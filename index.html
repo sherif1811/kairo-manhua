@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى</title>
+    <!-- خط Cairo المميز من Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome للأيقونات الاحترافية -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملفات التنسيق المخصصة -->
+    <link rel="stylesheet" href="style.css">
+    <!-- دعم وضع عدم الاتصال (PWA Basic Setup) -->
+    <meta name="theme-color" content="#0a0b0e">
+    <meta name="description" content="منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.">
+</head>
+<body>
+    <!-- الهيكل الرئيسي للتطبيق -->
+    <div id="app">
+        <!-- سيتم تحميل المحتوى بالكامل ديناميكياً بواسطة JavaScript -->
+        <div class="loading-screen" id="initial-loader">
+            <div class="loader-content">
+                <h1 class="logo-text neon-pulse">KAIRO<span>/منهوا</span></h1>
+                <div class="spinner"></div>
+                <p>جاري تحميل عالم المانجا الخاص بك...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- المنطق البرمجي الرئيسي للموقع -->
+    <script src="app.js" type="module"></script>
+</body>
+</html>
