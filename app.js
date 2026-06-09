@@ -256,13 +256,13 @@ const DEFAULT_MANGAS = [
 
 class AppState {
     constructor() {
+        this.loadUserProfile();
         this.loadMangas();
         this.loadBookmarks();
         this.loadReadingProgress();
         this.loadHistory();
         this.loadComments();
         this.loadLikes();
-        this.loadUserProfile();
         this.loadReaderSettings();
         
         this.currentView = 'home';
@@ -275,7 +275,13 @@ class AppState {
         this.activeGenre = 'الكل';
         this.downloadProgress = {};
         this.isLoading = false;
+        this.showAuthModal = false;
+        this.authModalTab = 'login';
         this.loadScrapedMangas();
+        
+        if (this.sessionToken) {
+            this.fetchAndMergeSettings();
+        }
     }
 
     loadMangas() {
@@ -353,6 +359,86 @@ class AppState {
         }
     }
 
+    async syncSettings() {
+        if (!this.sessionToken) return;
+        
+        const settingsPayload = {
+            bookmarks: this.bookmarks,
+            history: this.history,
+            progress: this.progress,
+            likes: this.likes,
+            comments: this.comments,
+            userProfile: this.userProfile
+        };
+        
+        try {
+            await fetch('http://localhost:8000/api/sync_settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.sessionToken}`
+                },
+                body: JSON.stringify({ settings: settingsPayload })
+            });
+        } catch (e) {
+            console.error("[-] Sync error:", e);
+        }
+    }
+
+    async fetchAndMergeSettings() {
+        if (!this.sessionToken) return;
+        
+        try {
+            const response = await fetch('http://localhost:8000/api/get_settings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${this.sessionToken}`
+                }
+            });
+            if (response.ok) {
+                const settings = await response.json();
+                if (settings && Object.keys(settings).length > 0) {
+                    if (settings.bookmarks) this.bookmarks = { ...this.bookmarks, ...settings.bookmarks };
+                    if (settings.likes) this.likes = { ...this.likes, ...settings.likes };
+                    if (settings.comments) this.comments = { ...this.comments, ...settings.comments };
+                    if (settings.userProfile) {
+                        this.userProfile.username = settings.userProfile.username || this.userProfile.username;
+                        this.userProfile.points = Math.max(this.userProfile.points, settings.userProfile.points || 0);
+                    }
+                    
+                    if (settings.history && Array.isArray(settings.history)) {
+                        const historyMap = new Map();
+                        this.history.forEach(h => historyMap.set(h.mangaId, h));
+                        settings.history.forEach(h => {
+                            if (!historyMap.has(h.mangaId) || new Date(h.updatedAt) > new Date(historyMap.get(h.mangaId).updatedAt)) {
+                                historyMap.set(h.mangaId, h);
+                            }
+                        });
+                        this.history = Array.from(historyMap.values()).sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt)).slice(0, 30);
+                    }
+                    
+                    if (settings.progress) {
+                        for (let mangaId in settings.progress) {
+                            if (!this.progress[mangaId] || new Date(settings.progress[mangaId].updatedAt) > new Date(this.progress[mangaId].updatedAt)) {
+                                this.progress[mangaId] = settings.progress[mangaId];
+                            }
+                        }
+                    }
+                    
+                    this.saveBookmarks();
+                    this.saveHistory();
+                    localStorage.setItem('kairo_progress', JSON.stringify(this.progress));
+                    localStorage.setItem('kairo_likes', JSON.stringify(this.likes));
+                    localStorage.setItem('kairo_comments', JSON.stringify(this.comments));
+                    this.saveUserProfile();
+                    renderApp();
+                }
+            }
+        } catch (e) {
+            console.error("[-] Fetch sync settings error:", e);
+        }
+    }
+
     loadBookmarks() {
         const stored = localStorage.getItem('kairo_bookmarks');
         this.bookmarks = stored ? JSON.parse(stored) : {};
@@ -360,6 +446,7 @@ class AppState {
 
     saveBookmarks() {
         localStorage.setItem('kairo_bookmarks', JSON.stringify(this.bookmarks));
+        this.syncSettings();
     }
 
     loadHistory() {
@@ -369,6 +456,7 @@ class AppState {
 
     saveHistory() {
         localStorage.setItem('kairo_history', JSON.stringify(this.history));
+        this.syncSettings();
     }
 
     addToHistory(mangaId, chapterId, scrollY = 0, percentage = 0, pageIndex = 0) {
@@ -399,6 +487,7 @@ class AppState {
         if (!this.progress[mangaId]) this.progress[mangaId] = {};
         this.progress[mangaId] = { chapterId, scrollY, percentage, activePageIndex: pageIndex, updatedAt: new Date().toISOString() };
         localStorage.setItem('kairo_progress', JSON.stringify(this.progress));
+        this.syncSettings();
         
         this.addToHistory(mangaId, chapterId, scrollY, percentage, pageIndex);
     }
@@ -406,6 +495,18 @@ class AppState {
     loadComments() {
         const stored = localStorage.getItem('kairo_comments');
         this.comments = stored ? JSON.parse(stored) : {};
+    }
+
+    addComment(mangaId, chapterId, username, text) {
+        const key = `${mangaId}_${chapterId}`;
+        if (!this.comments[key]) this.comments[key] = [];
+        this.comments[key].push({
+            user: username || 'مجهول',
+            text,
+            date: new Date().toLocaleDateString('ar-EG')
+        });
+        localStorage.setItem('kairo_comments', JSON.stringify(this.comments));
+        this.syncSettings();
     }
 
     loadLikes() {
@@ -417,6 +518,7 @@ class AppState {
         const key = `${mangaId}_${chapterId}`;
         this.likes[key] = !this.likes[key];
         localStorage.setItem('kairo_likes', JSON.stringify(this.likes));
+        this.syncSettings();
         return this.likes[key];
     }
 
@@ -426,15 +528,28 @@ class AppState {
             username: 'أوتلاينر مميز',
             points: 150
         };
+        this.sessionToken = localStorage.getItem('kairo_session_token') || null;
+        this.userEmail = localStorage.getItem('kairo_user_email') || null;
+        this.userRole = localStorage.getItem('kairo_user_role') || null;
     }
 
     saveUserProfile() {
         localStorage.setItem('kairo_user_profile', JSON.stringify(this.userProfile));
+        if (this.sessionToken) {
+            localStorage.setItem('kairo_session_token', this.sessionToken);
+            localStorage.setItem('kairo_user_email', this.userEmail);
+            localStorage.setItem('kairo_user_role', this.userRole);
+        } else {
+            localStorage.removeItem('kairo_session_token');
+            localStorage.removeItem('kairo_user_email');
+            localStorage.removeItem('kairo_user_role');
+        }
     }
 
     addPoints(pts) {
         this.userProfile.points += pts;
         this.saveUserProfile();
+        this.syncSettings();
     }
 
     getUserLevelInfo() {
@@ -464,9 +579,9 @@ class AppState {
         localStorage.setItem('kairo_reader_settings', JSON.stringify(this.readerSettings));
     }
 
-    addManga(title, alternative, author, cover, banner, genres, synopsis, type) {
+    async addManga(title, alternative, author, cover, banner, genres, synopsis, type) {
         const newManga = {
-            id: String(this.mangas.length + 1),
+            id: `lek_${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${Date.now()}`,
             title,
             alternative,
             author,
@@ -475,16 +590,43 @@ class AppState {
             rating: 5.0,
             status: 'مستمر',
             type: type || 'منهوا',
-            views: Math.floor(Math.random() * 200) + 10,
+            views: 1500,
             genres: genres.split(',').map(g => g.trim()),
             synopsis,
             chapters: []
         };
-        this.mangas.unshift(newManga);
-        this.saveMangas();
+
+        if (this.sessionToken && this.userRole === 'admin') {
+            try {
+                const response = await fetch('http://localhost:8000/api/save_manga', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.sessionToken}`
+                    },
+                    body: JSON.stringify(newManga)
+                });
+                if (response.ok) {
+                    this.mangas.unshift(newManga);
+                    this.saveMangas();
+                    alert("تم إدراج العمل الفني على السيرفر بنجاح!");
+                    navigate('home');
+                } else {
+                    const err = await response.json();
+                    alert(`فشل الحفظ: ${err.error || 'خطأ غير معروف'}`);
+                }
+            } catch (e) {
+                alert("خطأ في الاتصال بالخادم وحفظ المنهوا.");
+            }
+        } else {
+            this.mangas.unshift(newManga);
+            this.saveMangas();
+            alert("تم حفظ المنهوا محلياً (غير مسجلة على السيرفر لأنك لست المدير).");
+            navigate('home');
+        }
     }
 
-    addChapter(mangaId, title, chapterNo, imagesStr) {
+    async addChapter(mangaId, title, chapterNo, imagesStr) {
         const manga = this.mangas.find(m => m.id === mangaId);
         if (!manga) return;
         
@@ -502,10 +644,39 @@ class AppState {
             images
         };
 
+        const originalChapters = [...manga.chapters];
         manga.chapters = manga.chapters.filter(ch => ch.id !== String(chapterNo));
         manga.chapters.unshift(newChapter);
         manga.chapters.sort((a, b) => parseFloat(b.id) - parseFloat(a.id));
-        this.saveMangas();
+
+        if (this.sessionToken && this.userRole === 'admin') {
+            try {
+                const response = await fetch('http://localhost:8000/api/save_manga', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.sessionToken}`
+                    },
+                    body: JSON.stringify(manga)
+                });
+                if (response.ok) {
+                    this.saveMangas();
+                    alert(`تم رفع ونشر الفصل ${chapterNo} بنجاح!`);
+                    navigate('detail', mangaId);
+                } else {
+                    manga.chapters = originalChapters;
+                    const err = await response.json();
+                    alert(`فشل إضافة الفصل: ${err.error || 'خطأ غير معروف'}`);
+                }
+            } catch (e) {
+                manga.chapters = originalChapters;
+                alert("خطأ في الاتصال بالسيرفر وإضافة الفصل.");
+            }
+        } else {
+            this.saveMangas();
+            alert(`تم إضافة الفصل ${chapterNo} محلياً.`);
+            navigate('detail', mangaId);
+        }
     }
 
     async loadSoloLevelingChapters() {
@@ -590,6 +761,31 @@ function prefetchNextChapter(images) {
 // شريط التنقل العلوي
 function HeaderComponent() {
     const activeView = state.currentView;
+    const isAdmin = state.userRole === 'admin';
+    const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-screwdriver-wrench"></i> الإدارة</button>` : '';
+
+    let accountButton = '';
+    if (state.sessionToken) {
+        accountButton = `
+        <div class="user-profile-menu-container">
+            <button class="profile-navbar-btn" id="nav-profile-btn">
+                <i class="fa-solid fa-user-check"></i>
+                <span>${state.userEmail.split('@')[0]}</span>
+            </button>
+            <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج">
+                <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+        </div>
+        `;
+    } else {
+        accountButton = `
+        <button class="login-navbar-btn" id="open-login-btn">
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span>تسجيل الدخول</span>
+        </button>
+        `;
+    }
+
     return `
     <header class="header">
         <a class="header-logo" id="logo-btn">KAIRO<span>/منهوا</span></a>
@@ -599,6 +795,7 @@ function HeaderComponent() {
             <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks"><i class="fa-solid fa-bookmark"></i> المفضلة</span>
             <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads"><i class="fa-solid fa-circle-down"></i> المحملة</span>
             <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history"><i class="fa-solid fa-clock-rotate-left"></i> السجل</span>
+            <span class="nav-link" id="open-suggestions-btn"><i class="fa-solid fa-comments"></i> الاقتراحات والشكاوى</span>
         </nav>
         
         <div class="header-actions">
@@ -606,9 +803,88 @@ function HeaderComponent() {
                 <input type="text" placeholder="ابحث عن المانجا..." id="search-input" value="${state.searchQuery}">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </div>
-            <button class="admin-btn" id="nav-admin"><i class="fa-solid fa-screwdriver-wrench"></i> الإدارة</button>
+            ${accountButton}
+            ${adminButton}
         </div>
     </header>
+    `;
+}
+
+function AuthModalComponent() {
+    if (!state.showAuthModal) return '';
+    const isLogin = state.authModalTab === 'login';
+    
+    return `
+    <div class="auth-modal-overlay" id="auth-modal-overlay">
+        <div class="auth-modal-card glass-card">
+            <button class="auth-modal-close" id="close-auth-modal">&times;</button>
+            <div class="auth-modal-tabs">
+                <button class="auth-tab-btn ${isLogin ? 'active' : ''}" id="auth-tab-login" data-tab="login">تسجيل الدخول</button>
+                <button class="auth-tab-btn ${!isLogin ? 'active' : ''}" id="auth-tab-register" data-tab="register">حساب جديد</button>
+            </div>
+            
+            <div class="auth-modal-body">
+                <form id="auth-form" class="auth-form">
+                    <div class="form-group">
+                        <label for="auth-email">البريد الإلكتروني (Gmail)</label>
+                        <input type="email" id="auth-email" required placeholder="example@gmail.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-password">كلمة المرور</label>
+                        <input type="password" id="auth-password" required placeholder="********" autocomplete="current-password">
+                    </div>
+                    <div id="auth-error-msg" class="auth-error-msg" style="display:none;"></div>
+                    <div id="auth-success-msg" class="auth-success-msg" style="display:none;"></div>
+                    <button type="submit" class="auth-submit-btn neon-pulse-hover">
+                        ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> دخول' : '<i class="fa-solid fa-user-plus"></i> إنشاء الحساب'}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+function SuggestionsModalComponent() {
+    if (!state.showSuggestionsModal) return '';
+    
+    return `
+    <div class="auth-modal-overlay" id="suggestions-modal-overlay">
+        <div class="auth-modal-card glass-card" style="max-width: 500px;">
+            <button class="auth-modal-close" id="close-suggestions-modal">&times;</button>
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 12px; text-align: right; border-right: 4px solid var(--color-secondary); padding-right: 10px;">
+                <i class="fa-solid fa-comments" style="color: var(--color-secondary);"></i> تقديم اقتراح أو شكوى
+            </h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; text-align: right; line-height: 1.6;">
+                رأيك يهمنا لتطوير موقع KAIRO/منهوا. يمكنك كتابة اقتراح لتحسين الموقع أو تقديم شكوى عن أي مشكلة فنية.
+            </p>
+            
+            <form id="suggestions-form" class="auth-form" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="form-group" style="text-align: right;">
+                    <label style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">نوع الرسالة</label>
+                    <div style="display: flex; gap: 20px; justify-content: flex-start; direction: rtl;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-weight: 600;">
+                            <input type="radio" name="sug-type" value="suggestion" checked style="cursor: pointer; accent-color: var(--color-secondary);">
+                            <span>اقتراح <i class="fa-solid fa-lightbulb" style="color: #ffb703;"></i></span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-weight: 600;">
+                            <input type="radio" name="sug-type" value="complaint" style="cursor: pointer; accent-color: var(--color-accent);">
+                            <span>شكوى <i class="fa-solid fa-circle-exclamation" style="color: var(--color-accent);"></i></span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group" style="text-align: right;">
+                    <label for="sug-content" style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">تفاصيل الرسالة</label>
+                    <textarea id="sug-content" required rows="4" placeholder="اكتب تفاصيل اقتراحك أو شكواك هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;"></textarea>
+                </div>
+                <div id="sug-error-msg" class="auth-error-msg" style="display:none; color: #ff007f; font-size: 0.85rem; text-align: right;"></div>
+                <div id="sug-success-msg" class="auth-success-msg" style="display:none; color: #00ff7f; font-size: 0.85rem; text-align: right;"></div>
+                <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), #00b0ff); margin-top: 10px;">
+                    إرسال الرسالة الآن <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>
+                </button>
+            </form>
+        </div>
+    </div>
     `;
 }
 
@@ -791,68 +1067,6 @@ function HistoryViewComponent() {
     `;
 }
 
-// مكونات القائمة الجانبية (Sidebar)
-function UserProfileWidgetComponent() {
-    const info = state.getUserLevelInfo();
-    return `
-    <div class="sidebar-card">
-        <div class="user-widget-profile">
-            <div class="user-widget-avatar">${state.userProfile.username.charAt(0)}</div>
-            <div class="user-widget-info">
-                <h4>${state.userProfile.username}</h4>
-                <p>${info.rankTitle}</p>
-            </div>
-        </div>
-        <div style="margin-top:15px;">
-            <div class="level-progress-info">
-                <span>المستوى الحالي: ${info.level}</span>
-                <span>النقاط: ${state.userProfile.points}</span>
-            </div>
-            <div class="history-progress-track">
-                <div class="history-progress-bar-fill" style="width: ${info.levelProgress}%"></div>
-            </div>
-            <p style="font-size:0.7rem;color:var(--text-dark);margin-top:5px;text-align:center;">اقرأ فصولاً إضافية لترقية مستواك!</p>
-        </div>
-    </div>
-    `;
-}
-
-function TrendingSidebarComponent() {
-    const trending = [...state.mangas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
-    
-    let listHtml = '';
-    trending.forEach((manga, idx) => {
-        listHtml += `
-        <div class="trending-item" data-id="${manga.id}">
-            <div class="trending-rank">${idx + 1}</div>
-            <div class="trending-cover">
-                <img src="${manga.cover}" alt="${manga.title}">
-            </div>
-            <div class="trending-details">
-                <h4 class="trending-title">${manga.title}</h4>
-                <div class="trending-stats">
-                    <span style="margin-left: 10px;"><i class="fa-solid fa-eye"></i> ${manga.views || 0}</span>
-                    <span><i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</span>
-                </div>
-            </div>
-        </div>
-        `;
-    });
-
-    return `
-    <div class="sidebar-card">
-        <div class="sidebar-card-title">
-            <span class="title-text">الأكثر شعبية</span>
-            <i class="fa-solid fa-fire"></i>
-        </div>
-        <div class="trending-list">
-            ${listHtml}
-        </div>
-    </div>
-    `;
-}
-
-// شبكات المانجا (مع محاكاة لـ Skeleton loader)
 function MangaGridComponent(title, mangasFiltered) {
     if (state.isLoading) {
         let skeletons = '';
@@ -921,25 +1135,68 @@ function MangaGridComponent(title, mangasFiltered) {
     `;
 }
 
-// تصنيفات المانجا للتصفية
-function GenresFilterComponent() {
-    const allGenres = ['الكل'];
-    state.mangas.forEach(manga => {
-        manga.genres.forEach(g => {
-            if (!allGenres.includes(g)) allGenres.push(g);
-        });
-    });
-
-    let html = '<div class="genres-list" style="margin-bottom: 30px;">';
-    allGenres.forEach(genre => {
-        const isActive = state.activeGenre === genre;
-        html += `<span class="genre-tag ${isActive ? 'active' : ''}" style="${isActive ? 'background:var(--color-primary);color:#fff;' : ''}" data-genre="${genre}">${genre}</span>`;
-    });
-    html += '</div>';
-    return html;
+// مكونات القائمة الجانبية (Sidebar)
+function UserProfileWidgetComponent() {
+    const info = state.getUserLevelInfo();
+    return `
+    <div class="sidebar-card">
+        <div class="user-widget-profile">
+            <div class="user-widget-avatar">${state.userProfile.username.charAt(0)}</div>
+            <div class="user-widget-info">
+                <h4>${state.userProfile.username}</h4>
+                <p>${info.rankTitle}</p>
+            </div>
+        </div>
+        <div style="margin-top:15px;">
+            <div class="level-progress-info">
+                <span>المستوى الحالي: ${info.level}</span>
+                <span>النقاط: ${state.userProfile.points}</span>
+            </div>
+            <div class="history-progress-track">
+                <div class="history-progress-bar-fill" style="width: ${info.levelProgress}%"></div>
+            </div>
+            <p style="font-size:0.7rem;color:var(--text-dark);margin-top:5px;text-align:center;">اقرأ فصولاً إضافية لترقية مستواك!</p>
+        </div>
+    </div>
+    `;
 }
 
-// صفحة التفاصيل الكاملة
+function TrendingSidebarComponent() {
+    const trending = [...state.mangas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+    
+    let listHtml = '';
+    trending.forEach((manga, idx) => {
+        listHtml += `
+        <div class="trending-item" data-id="${manga.id}">
+            <div class="trending-rank">${idx + 1}</div>
+            <div class="trending-cover">
+                <img src="${manga.cover}" alt="${manga.title}">
+            </div>
+            <div class="trending-details">
+                <h4 class="trending-title">${manga.title}</h4>
+                <div class="trending-stats">
+                    <span style="margin-left: 10px;"><i class="fa-solid fa-eye"></i> ${manga.views || 0}</span>
+                    <span><i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</span>
+                </div>
+            </div>
+        </div>
+        `;
+    });
+
+    return `
+    <div class="sidebar-card">
+        <div class="sidebar-card-title">
+            <span class="title-text">الأكثر شعبية</span>
+            <i class="fa-solid fa-fire"></i>
+        </div>
+        <div class="trending-list">
+            ${listHtml}
+        </div>
+    </div>
+    `;
+}
+
+// شبكات المانجا (مع محاكاة لـ Sk// صفحة التفاصيل الكاملة
 async function DetailViewComponent() {
     if (state.isLoading) {
         return `
@@ -1026,6 +1283,93 @@ async function DetailViewComponent() {
         });
     }
 
+    // جلب التقييمات والمراجعات من السيرفر
+    let reviewsListHtml = '';
+    let userReview = null;
+    let avgRating = 5.0;
+    
+    try {
+        const response = await fetch(`http://localhost:8000/api/manga_reviews?manga_id=${manga.id}`);
+        if (response.ok) {
+            const reviews = await response.json();
+            if (reviews.length > 0) {
+                let sum = 0;
+                reviews.forEach(r => {
+                    sum += r.rating;
+                    if (state.userEmail && r.email.toLowerCase() === state.userEmail.toLowerCase()) {
+                        userReview = r;
+                    }
+                    
+                    const stars = '<i class="fa-solid fa-star" style="color: #ffb703;"></i>'.repeat(r.rating) +
+                                  '<i class="fa-regular fa-star" style="color: var(--text-dark);"></i>'.repeat(5 - r.rating);
+                    const userDisplay = r.email.split('@')[0];
+                    const dateStr = new Date(r.created_at * 1000).toLocaleDateString('ar-EG');
+                    
+                    reviewsListHtml += `
+                    <div class="review-item-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px; background: rgba(255,255,255,0.01); text-align: right;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-regular fa-calendar"></i> ${dateStr}</span>
+                            <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-user-circle" style="color: var(--color-secondary); margin-left: 6px;"></i> ${userDisplay}</span>
+                        </div>
+                        <div style="font-size: 0.85rem; display: flex; gap: 4px; justify-content: flex-end;">${stars}</div>
+                        \${r.review_text ? `<p style="font-size: 0.9rem; color: var(--text-main); line-height: 1.6; margin-top: 4px;">\${r.review_text}</p>` : ''}
+                    </div>
+                    `;
+                });
+                avgRating = (sum / reviews.length).toFixed(1);
+            } else {
+                reviewsListHtml = '<p style="color: var(--text-dark); text-align: center; padding: 20px;">لا توجد مراجعات لهذا العمل حالياً. كن أول من يكتب مراجعة!</p>';
+            }
+        }
+    } catch (e) {
+        console.error("Error loading reviews:", e);
+        reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">فشل تحميل مراجعات هذا العمل.</p>';
+    }
+
+    manga.rating = parseFloat(avgRating);
+
+    // نموذج إضافة مراجعة
+    let reviewFormHtml = '';
+    if (state.sessionToken) {
+        const userRating = userReview ? userReview.rating : 5;
+        const userText = userReview ? userReview.review_text : '';
+        
+        let starsPickerHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            const starClass = i <= userRating ? 'fa-solid' : 'fa-regular';
+            starsPickerHtml += `<i class="${starClass} fa-star star-opt" data-rating="${i}" style="font-size: 1.5rem; color: #ffb703; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></i>`;
+        }
+
+        reviewFormHtml = `
+        <div class="review-form-container glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 16px; text-align: right;">
+            <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">
+                \${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
+            </h4>
+            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
+                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم بالنجوم:</span>
+                <div class="stars-picker" id="manga-stars-picker" style="display: flex; gap: 6px; direction: ltr;">
+                    \${starsPickerHtml}
+                </div>
+                <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">\${userRating} / 5</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+                <label for="manga-review-text" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">رأيك أو مراجعتك (اختياري):</label>
+                <textarea id="manga-review-text" rows="3" placeholder="اكتب رأيك أو مراجعتك النصية هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;">\${userText}</textarea>
+            </div>
+            <button class="detail-btn btn-read" id="submit-manga-review-btn" style="padding: 10px 24px; font-size: 0.95rem; font-weight: 800; border-radius: 30px; width: fit-content; align-self: flex-start;">
+                \${userReview ? 'تحديث المراجعة والتقييم' : 'إرسال التقييم والمراجعة'}
+            </button>
+        </div>
+        `;
+    } else {
+        reviewFormHtml = `
+        <div class="glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 0, 127, 0.03); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+            <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;"><i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من تقييم المنهوا وترك مراجعة.</p>
+            <button class="login-navbar-btn" id="review-auth-prompt-btn" style="padding: 8px 20px; font-size: 0.85rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول الآن</button>
+        </div>
+        `;
+    }
+
     return `
     <div class="manga-detail-wrapper">
         <div class="detail-banner" style="background-image: url('${manga.banner}')">
@@ -1037,18 +1381,24 @@ async function DetailViewComponent() {
                     <img src="${manga.cover}" alt="${manga.title}">
                 </div>
                 <div class="detail-actions">
-                    ${latestChapter ? `
-                        <button class="detail-btn btn-read start-reading-btn" data-chap-id="${latestChapter.id}">
+                    \${latestChapter ? `
+                        <button class="detail-btn btn-read start-reading-btn" data-chap-id="\${latestChapter.id}">
                             <i class="fa-solid fa-book-open"></i> قراءة أول فصل
                         </button>
                     ` : ''}
                     
                     <select class="detail-btn btn-fav select-bookmark-status" data-id="${manga.id}">
-                        <option value="" ${bookmarkStatus === '' ? 'selected' : ''}>+ إضافة للمفضلة</option>
-                        <option value="reading" ${bookmarkStatus === 'reading' ? 'selected' : ''}>أقرأه حالياً</option>
-                        <option value="plan" ${bookmarkStatus === 'plan' ? 'selected' : ''}>أرغب في قراءته</option>
-                        <option value="completed" ${bookmarkStatus === 'completed' ? 'selected' : ''}>مكتمل</option>
+                        <option value="" \${bookmarkStatus === '' ? 'selected' : ''}>+ إضافة للمفضلة</option>
+                        <option value="reading" \${bookmarkStatus === 'reading' ? 'selected' : ''}>أقرأه حالياً</option>
+                        <option value="plan" \${bookmarkStatus === 'plan' ? 'selected' : ''}>أرغب في قراءته</option>
+                        <option value="completed" \${bookmarkStatus === 'completed' ? 'selected' : ''}>مكتمل</option>
                     </select>
+                    
+                    \${state.userRole === 'admin' ? `
+                        <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+                            <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
+                        </button>
+                    ` : ''}
                 </div>
             </div>
             <div class="detail-content">
@@ -1071,17 +1421,33 @@ async function DetailViewComponent() {
                     <p>${manga.synopsis}</p>
                 </div>
                 
+                <!-- قسم مراجعات المنهوا والتقييمات -->
+                <div class="chapters-section" style="margin-top: 30px;">
+                    <div class="chapters-header" style="margin-bottom: 20px;">
+                        <h3>تقييمات ومراجعات المتابعين</h3>
+                        <span>متوسط التقييم: <i class="fa-solid fa-star" style="color: #ffb703;"></i> \${manga.rating}</span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        \${reviewFormHtml}
+                        
+                        <div style="display: flex; flex-direction: column; gap: 14px; max-height: 400px; overflow-y: auto; padding-left: 6px;">
+                            \${reviewsListHtml}
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="chapters-section">
                     <div class="chapters-header">
                         <h3>فصول المانجا المتاحة</h3>
                         <div class="chapters-search-box">
-                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
+                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="\${state.chapterSearchQuery || ''}" autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
-                        <span>إجمالي الفصول: ${manga.chapters.length}</span>
+                        <span>إجمالي الفصول: \${manga.chapters.length}</span>
                     </div>
                     <div class="chapters-list">
-                        ${chaptersHtml}
+                        \${chaptersHtml}
                     </div>
                 </div>
             </div>
@@ -1114,7 +1480,7 @@ async function ReaderViewComponent() {
     // فحص ما إذا كان هذا الفصل محمل أوفلاين
     let pages = chapter.images;
     const offlineData = await getChapterOffline(manga.id, chapter.id);
-    const isOfflineAvailable = !!offlineData;
+    const isOfflineAvailable = !offlineData;
     if (isOfflineAvailable) {
         pages = offlineData.images;
         console.log("تم تحميل صفحات الفصل المحفوظة من الـ IndexedDB محلياً.");
@@ -1138,7 +1504,7 @@ async function ReaderViewComponent() {
     // خيارات الفصول
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
-        optionsHtml += `<option value="${ch.id}" ${ch.id === chapter.id ? 'selected' : ''}>الفصل ${ch.id}</option>`;
+        optionsHtml += `<option value="${ch.id}" \${ch.id === chapter.id ? 'selected' : ''}>الفصل \${ch.id}</option>`;
     });
 
     // تفضيل الفصل
@@ -1157,8 +1523,8 @@ async function ReaderViewComponent() {
             const isActivePage = index === state.activePageIndex;
             const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${proxiedUrl}" alt="صفحة ${index + 1}">
+            <div class="reader-image-container \${isActivePage ? 'active-page' : ''}" data-index="\${index}">
+                <img src="\${proxiedUrl}" alt="صفحة \${index + 1}">
             </div>
             `;
         });
@@ -1166,38 +1532,73 @@ async function ReaderViewComponent() {
         pages.forEach((pageUrl, index) => {
             const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container lazy-load-container" data-src="${proxiedUrl}">
+            <div class="reader-image-container lazy-load-container" data-src="\${proxiedUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
-                    <span>جاري تحميل الصفحة ${index + 1}...</span>
+                    <span>جاري تحميل الصفحة \${index + 1}...</span>
                 </div>
             </div>
             `;
         });
     }
 
-    // التعليقات
-    const commentsKey = `${manga.id}_${chapter.id}`;
-    const chapterComments = state.comments[commentsKey] || [];
+    // جلب تعليقات الفصل من السيرفر
+    let chapterComments = [];
     let commentsListHtml = '';
-    if (chapterComments.length === 0) {
-        commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">كن أول من يترك تعليقاً على هذا الفصل!</p>';
-    } else {
-        chapterComments.forEach(comm => {
-            const firstLetter = comm.username ? comm.username.charAt(0).toUpperCase() : 'U';
-            commentsListHtml += `
-            <div class="comment-item">
-                <div class="comment-avatar">${firstLetter}</div>
-                <div class="comment-body">
-                    <div class="comment-header">
-                        <span class="comment-username">${comm.username}</span>
-                        <span class="comment-time">${comm.time}</span>
+    try {
+        const response = await fetch(`http://localhost:8000/api/chapter_comments?manga_id=\${manga.id}&chapter_id=\${chapter.id}`);
+        if (response.ok) {
+            chapterComments = await response.json();
+            if (chapterComments.length === 0) {
+                commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">كن أول من يترك تعليقاً على هذا الفصل!</p>';
+            } else {
+                chapterComments.forEach(comm => {
+                    const userDisplay = comm.email.split('@')[0];
+                    const firstLetter = userDisplay.charAt(0).toUpperCase();
+                    const dateStr = new Date(comm.created_at * 1000).toLocaleDateString('ar-EG');
+                    commentsListHtml += `
+                    <div class="comment-item">
+                        <div class="comment-avatar">\${firstLetter}</div>
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-username">\${userDisplay}</span>
+                                <span class="comment-time">\${dateStr}</span>
+                            </div>
+                            <p class="comment-text">\${comm.comment_text}</p>
+                        </div>
                     </div>
-                    <p class="comment-text">${comm.text}</p>
-                </div>
+                    `;
+                });
+            }
+        }
+    } catch (e) {
+        console.error("Error fetching comments:", e);
+        commentsListHtml = '<p style="color:#ff007f;text-align:center;padding:20px;">فشل تحميل تعليقات هذا الفصل.</p>';
+    }
+
+    // صندوق تعليق مسجل الدخول أو غير المسجل
+    let commentFormHtml = '';
+    if (state.sessionToken) {
+        commentFormHtml = `
+        <form class="comments-form" id="chapter-comment-form" style="display: flex; flex-direction: column; gap: 10px; text-align: right;">
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">
+                <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> التعليق باسم: <strong>\${state.userEmail.split('@')[0]}</strong>
             </div>
-            `;
-        });
+            <div style="display: flex; gap: 12px; width: 100%;">
+                <input type="text" placeholder="شاركنا رأيك حول الفصل..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
+                <button type="submit" style="padding: 10px 24px; background: var(--color-primary); color: #fff; border: none; border-radius: 30px; font-weight: 700; cursor: pointer;">إرسال</button>
+            </div>
+        </form>
+        `;
+    } else {
+        commentFormHtml = `
+        <div class="glass-card" style="padding: 18px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 0, 127, 0.03); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">
+                <i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من كتابة تعليق على هذا الفصل.
+            </p>
+            <button class="login-navbar-btn" id="comment-auth-prompt-btn" style="padding: 6px 18px; font-size: 0.8rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول الآن</button>
+        </div>
+        `;
     }
 
     // استرجاع وحفظ التقدم
@@ -1205,21 +1606,21 @@ async function ReaderViewComponent() {
     state.saveReadingProgress(manga.id, chapter.id, 0, progressPercent, state.activePageIndex);
 
     return `
-    <div class="reader-wrapper ${themeClass} ${widthClass} ${modeClass}">
-        <div class="reader-progress-bar" id="reading-bar" style="width: ${progressPercent}%"></div>
+    <div class="reader-wrapper \${themeClass} \${widthClass} \${modeClass}">
+        <div class="reader-progress-bar" id="reading-bar" style="width: \${progressPercent}%"></div>
         
         <div class="reader-nav">
             <button class="reader-btn return-to-manga" title="العودة لصفحة المانجا"><i class="fa-solid fa-arrow-right"></i></button>
             <div class="reader-title-info">
-                <h2>${manga.title}</h2>
-                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
+                <h2>\${manga.title}</h2>
+                <p>\${chapter.title} \${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
             </div>
             <div class="reader-controls">
-                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="reader-btn prev-chapter-btn \${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
-                        <span>الفصل ${chapter.id}</span>
+                        <span>الفصل \${chapter.id}</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-content">
@@ -1228,12 +1629,12 @@ async function ReaderViewComponent() {
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <div class="dropdown-items-list">
-                            ${manga.chapters.map(ch => {
+                            \${manga.chapters.map(ch => {
                                 const subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
                                 return `
-                                    <div class="dropdown-item-opt ${ch.id === chapter.id ? 'active' : ''}" data-value="${ch.id}">
-                                        <span class="opt-num">الفصل ${ch.id}</span>
-                                        ${subtitle ? `<span class="opt-title">${subtitle}</span>` : ''}
+                                    <div class="dropdown-item-opt \${ch.id === chapter.id ? 'active' : ''}" data-value="\${ch.id}">
+                                        <span class="opt-num">الفصل \${ch.id}</span>
+                                        \${subtitle ? `<span class="opt-title">\${subtitle}</span>` : ''}
                                     </div>
                                 `;
                             }).join('')}
@@ -1241,28 +1642,28 @@ async function ReaderViewComponent() {
                     </div>
                 </div>
 
-                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="reader-btn next-chapter-btn \${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
             </div>
         </div>
         
         <div class="reader-content-images">
-            ${imagesHtml}
+            \${imagesHtml}
             
-            ${settings.mode === 'horizontal' ? `
+            \${settings.mode === 'horizontal' ? `
                 <div class="horizontal-click-navigator">
                     <div class="nav-zone nav-zone-right" id="h-prev-zone" title="الصفحة السابقة"><i class="fa-solid fa-chevron-right"></i></div>
                     <div class="nav-zone nav-zone-left" id="h-next-zone" title="الصفحة التالية"><i class="fa-solid fa-chevron-left"></i></div>
                 </div>
                 <div class="horizontal-page-indicator">
-                    صفحة ${state.activePageIndex + 1} من ${pages.length}
+                    صفحة \${state.activePageIndex + 1} من \${pages.length}
                 </div>
             ` : ''}
         </div>
 
         <div class="chapter-likes-interactive">
-            <button class="like-chapter-btn ${isLiked ? 'liked' : ''}" id="chapter-like-btn">
-                <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
-                <span id="like-text">${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
+            <button class="like-chapter-btn \${isLiked ? 'liked' : ''}" id="chapter-like-btn">
+                <i class="fa-\${isLiked ? 'solid' : 'regular'} fa-heart"></i>
+                <span id="like-text">\${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
             </button>
         </div>
         
@@ -1272,38 +1673,34 @@ async function ReaderViewComponent() {
             <div class="setting-row">
                 <label>اتجاه القراءة</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
-                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
+                    <button class="setting-btn \${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
+                    <button class="setting-btn \${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
                 </div>
             </div>
             <div class="setting-row">
                 <label>لون الخلفية</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
-                    <button class="setting-btn ${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
-                    <button class="setting-btn ${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">مريح للعين</button>
+                    <button class="setting-btn \${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
+                    <button class="setting-btn \${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
+                    <button class="setting-btn \${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">مريح للعين</button>
                 </div>
             </div>
             <div class="setting-row">
                 <label>عرض الصور</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">مضغوط</button>
-                    <button class="setting-btn ${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">متوسط</button>
-                    <button class="setting-btn ${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
+                    <button class="setting-btn \${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">مضغوط</button>
+                    <button class="setting-btn \${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">متوسط</button>
+                    <button class="setting-btn \${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
                 </div>
             </div>
         </div>
         
         <div class="main-content" style="max-width: 800px; margin: 0 auto; width: 100%;">
             <div class="comments-container" style="margin-bottom: 50px;">
-                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (${chapterComments.length})</h3>
-                <form class="comments-form" id="comment-form">
-                    <input type="text" placeholder="اكتب اسمك المستعار..." id="comment-user" required style="max-width:200px;margin-bottom:10px;">
-                    <input type="text" placeholder="شاركنا رأيك حول الفصل..." id="comment-text" required>
-                    <button type="submit">إرسال تعليق</button>
-                </form>
+                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (\${chapterComments.length})</h3>
+                \${commentFormHtml}
                 <div class="comments-list">
-                    ${commentsListHtml}
+                    \${commentsListHtml}
                 </div>
             </div>
         </div>
@@ -1325,6 +1722,7 @@ function AdminPanelViewComponent() {
         <div class="admin-tabs">
             <button class="admin-tab active" id="tab-add-manga">إضافة مانجا/منهوا جديدة</button>
             <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
+            <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
         </div>
         
         <div class="admin-form-panel" id="panel-add-manga">
@@ -1390,6 +1788,12 @@ function AdminPanelViewComponent() {
                 </div>
                 <button type="submit" class="admin-submit-btn">حفظ ونشر الفصل الجديد</button>
             </form>
+        </div>
+
+        <div class="admin-form-panel" id="panel-suggestions" style="display:none; text-align: right;">
+            <div id="suggestions-list-admin" style="display: flex; flex-direction: column; gap: 16px;">
+                <p style="text-align:center; padding: 20px; color: var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الشكاوى والاقتراحات...</p>
+            </div>
         </div>
     </div>
     `;
@@ -1582,7 +1986,7 @@ async function renderApp() {
 
     // 3. بناء وتصيير الهيكل الأساسي للواجهة
     if (state.currentView === 'reader') {
-        root.innerHTML = `<div id="app-root">${viewHtml}</div>`;
+        root.innerHTML = `<div id="app-root">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()}</div>`;
         
         if (state.readerSettings.mode !== 'horizontal') {
             initLazyLoading();
@@ -1595,6 +1999,8 @@ async function renderApp() {
             <main class="main-content">
                 ${viewHtml}
             </main>
+            ${AuthModalComponent()}
+            ${SuggestionsModalComponent()}
         </div>
         `;
     }
@@ -2136,6 +2542,327 @@ function attachEventListeners() {
             navigate('detail', mangaId);
         };
     }
+
+    // الشكاوى والاقتراحات: فتح وإغلاق النافذة
+    const openSuggestionsBtn = document.getElementById('open-suggestions-btn');
+    if (openSuggestionsBtn) {
+        openSuggestionsBtn.onclick = () => {
+            if (!state.sessionToken) {
+                alert("الرجاء تسجيل الدخول أولاً لتتمكن من تقديم اقتراح أو شكوى.");
+                state.showAuthModal = true;
+                state.authModalTab = 'login';
+                renderApp();
+            } else {
+                state.showSuggestionsModal = true;
+                state.suggestionsError = '';
+                state.suggestionsSuccess = '';
+                renderApp();
+            }
+        };
+    }
+
+    const closeSuggestionsBtn = document.getElementById('close-suggestions-modal');
+    if (closeSuggestionsBtn) {
+        closeSuggestionsBtn.onclick = () => {
+            state.showSuggestionsModal = false;
+            renderApp();
+        };
+    }
+
+    // الشكاوى والاقتراحات: نموذج الإرسال
+    const suggestionsForm = document.getElementById('suggestions-form');
+    if (suggestionsForm) {
+        suggestionsForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const sugType = suggestionsForm.querySelector('input[name="sug-type"]:checked').value;
+            const content = document.getElementById('sug-content').value;
+            const errorMsg = document.getElementById('sug-error-msg');
+            const successMsg = document.getElementById('sug-success-msg');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/suggestions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.sessionToken}`
+                    },
+                    body: JSON.stringify({ type: sugType, content: content })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    successMsg.innerText = result.message;
+                    successMsg.style.display = 'block';
+                    suggestionsForm.reset();
+                    setTimeout(() => {
+                        state.showSuggestionsModal = false;
+                        renderApp();
+                    }, 1500);
+                } else {
+                    errorMsg.innerText = result.error || 'حدث خطأ ما';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.style.display = 'block';
+            }
+        };
+    }
+
+    // التوثيق: فتح النافذة المنبثقة
+    const openLoginBtn = document.getElementById('open-login-btn');
+    if (openLoginBtn) {
+        openLoginBtn.onclick = () => {
+            state.showAuthModal = true;
+            state.authModalTab = 'login';
+            renderApp();
+        };
+    }
+    
+    const reviewsLoginBtn = document.getElementById('review-auth-prompt-btn');
+    if (reviewsLoginBtn) {
+        reviewsLoginBtn.onclick = () => {
+            state.showAuthModal = true;
+            state.authModalTab = 'login';
+            renderApp();
+        };
+    }
+    
+    const commentsLoginBtn = document.getElementById('comment-auth-prompt-btn');
+    if (commentsLoginBtn) {
+        commentsLoginBtn.onclick = () => {
+            state.showAuthModal = true;
+            state.authModalTab = 'login';
+            renderApp();
+        };
+    }
+
+    // التوثيق: تبديل التبويبات
+    const authTabLogin = document.getElementById('auth-tab-login');
+    const authTabRegister = document.getElementById('auth-tab-register');
+    if (authTabLogin) {
+        authTabLogin.onclick = () => {
+            state.authModalTab = 'login';
+            renderApp();
+        };
+    }
+    if (authTabRegister) {
+        authTabRegister.onclick = () => {
+            state.authModalTab = 'register';
+            renderApp();
+        };
+    }
+
+    // التوثيق: إغلاق النافذة
+    const closeAuthBtn = document.getElementById('close-auth-modal');
+    if (closeAuthBtn) {
+        closeAuthBtn.onclick = () => {
+            state.showAuthModal = false;
+            renderApp();
+        };
+    }
+    
+    const authOverlay = document.getElementById('auth-modal-overlay');
+    if (authOverlay) {
+        authOverlay.onclick = (e) => {
+            if (e.target === authOverlay) {
+                state.showAuthModal = false;
+                renderApp();
+            }
+        };
+    }
+    
+    const sugOverlay = document.getElementById('suggestions-modal-overlay');
+    if (sugOverlay) {
+        sugOverlay.onclick = (e) => {
+            if (e.target === sugOverlay) {
+                state.showSuggestionsModal = false;
+                renderApp();
+            }
+        };
+    }
+
+    // التوثيق: إرسال نموذج الدخول/التسجيل
+    const authForm = document.getElementById('auth-form');
+    if (authForm) {
+        authForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errorMsg = document.getElementById('auth-error-msg');
+            const successMsg = document.getElementById('auth-success-msg');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            const endpoint = state.authModalTab === 'login' ? '/api/login' : '/api/register';
+            try {
+                const response = await fetch(`http://localhost:8000${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    if (state.authModalTab === 'login') {
+                        state.sessionToken = result.token;
+                        state.userEmail = result.email;
+                        state.userRole = result.role;
+                        state.saveUserProfile();
+                        successMsg.innerText = 'تم تسجيل الدخول بنجاح!';
+                        successMsg.style.display = 'block';
+                        await state.fetchAndMergeSettings();
+                        setTimeout(() => {
+                            state.showAuthModal = false;
+                            renderApp();
+                        }, 1200);
+                    } else {
+                        successMsg.innerText = result.message || 'تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول';
+                        successMsg.style.display = 'block';
+                        setTimeout(() => {
+                            state.authModalTab = 'login';
+                            renderApp();
+                        }, 1500);
+                    }
+                } else {
+                    errorMsg.innerText = result.error || 'حدث خطأ ما';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'خطأ في الاتصال بالسيرفر';
+                errorMsg.style.display = 'block';
+            }
+        };
+    }
+
+    // التوثيق: تسجيل الخروج
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.onclick = async () => {
+            if (confirm("هل تريد تسجيل الخروج؟")) {
+                try {
+                    await fetch('http://localhost:8000/api/logout', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${state.sessionToken}` }
+                    });
+                } catch(e){}
+                state.sessionToken = null;
+                state.userEmail = null;
+                state.userRole = null;
+                state.saveUserProfile();
+                localStorage.removeItem('kairo_bookmarks');
+                localStorage.removeItem('kairo_history');
+                localStorage.removeItem('kairo_progress');
+                localStorage.removeItem('kairo_likes');
+                localStorage.removeItem('kairo_comments');
+                location.reload();
+            }
+        };
+    }
+
+    // مراجعات المنهوا: النجوم التفاعلية وإرسال المراجعة
+    const starOpts = document.querySelectorAll('.star-opt');
+    let chosenRating = 5;
+    if (starOpts.length > 0) {
+        const currentRatingVal = document.getElementById('manga-selected-rating-val');
+        if (currentRatingVal) {
+            chosenRating = parseInt(currentRatingVal.innerText.split(' ')[0]) || 5;
+        }
+        
+        starOpts.forEach(star => {
+            star.onclick = () => {
+                const rating = parseInt(star.dataset.rating);
+                chosenRating = rating;
+                document.getElementById('manga-selected-rating-val').innerText = `${rating} / 5`;
+                starOpts.forEach((s, idx) => {
+                    if (idx < rating) {
+                        s.className = 'fa-solid fa-star star-opt';
+                    } else {
+                        s.className = 'fa-regular fa-star star-opt';
+                    }
+                });
+            };
+        });
+    }
+    
+    const submitReviewBtn = document.getElementById('submit-manga-review-btn');
+    if (submitReviewBtn) {
+        submitReviewBtn.onclick = async () => {
+            const reviewText = document.getElementById('manga-review-text').value;
+            try {
+                const response = await fetch('http://localhost:8000/api/manga_reviews', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.sessionToken}`
+                    },
+                    body: JSON.stringify({
+                        manga_id: state.activeMangaId,
+                        rating: chosenRating,
+                        review_text: reviewText
+                    })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    renderApp();
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert("خطأ في الاتصال بالخادم");
+            }
+        };
+    }
+
+    // التعليق على الفصول: إرسال التعليق للسيرفر
+    const chapterCommentForm = document.getElementById('chapter-comment-form');
+    if (chapterCommentForm) {
+        chapterCommentForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const text = document.getElementById('chapter-comment-text').value;
+            try {
+                const response = await fetch('http://localhost:8000/api/chapter_comments', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.sessionToken}`
+                    },
+                    body: JSON.stringify({
+                        manga_id: state.activeMangaId,
+                        chapter_id: state.activeChapterId,
+                        comment_text: text
+                    })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    document.getElementById('chapter-comment-text').value = '';
+                    renderApp();
+                } else {
+                    alert(result.error);
+                }
+            } catch (err) {
+                alert("خطأ في الاتصال بالخادم");
+            }
+        };
+    }
+
+    // الإدارة: تبويب الشكاوى والاقتراحات
+    const tabSuggestions = document.getElementById('tab-suggestions');
+    const panelSuggestions = document.getElementById('panel-suggestions');
+    if (tabSuggestions) {
+        tabSuggestions.onclick = () => {
+            tabSuggestions.classList.add('active');
+            if (tabAddManga) tabAddManga.classList.remove('active');
+            if (tabAddChapter) tabAddChapter.classList.remove('active');
+            if (panelSuggestions) panelSuggestions.style.display = 'block';
+            if (panelManga) panelManga.style.display = 'none';
+            if (panelChapter) panelChapter.style.display = 'none';
+            loadAdminSuggestions();
+        };
+    }
 }
 
 // ==========================================
@@ -2190,7 +2917,60 @@ function initProgressTracker() {
     };
 }
 
+async function loadAdminSuggestions() {
+    const container = document.getElementById('suggestions-list-admin');
+    if (!container) return;
+    try {
+        const response = await fetch('http://localhost:8000/api/suggestions', {
+            headers: {
+                'Authorization': `Bearer ${state.sessionToken}`
+            }
+        });
+        if (response.ok) {
+            const list = await response.json();
+            if (list.length === 0) {
+                container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-dark);">لا توجد شكاوى أو اقتراحات مرسلة حالياً.</p>';
+                return;
+            }
+            let html = `
+            <div style="display: grid; grid-template-columns: 1fr; gap: 16px; width: 100%;">
+            `;
+            list.forEach(item => {
+                const dateStr = new Date(item.created_at * 1000).toLocaleString('ar-EG');
+                const isComplaint = item.type === 'complaint';
+                const badgeBg = isComplaint ? 'rgba(255, 0, 127, 0.1)' : 'rgba(0, 255, 127, 0.1)';
+                const badgeColor = isComplaint ? '#ff007f' : '#00ff7f';
+                const badgeText = isComplaint ? 'شكوى' : 'اقتراح';
+                const badgeIcon = isComplaint ? '<i class="fa-solid fa-circle-exclamation"></i>' : '<i class="fa-solid fa-lightbulb"></i>';
+                
+                html += `
+                <div class="glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; gap: 10px; text-align: right;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);"><i class="fa-regular fa-clock"></i> ${dateStr}</span>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <span style="font-size: 0.8rem; background: ${badgeBg}; color: ${badgeColor}; border: 1px solid ${badgeColor}; padding: 2px 10px; border-radius: 20px; font-weight: 700;">
+                                ${badgeIcon} ${badgeText}
+                            </span>
+                            <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-envelope" style="color: var(--color-secondary); margin-left: 6px;"></i> ${item.email}</span>
+                        </div>
+                    </div>
+                    <p style="font-size: 0.95rem; color: var(--text-main); line-height: 1.6; margin: 0; white-space: pre-wrap;">${item.content}</p>
+                </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">فشل تحميل الاقتراحات من السيرفر.</p>';
+        }
+    } catch(e) {
+        container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">حدث خطأ أثناء الاتصال بالخادم.</p>';
+    }
+}
+
 // تشغيل التطبيق
-window.onload = () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderApp);
+} else {
     renderApp();
-};
+}
