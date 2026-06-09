@@ -1210,7 +1210,24 @@ function TrendingSidebarComponent() {
     `;
 }
 
-// شبكات المانجا (مع محاكاة لـ Sk// صفحة التفاصيل الكاملة
+function GenresFilterComponent() {
+    const allGenres = ['الكل'];
+    state.mangas.forEach(manga => {
+        manga.genres.forEach(g => {
+            if (!allGenres.includes(g)) allGenres.push(g);
+        });
+    });
+
+    let html = '<div class="genres-list" style="margin-bottom: 30px;">';
+    allGenres.forEach(genre => {
+        const isActive = state.activeGenre === genre;
+        html += `<span class="genre-tag ${isActive ? 'active' : ''}" style="${isActive ? 'background:var(--color-primary);color:#fff;' : ''}" data-genre="${genre}">${genre}</span>`;
+    });
+    html += '</div>';
+    return html;
+}
+
+// صفحة التفاصيل الكاملة
 async function DetailViewComponent() {
     if (state.isLoading) {
         return `
