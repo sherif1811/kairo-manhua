@@ -1343,7 +1343,7 @@ async function DetailViewComponent() {
                             <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><i class="fa-solid fa-user-circle" style="color: var(--color-secondary); margin-left: 6px;"></i> ${userDisplay}</span>
                         </div>
                         <div style="font-size: 0.85rem; display: flex; gap: 4px; justify-content: flex-end;">${stars}</div>
-                        \${r.review_text ? `<p style="font-size: 0.9rem; color: var(--text-main); line-height: 1.6; margin-top: 4px;">\${r.review_text}</p>` : ''}
+                        ${r.review_text ? '<p style="font-size: 0.9rem; color: var(--text-main); line-height: 1.6; margin-top: 4px;">' + r.review_text + '</p>' : ''}
                     </div>
                     `;
                 });
