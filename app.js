@@ -255,6 +255,15 @@ const DEFAULT_MANGAS = [
 // ==========================================
 
 class AppState {
+    safeParse(str, fallback) {
+        try {
+            return str ? JSON.parse(str) : fallback;
+        } catch (e) {
+            console.error("Safe JSON parse failed:", e);
+            return fallback;
+        }
+    }
+
     constructor() {
         this.loadUserProfile();
         this.loadMangas();
@@ -287,7 +296,12 @@ class AppState {
     loadMangas() {
         const stored = localStorage.getItem('kairo_mangas');
         if (stored) {
-            this.mangas = JSON.parse(stored);
+            try {
+                this.mangas = JSON.parse(stored);
+            } catch (e) {
+                console.error("Failed to parse kairo_mangas, resetting to default:", e);
+                this.mangas = DEFAULT_MANGAS;
+            }
             
             // تحقق ما إذا كانت فصول كينجدوم تحتاج لتحديث وتوسيع لتشمل الـ 800 فصل بالكامل
             const kingdom = this.mangas.find(m => m.id === "4");
@@ -441,7 +455,7 @@ class AppState {
 
     loadBookmarks() {
         const stored = localStorage.getItem('kairo_bookmarks');
-        this.bookmarks = stored ? JSON.parse(stored) : {};
+        this.bookmarks = this.safeParse(stored, {});
     }
 
     saveBookmarks() {
@@ -451,7 +465,7 @@ class AppState {
 
     loadHistory() {
         const stored = localStorage.getItem('kairo_history');
-        this.history = stored ? JSON.parse(stored) : [];
+        this.history = this.safeParse(stored, []);
     }
 
     saveHistory() {
@@ -480,7 +494,7 @@ class AppState {
 
     loadReadingProgress() {
         const stored = localStorage.getItem('kairo_progress');
-        this.progress = stored ? JSON.parse(stored) : {};
+        this.progress = this.safeParse(stored, {});
     }
 
     saveReadingProgress(mangaId, chapterId, scrollY, percentage, pageIndex = 0) {
@@ -494,7 +508,7 @@ class AppState {
 
     loadComments() {
         const stored = localStorage.getItem('kairo_comments');
-        this.comments = stored ? JSON.parse(stored) : {};
+        this.comments = this.safeParse(stored, {});
     }
 
     addComment(mangaId, chapterId, username, text) {
@@ -511,7 +525,7 @@ class AppState {
 
     loadLikes() {
         const stored = localStorage.getItem('kairo_likes');
-        this.likes = stored ? JSON.parse(stored) : {};
+        this.likes = this.safeParse(stored, {});
     }
 
     toggleLike(mangaId, chapterId) {
@@ -524,10 +538,10 @@ class AppState {
 
     loadUserProfile() {
         const stored = localStorage.getItem('kairo_user_profile');
-        this.userProfile = stored ? JSON.parse(stored) : {
+        this.userProfile = this.safeParse(stored, {
             username: 'أوتلاينر مميز',
             points: 150
-        };
+        });
         this.sessionToken = localStorage.getItem('kairo_session_token') || null;
         this.userEmail = localStorage.getItem('kairo_user_email') || null;
         this.userRole = localStorage.getItem('kairo_user_role') || null;
@@ -568,11 +582,11 @@ class AppState {
 
     loadReaderSettings() {
         const stored = localStorage.getItem('kairo_reader_settings');
-        this.readerSettings = stored ? JSON.parse(stored) : {
+        this.readerSettings = this.safeParse(stored, {
             theme: 'dark',
             mode: 'vertical',
             width: 'medium'
-        };
+        });
     }
 
     saveReaderSettings() {
