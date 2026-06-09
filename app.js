@@ -386,7 +386,7 @@ class AppState {
         };
         
         try {
-            await fetch('http://localhost:8000/api/sync_settings', {
+            await fetch('/api/sync_settings', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ class AppState {
         if (!this.sessionToken) return;
         
         try {
-            const response = await fetch('http://localhost:8000/api/get_settings', {
+            const response = await fetch('/api/get_settings', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${this.sessionToken}`
@@ -612,7 +612,7 @@ class AppState {
 
         if (this.sessionToken && this.userRole === 'admin') {
             try {
-                const response = await fetch('http://localhost:8000/api/save_manga', {
+                const response = await fetch('/api/save_manga', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -665,7 +665,7 @@ class AppState {
 
         if (this.sessionToken && this.userRole === 'admin') {
             try {
-                const response = await fetch('http://localhost:8000/api/save_manga', {
+                const response = await fetch('/api/save_manga', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1320,7 +1320,7 @@ async function DetailViewComponent() {
     let avgRating = 5.0;
     
     try {
-        const response = await fetch(`http://localhost:8000/api/manga_reviews?manga_id=${manga.id}`);
+        const response = await fetch(`/api/manga_reviews?manga_id=${manga.id}`);
         if (response.ok) {
             const reviews = await response.json();
             if (reviews.length > 0) {
@@ -1577,7 +1577,7 @@ async function ReaderViewComponent() {
     let chapterComments = [];
     let commentsListHtml = '';
     try {
-        const response = await fetch(`http://localhost:8000/api/chapter_comments?manga_id=\${manga.id}&chapter_id=\${chapter.id}`);
+        const response = await fetch(`/api/chapter_comments?manga_id=\${manga.id}&chapter_id=\${chapter.id}`);
         if (response.ok) {
             chapterComments = await response.json();
             if (chapterComments.length === 0) {
@@ -2614,7 +2614,7 @@ function attachEventListeners() {
             successMsg.style.display = 'none';
             
             try {
-                const response = await fetch('http://localhost:8000/api/suggestions', {
+                const response = await fetch('/api/suggestions', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2730,7 +2730,7 @@ function attachEventListeners() {
             
             const endpoint = state.authModalTab === 'login' ? '/api/login' : '/api/register';
             try {
-                const response = await fetch(`http://localhost:8000${endpoint}`, {
+                const response = await fetch(`${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -2774,7 +2774,7 @@ function attachEventListeners() {
         logoutBtn.onclick = async () => {
             if (confirm("هل تريد تسجيل الخروج؟")) {
                 try {
-                    await fetch('http://localhost:8000/api/logout', {
+                    await fetch('/api/logout', {
                         method: 'POST',
                         headers: { 'Authorization': `Bearer ${state.sessionToken}` }
                     });
@@ -2823,7 +2823,7 @@ function attachEventListeners() {
         submitReviewBtn.onclick = async () => {
             const reviewText = document.getElementById('manga-review-text').value;
             try {
-                const response = await fetch('http://localhost:8000/api/manga_reviews', {
+                const response = await fetch('/api/manga_reviews', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2855,7 +2855,7 @@ function attachEventListeners() {
             e.preventDefault();
             const text = document.getElementById('chapter-comment-text').value;
             try {
-                const response = await fetch('http://localhost:8000/api/chapter_comments', {
+                const response = await fetch('/api/chapter_comments', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2952,7 +2952,7 @@ async function loadAdminSuggestions() {
     const container = document.getElementById('suggestions-list-admin');
     if (!container) return;
     try {
-        const response = await fetch('http://localhost:8000/api/suggestions', {
+        const response = await fetch('/api/suggestions', {
             headers: {
                 'Authorization': `Bearer ${state.sessionToken}`
             }
