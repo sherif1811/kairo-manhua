@@ -377,6 +377,8 @@ class AppState {
         this.authModalTab = 'login';
         this.adminStats = null;
         this.adminStatsLoading = false;
+        this.adminDateFrom = '';
+        this.adminDateTo = '';
         this.loadScrapedMangas();
         
         if (this.sessionToken) {
@@ -2150,9 +2152,25 @@ function AdminPanelViewComponent() {
         mangaOptions += `<option value="${m.id}">${m.title}</option>`;
     });
 
+    const dateFrom = state.adminDateFrom || '';
+    const dateTo = state.adminDateTo || '';
+    const statsTitle = state.adminDateFrom && state.adminDateTo ? `إحصائيات (${state.adminDateFrom} → ${state.adminDateTo})` : 'لوحة الإحصائيات الحيوية';
     return `
     <div class="admin-container">
         <h2 class="admin-title">لوحة التحكم والإدارة للموقع <span>(KAIRO/منهوا)</span></h2>
+        
+        <!-- Date Range + Export Controls -->
+        <div class="admin-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255,255,255,0.01);">
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-calendar"></i> تصفية:</span>
+            <input type="date" id="admin-date-from" value="${dateFrom}" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
+            <span style="color: var(--text-dark);">→</span>
+            <input type="date" id="admin-date-to" value="${dateTo}" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
+            <button class="admin-control-btn" id="btn-admin-apply-filter" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: none; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-filter"></i> تطبيق</button>
+            <button class="admin-control-btn" id="btn-admin-clear-filter" style="padding: 8px 16px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-xmark"></i> مسح</button>
+            <span style="flex:1;"></span>
+            <button class="admin-control-btn" id="btn-admin-export-csv" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: 1px solid #00ff7f44; background: rgba(0,255,127,0.05); color: #00ff7f; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-csv"></i> CSV</button>
+            <button class="admin-control-btn" id="btn-admin-export-json" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: 1px solid #6c63ff44; background: rgba(108,99,255,0.05); color: #6c63ff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-export"></i> JSON</button>
+        </div>
         
         <!-- لوحة الإحصائيات الحيوية -->
         <div class="admin-stats-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px;">
@@ -2173,6 +2191,15 @@ function AdminPanelViewComponent() {
                     <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-facebook" style="color: #1877f2; margin-left: 6px;"></i> التسجيل بـ Facebook</span>
                     <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.facebook}</strong>
                 </div>
+                ${state.adminStats.suggestions_in_range !== undefined ? `
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> اقتراحات/شكاوى (في النطاق)</span>
+                    <strong style="font-size: 1.5rem; color: #ff007f; font-weight: 800;">${state.adminStats.suggestions_in_range}</strong>
+                </div>` : state.adminStats.total_suggestions !== undefined ? `
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> إجمالي الاقتراحات والشكاوى</span>
+                    <strong style="font-size: 1.5rem; color: #ff007f; font-weight: 800;">${state.adminStats.total_suggestions}</strong>
+                </div>` : ''}
             ` : `
                 <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
                 <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
@@ -3283,6 +3310,61 @@ function attachEventListeners() {
         };
     }
 
+    // Admin: Date filter buttons
+    const btnApplyFilter = document.getElementById('btn-admin-apply-filter');
+    const btnClearFilter = document.getElementById('btn-admin-clear-filter');
+    const btnExportCsv = document.getElementById('btn-admin-export-csv');
+    const btnExportJson = document.getElementById('btn-admin-export-json');
+    
+    if (btnApplyFilter) {
+        btnApplyFilter.onclick = () => {
+            const from = document.getElementById('admin-date-from').value;
+            const to = document.getElementById('admin-date-to').value;
+            if (!from || !to) return;
+            state.adminDateFrom = from;
+            state.adminDateTo = to;
+            state.adminStats = null;
+            loadAdminStats();
+        };
+    }
+    
+    if (btnClearFilter) {
+        btnClearFilter.onclick = () => {
+            state.adminDateFrom = '';
+            state.adminDateTo = '';
+            state.adminStats = null;
+            loadAdminStats();
+        };
+    }
+    
+    if (btnExportCsv) {
+        btnExportCsv.onclick = () => {
+            const token = state.sessionToken;
+            if (!token) return;
+            const a = document.createElement('a');
+            a.href = '/api/admin/stats/export?format=csv';
+            a.download = 'kairo_stats_export.csv';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+    }
+    
+    if (btnExportJson) {
+        btnExportJson.onclick = () => {
+            const token = state.sessionToken;
+            if (!token) return;
+            const a = document.createElement('a');
+            a.href = '/api/admin/stats/export?format=json';
+            a.download = 'kairo_stats_export.json';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+    }
+
     // الإدارة: إرسال نموذج مانجا
     const addMangaForm = document.getElementById('add-manga-form');
     if (addMangaForm) {
@@ -3901,10 +3983,17 @@ function initProgressTracker() {
 }
 
 async function loadAdminStats() {
-    if (state.adminStatsLoading || state.adminStats) return;
+    if (state.adminStatsLoading) return;
+    if (state.adminStats && !state.adminDateFrom && !state.adminDateTo) return;
     state.adminStatsLoading = true;
     try {
-        const response = await fetch('/api/admin/stats', {
+        let url = '/api/admin/stats';
+        if (state.adminDateFrom && state.adminDateTo) {
+            const fromTs = Math.floor(new Date(state.adminDateFrom).getTime() / 1000);
+            const toTs = Math.floor(new Date(state.adminDateTo + 'T23:59:59').getTime() / 1000);
+            url += `?from=${fromTs}&to=${toTs}`;
+        }
+        const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${state.sessionToken}`
             }

@@ -1160,6 +1160,9 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
             if not user or user['role'] != 'admin':
                 self.send_cors_response(403, body=json.dumps({"error": "غير مصرح، للمدير فقط"}))
                 return
+            query_params = urllib.parse.parse_qs(parsed_url.query)
+            from_ts = query_params.get('from', [None])[0]
+            to_ts = query_params.get('to', [None])[0]
             try:
                 conn = sqlite3.connect(DB_FILE, timeout=30)
                 try:
@@ -1181,11 +1184,66 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                             stats[provider] = count
                     c.execute("SELECT COUNT(*) FROM users")
                     stats["total_users"] = c.fetchone()[0]
+                    if from_ts and to_ts:
+                        c.execute("SELECT COUNT(*) FROM suggestions WHERE created_at >= ? AND created_at <= ?", (float(from_ts), float(to_ts)))
+                        stats["suggestions_in_range"] = c.fetchone()[0]
+                    else:
+                        c.execute("SELECT COUNT(*) FROM suggestions")
+                        stats["total_suggestions"] = c.fetchone()[0]
                 finally:
                     conn.close()
                 self.send_cors_response(200, body=json.dumps(stats))
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
+            return
+
+        elif parsed_url.path == '/api/admin/stats/export':
+            user = get_session_user(self.headers)
+            if not user or user['role'] != 'admin':
+                self.send_cors_response(403, body=json.dumps({"error": "غير مصرح، للمدير فقط"}))
+                return
+            query_params = urllib.parse.parse_qs(parsed_url.query)
+            fmt = query_params.get('format', ['json'])[0]
+            export_data = {}
+            conn = sqlite3.connect(DB_FILE, timeout=30)
+            try:
+                c = conn.cursor()
+                c.execute("SELECT email, role, provider FROM users")
+                export_data['users'] = [{"email": r[0], "role": r[1], "provider": r[2]} for r in c.fetchall()]
+                c.execute("SELECT email, type, content, created_at FROM suggestions ORDER BY created_at DESC")
+                export_data['suggestions'] = [{"email": r[0], "type": r[1], "content": r[2], "created_at": r[3]} for r in c.fetchall()]
+                c.execute("SELECT key, value FROM site_stats")
+                export_data['site_stats'] = {r[0]: r[1] for r in c.fetchall()}
+            finally:
+                conn.close()
+            if fmt == 'csv':
+                import io
+                import csv
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow(['Table', 'Field', 'Value'])
+                for table, items in export_data.items():
+                    if isinstance(items, list):
+                        for item in items:
+                            writer.writerow([table, str(item), ''])
+                    else:
+                        for k, v in items.items():
+                            writer.writerow([table, k, v])
+                csv_text = output.getvalue().encode('utf-8')
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/csv; charset=utf-8')
+                self.send_header('Content-Disposition', 'attachment; filename=kairo_stats_export.csv')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(csv_text)
+            else:
+                json_str = json.dumps(export_data, ensure_ascii=False)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.send_header('Content-Disposition', 'attachment; filename=kairo_stats_export.json')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json_str.encode('utf-8'))
             return
 
         # User Profile endpoint (GET)

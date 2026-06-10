@@ -733,6 +733,9 @@ def get_admin_stats():
     user = get_session_user()
     if not user or user['role'] != 'admin':
         return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+    
+    from_ts = request.args.get('from')
+    to_ts = request.args.get('to')
         
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -763,9 +766,59 @@ def get_admin_stats():
         c.execute("SELECT COUNT(*) FROM users")
         stats["total_users"] = c.fetchone()[0]
         
+        # Filtered suggestion count if date range provided
+        if from_ts and to_ts:
+            c.execute("SELECT COUNT(*) FROM suggestions WHERE created_at >= ? AND created_at <= ?", (float(from_ts), float(to_ts)))
+            stats["suggestions_in_range"] = c.fetchone()[0]
+        else:
+            c.execute("SELECT COUNT(*) FROM suggestions")
+            stats["total_suggestions"] = c.fetchone()[0]
+        
     finally:
         conn.close()
     return jsonify(stats), 200
+
+@app.route('/api/admin/stats/export', methods=['GET'])
+def get_admin_stats_export():
+    user = get_session_user()
+    if not user or user['role'] != 'admin':
+        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+    
+    fmt = request.args.get('format', 'json')
+    export_data = {}
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email, role, provider FROM users")
+        export_data['users'] = [{"email": r[0], "role": r[1], "provider": r[2]} for r in c.fetchall()]
+        c.execute("SELECT email, type, content, created_at FROM suggestions ORDER BY created_at DESC")
+        export_data['suggestions'] = [{"email": r[0], "type": r[1], "content": r[2], "created_at": r[3]} for r in c.fetchall()]
+        c.execute("SELECT key, value FROM site_stats")
+        export_data['site_stats'] = {r[0]: r[1] for r in c.fetchall()}
+    finally:
+        conn.close()
+    
+    if fmt == 'csv':
+        import io, csv
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['Table', 'Field', 'Value'])
+        for table, items in export_data.items():
+            if isinstance(items, list):
+                for item in items:
+                    writer.writerow([table, str(item), ''])
+            else:
+                for k, v in items.items():
+                    writer.writerow([table, k, v])
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=kairo_stats_export.csv'
+        return response
+    else:
+        response = make_response(json.dumps(export_data, ensure_ascii=False))
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        response.headers['Content-Disposition'] = 'attachment; filename=kairo_stats_export.json'
+        return response
 
 # ============================================================
 # GAMIFICATION
