@@ -754,6 +754,13 @@ class AppState {
         }
     }
 
+    addPoints(amount) {
+        if (!this.userProfile) this.userProfile = {};
+        this.userProfile.points = (this.userProfile.points || 0) + amount;
+        this.userProfile.level = this.calculateLevel(this.userProfile.points);
+        this.saveUserProfile();
+    }
+
     getUserLevelInfo() {
         const points = this.userProfile.points || 0;
         const level = this.userProfile.level || this.calculateLevel(points);
