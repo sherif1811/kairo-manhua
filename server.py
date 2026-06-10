@@ -565,7 +565,7 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         return
                     
                     # Force admin role for the specified email
-                    role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+                    role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
                     password_hash = hash_password(password)
                     
                     c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'email'))
@@ -608,7 +608,7 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     
                     role = row[1]
                     # Keep database role updated if user changed their role config
-                    if email == 'sherifahmed200100@gmail.com' and role != 'admin':
+                    if email == 'sherifahmed181199@gmail.com' and role != 'admin':
                         c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                         conn.commit()
                         role = 'admin'
@@ -1034,13 +1034,13 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         # تسجيل تلقائي
                         random_pass = secrets.token_hex(16)
                         password_hash = hash_password(random_pass)
-                        role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+                        role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
                         c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'google'))
                         conn.commit()
                         user_role = role
                     else:
                         user_role = row[1]
-                        if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+                        if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
                             c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                             conn.commit()
                             user_role = 'admin'
@@ -1097,13 +1097,13 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         # تسجيل تلقائي
                         random_pass = secrets.token_hex(16)
                         password_hash = hash_password(random_pass)
-                        role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+                        role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
                         c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'facebook'))
                         conn.commit()
                         user_role = role
                     else:
                         user_role = row[1]
-                        if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+                        if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
                             c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                             conn.commit()
                             user_role = 'admin'

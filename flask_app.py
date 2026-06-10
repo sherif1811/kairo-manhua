@@ -518,7 +518,7 @@ def register():
         c.execute('SELECT email FROM users WHERE email = ?', (email,))
         if c.fetchone():
             return jsonify({"error": "هذا البريد الإلكتروني مسجل بالفعل"}), 400
-        role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+        role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
         password_hash = hash_password(password)
         c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'email'))
         conn.commit()
@@ -547,7 +547,7 @@ def login():
             c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (new_hash, email))
         
         role = row[1]
-        if email == 'sherifahmed200100@gmail.com' and role != 'admin':
+        if email == 'sherifahmed181199@gmail.com' and role != 'admin':
             c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
             conn.commit()
             role = 'admin'
@@ -648,13 +648,13 @@ def auth_google():
             # تسجيل تلقائي
             random_pass = secrets.token_hex(16)
             password_hash = hash_password(random_pass)
-            role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+            role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
             c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'google'))
             conn.commit()
             user_role = role
         else:
             user_role = row[1]
-            if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+            if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                 conn.commit()
                 user_role = 'admin'
@@ -703,13 +703,13 @@ def auth_facebook():
             # تسجيل تلقائي
             random_pass = secrets.token_hex(16)
             password_hash = hash_password(random_pass)
-            role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+            role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
             c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'facebook'))
             conn.commit()
             user_role = role
         else:
             user_role = row[1]
-            if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+            if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                 conn.commit()
                 user_role = 'admin'

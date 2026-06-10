@@ -1095,7 +1095,7 @@ function HeaderComponent() {
 
     let accountButton = '';
     if (state.sessionToken) {
-        const isAdmin = state.userEmail === 'sherifahmed200100@gmail.com';
+        const isAdmin = state.userEmail === 'sherifahmed181199@gmail.com';
         const userHandle = getUserHandle(state.userEmail);
         const userInitial = getUserInitial(state.userEmail);
         const points = state.userProfile.points || 0;
@@ -1550,7 +1550,7 @@ function MangaGridComponent(title, mangasFiltered) {
 function UserProfileWidgetComponent() {
     if (!state.sessionToken) return '';
     const info = state.getUserLevelInfo();
-    const isAdmin = state.userEmail === 'sherifahmed200100@gmail.com';
+    const isAdmin = state.userEmail === 'sherifahmed181199@gmail.com';
     const rankClass = isAdmin ? 'rank-admin' : (info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold');
     return `
     <div class="sidebar-card glam-card ${isAdmin ? 'admin-card' : ''}">
