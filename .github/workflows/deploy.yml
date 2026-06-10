@@ -1,4 +1,4 @@
-name: Auto-Deploy to DigitalOcean
+name: Auto-Deploy to PythonAnywhere
 
 on:
   push:
@@ -8,18 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy via SSH to DigitalOcean Droplet
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DO_HOST }}
-          username: ${{ secrets.DO_USER }}
-          key: ${{ secrets.DO_SSH_KEY }}
-          script: |
-            cd /var/www/kairo-manhua
-            git pull origin main
-            source venv/bin/activate
-            pip install -r requirements.txt
-            sudo systemctl restart kairo-manhua
-            echo "[DEPLOY] KAIRO/منهوا deployed successfully at $(date)"
+      - name: Trigger PythonAnywhere Webhook
+        run: |
+          curl -s -X POST "https://www.pythonanywhere.com/webhooks/${{ secrets.PAW_WEBHOOK_TOKEN }}/" \
+            -H "User-Agent: GitHub-Actions" \
+            -H "X-GitHub-Event: push" \
+            --data '{}'
