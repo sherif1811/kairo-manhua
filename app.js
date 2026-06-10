@@ -1003,7 +1003,7 @@ function handleRouting() {
     } else if (state.currentView === 'reader' && state.activeMangaId && state.activeChapterId) {
         var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
         if (mangaR) {
-            var chapter = mangaR.chapters.find(function(c) { return c.id === state.activeChapterId; });
+            var chapter = mangaR.chapters.find(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
             seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
             seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
             seoImg = getDisplayCover(mangaR);
@@ -1965,7 +1965,7 @@ async function ReaderViewComponent() {
     // خيارات الفصول
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
-        optionsHtml += `<option value="${ch.id}" ${ch.id === chapter.id ? 'selected' : ''}>الفصل ${ch.id}</option>`;
+            optionsHtml += `<option value="${ch.id}" ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'selected' : ''}>الفصل ${ch.id}</option>`;
     });
 
     // تفضيل الفصل
@@ -3057,7 +3057,7 @@ function attachEventListeners() {
             state.downloadProgress[key] = 0;
             
             const mangaObj = state.mangas.find(m => m.id === mangaId);
-            const chapterObj = mangaObj.chapters.find(c => c.id === chapId);
+            const chapterObj = mangaObj.chapters.find(c => normalizeChapterId(c.id) === normalizeChapterId(chapId));
 
             const interval = setInterval(async () => {
                 state.downloadProgress[key] += 25;
