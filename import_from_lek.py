@@ -3,6 +3,8 @@ import os
 import re
 import json
 import argparse
+import urllib.request
+import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import cloudscraper
 from bs4 import BeautifulSoup
@@ -14,6 +16,40 @@ OUTPUT_FILE = "scraped_mangas.json"
 
 def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "", name)
+
+COVERS_DIR = "covers"
+
+def ensure_covers_dir():
+    os.makedirs(COVERS_DIR, exist_ok=True)
+
+def download_image(url, filepath):
+    try:
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            with open(filepath, 'wb') as f:
+                f.write(resp.read())
+        return True
+    except Exception as e:
+        print(f"    [WARN] Failed to download {url}: {e}")
+        return False
+
+def extract_banner_url(soup):
+    banner = ""
+    bg_div = soup.select_one('.background-image')
+    if bg_div:
+        style = bg_div.get('style', '')
+        m = re.search(r'url\([\'"]?([^\'"]+)[\'"]?\)', style)
+        if m:
+            banner = m.group(1)
+    if not banner:
+        og_img = soup.select_one('meta[property="og:image"]')
+        if og_img:
+            banner = og_img.get('content', '')
+    if not banner:
+        tw_img = soup.select_one('meta[name="twitter:image"]')
+        if tw_img:
+            banner = tw_img.get('content', '')
+    return banner
 
 def parse_args():
     parser = argparse.ArgumentParser(description="تحميل المنهوا والمانجا من موقع LekManga وتلقيمها للموقع")
@@ -119,6 +155,9 @@ def main():
     if cover_box:
         cover = cover_box.get('data-src') or cover_box.get('data-lazy-src') or cover_box.get('src') or ""
         cover = cover.strip()
+    
+    # Banner
+    banner = extract_banner_url(soup)
         
     # 3. Synopsis
     synopsis = ""
@@ -242,6 +281,23 @@ def main():
         print("[-] خطأ: لم يتم تحميل أي صفحات فصول بنجاح.")
         return
         
+    # Download cover and banner locally
+    ensure_covers_dir()
+    local_cover = ""
+    local_banner = ""
+    if cover:
+        cover_ext = os.path.splitext(urllib.parse.urlsplit(cover).path)[1] or ".jpg"
+        cover_path = os.path.join(COVERS_DIR, f"{manga_id}_cover{cover_ext}")
+        if download_image(cover, cover_path):
+            local_cover = f"/{COVERS_DIR}/{manga_id}_cover{cover_ext}"
+            print(f"[+] تم تحميل الغلاف محلياً: {local_cover}")
+    if banner:
+        banner_ext = os.path.splitext(urllib.parse.urlsplit(banner).path)[1] or ".jpg"
+        banner_path = os.path.join(COVERS_DIR, f"{manga_id}_banner{banner_ext}")
+        if download_image(banner, banner_path):
+            local_banner = f"/{COVERS_DIR}/{manga_id}_banner{banner_ext}"
+            print(f"[+] تم تحميل الخلفية محلياً: {local_banner}")
+
     # Sort chapters descending (latest first)
     chapters.sort(key=lambda x: float(x["id"]) if x["id"].replace('.','',1).isdigit() else 0, reverse=True)
     
@@ -251,8 +307,8 @@ def main():
         "title": title,
         "alternative": alternative or title,
         "author": author,
-        "cover": cover or "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500",
-        "banner": "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
+        "cover": local_cover or cover or "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500",
+        "banner": local_banner or banner or "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
         "rating": 4.9,
         "status": status,
         "type": "منهوا",
