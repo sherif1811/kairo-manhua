@@ -1034,20 +1034,9 @@ function handleRouting() {
     
     updateSEOMeta(seoTitle, seoDesc, seoImg);
     
-    if (state.currentView === 'reader') {
-        state.isLoading = false;
-        window.scrollTo(0, 0);
-        renderApp();
-    } else {
-        state.isLoading = true;
-        window.scrollTo(0, 0);
-        renderApp();
-        
-        setTimeout(() => {
-            state.isLoading = false;
-            renderApp();
-        }, 600);
-    }
+    state.isLoading = false;
+    window.scrollTo(0, 0);
+    renderApp();
 }
 
 // استماع لتغيرات الهاش في المتصفح للتنقل
