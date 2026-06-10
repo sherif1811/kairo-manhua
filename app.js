@@ -3056,6 +3056,36 @@ function attachEventListeners() {
         };
     });
 
+    // الإدارة: حذف منهوا (Admin Only)
+    const deleteMangaBtns = document.querySelectorAll('.delete-manga-admin-btn');
+    deleteMangaBtns.forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const mangaId = btn.dataset.id;
+            if (!confirm("هل أنت متأكد من حذف هذه المنهوا بالكامل؟\nهذا الإجراء لا يمكن التراجع عنه.")) return;
+            try {
+                const response = await fetch('/api/delete_manga', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + state.sessionToken
+                    },
+                    body: JSON.stringify({ id: mangaId })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    state.mangas = state.mangas.filter(m => m.id !== mangaId);
+                    state.saveMangas();
+                    navigate('home');
+                } else {
+                    alert(result.error || 'فشل الحذف');
+                }
+            } catch (err) {
+                alert('خطأ في الاتصال بالخادم');
+            }
+        };
+    });
+
     // المفضلة: تبديل التبويبات
     const bookmarkTabs = document.querySelectorAll('.bookmark-tab');
     bookmarkTabs.forEach(tab => {
