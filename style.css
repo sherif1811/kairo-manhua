@@ -2054,6 +2054,127 @@ body {
     text-overflow: ellipsis;
 }
 
+/* Manga Detail Actions and Buttons Premium Styling */
+.detail-cover {
+    position: relative;
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color);
+    transition: transform var(--transition-normal);
+}
+
+.detail-cover:hover {
+    transform: scale(1.02) translateY(-4px);
+    border-color: rgba(0, 240, 255, 0.3);
+    box-shadow: var(--shadow-lg), 0 0 25px rgba(0, 240, 255, 0.2);
+}
+
+.detail-cover img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: cover;
+}
+
+.detail-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.detail-btn {
+    width: 100%;
+    padding: 12px 20px;
+    font-family: var(--font-family);
+    font-size: 0.95rem;
+    font-weight: 700;
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    outline: none;
+    text-align: center;
+}
+
+/* Read First Chapter Button - Premium Cyan Neon Style */
+.detail-btn.btn-read {
+    background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(138, 43, 226, 0.15));
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    color: var(--text-main);
+    box-shadow: 0 4px 15px rgba(0, 240, 255, 0.1);
+}
+
+.detail-btn.btn-read:hover {
+    background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+    border-color: transparent;
+    color: #07080c;
+    box-shadow: 0 0 20px var(--color-secondary-glow);
+    transform: translateY(-2px);
+}
+
+.detail-btn.btn-read i {
+    font-size: 1.1rem;
+    transition: transform var(--transition-fast);
+}
+
+.detail-btn.btn-read:hover i {
+    transform: scale(1.2) rotate(-5deg);
+}
+
+/* Add to Bookmark Select Button - Premium Purple Neon Style */
+.detail-btn.btn-fav {
+    background: rgba(138, 43, 226, 0.08);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    color: var(--text-main);
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238a2be2' viewBox='0 0 16 16'><path d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: left 16px center; /* left position because it is RTL */
+    padding-left: 36px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(138, 43, 226, 0.1);
+}
+
+/* For RTL pages, background-position should be left */
+[dir="rtl"] .detail-btn.btn-fav {
+    background-position: left 16px center;
+}
+
+.detail-btn.btn-fav:hover {
+    background-color: rgba(138, 43, 226, 0.18);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 15px var(--color-primary-glow);
+    transform: translateY(-2px);
+}
+
+.detail-btn.btn-fav option {
+    background-color: var(--bg-surface);
+    color: var(--text-main);
+    padding: 12px;
+}
+
+/* Delete Manga Button styling */
+.detail-btn.delete-manga-admin-btn {
+    border-radius: var(--border-radius-sm) !important;
+    transition: all var(--transition-fast) !important;
+}
+
+.detail-btn.delete-manga-admin-btn:hover {
+    background: #ff007f !important;
+    color: #fff !important;
+    box-shadow: 0 0 15px rgba(255, 0, 127, 0.5) !important;
+    transform: translateY(-2px);
+}
+
+
 
 
 

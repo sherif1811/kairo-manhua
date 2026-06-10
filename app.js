@@ -202,7 +202,7 @@ const DEFAULT_MANGAS = [
         rating: 4.9,
         status: "مكتمل",
         type: "منهوا",
-        views: 24530,
+        views: 0,
         genres: ["أكشن", "مغامرة", "خيال", "قوى خارقة"],
         synopsis: "في عالم يربط فيه بوابة غامضة عالم البشر بعالم الوحوش، يكتشف الصياد الأضعف سونغ جين وو نظاماً غامضاً يمنحه القدرة الفريدة على رفع مستواه بلا حدود.",
         chapters: populateDefaultChapters(200, false)
@@ -217,7 +217,7 @@ const DEFAULT_MANGAS = [
         rating: 4.8,
         status: "مكتمل",
         type: "مانجا",
-        views: 18940,
+        views: 0,
         genres: ["أكشن", "شياطين", "تاريخي", "خيال"],
         synopsis: "تانجيرو فتى طيب يعيش برفقة عائلته، لكن حياته تنقلب رأساً على عقب عندما تذبح عائلته على يد شيطان وتتحول شقيقته نيزوكو إلى شيطانة.",
         chapters: populateDefaultChapters(205, false)
@@ -232,7 +232,7 @@ const DEFAULT_MANGAS = [
         rating: 4.7,
         status: "مستمر",
         type: "منهوا",
-        views: 15610,
+        views: 0,
         genres: ["مغامرة", "غموض", "دراما", "خيال"],
         synopsis: "ما هي رغبتك؟ الثروة؟ المجد؟ القوة؟ كل هذا وأكثر ينتظرك في قمة البرج. يدخل الفتى (بام) البرج بحثاً عن الفتاة الوحيدة التي أنارت عتمة حياته.",
         chapters: populateDefaultChapters(550, false)
@@ -247,7 +247,7 @@ const DEFAULT_MANGAS = [
         rating: 4.9,
         status: "مستمر",
         type: "مانجا",
-        views: 32420,
+        views: 0,
         genres: ["أكشن", "تاريخي", "عسكري", "دراما", "سينين"],
         synopsis: "في عصر الدول المتحاربة في الصين القديمة، يطمح الشابان اليتيمان شين وهيو بأن يصبحا أعظم جنرالين تحت السماء. ولكن بعد مأساة تغير مسار حياتهما، يسعى شين جاهداً لمساعدة ملك مقاطعة تشين الشاب في توحيد الصين بأكملها وإنهاء الحروب المستمرة.",
         chapters: populateDefaultChapters(800, true) // توليد 800 فصل تلقائياً
@@ -309,6 +309,20 @@ class AppState {
                 this.mangas = DEFAULT_MANGAS;
             }
             
+            // تصفير المشاهدات التجريبية للأعمال الافتراضية
+            let updated = false;
+            this.mangas.forEach(m => {
+                if (["1", "2", "3", "4"].includes(m.id)) {
+                    if (m.views > 0) {
+                        m.views = 0;
+                        updated = true;
+                    }
+                }
+            });
+            if (updated) {
+                this.saveMangas();
+            }
+
             // تحقق ما إذا كانت فصول كينجدوم تحتاج لتحديث وتوسيع لتشمل الـ 800 فصل بالكامل
             const kingdom = this.mangas.find(m => m.id === "4");
             const solo = this.mangas.find(m => m.id === "1");
@@ -610,7 +624,7 @@ class AppState {
             rating: 5.0,
             status: 'مستمر',
             type: type || 'منهوا',
-            views: 1500,
+            views: 0,
             genres: genres.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g !== ''),
             synopsis,
             chapters: []
