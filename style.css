@@ -2508,6 +2508,11 @@ body {
 .rank-gold {
     color: #ffd700 !important;
 }
+.rank-admin {
+    color: #00ffff !important;
+    text-shadow: 0 0 10px #00ffff88;
+}
+.points-badge.rank-admin .points-badge-text { color: #00ffff; }
 .user-widget-avatar.rank-bronze {
     background: linear-gradient(135deg, #8B4513, #cd7f32);
     box-shadow: 0 0 10px #cd7f3266;
@@ -2521,9 +2526,22 @@ body {
     box-shadow: 0 0 12px #ffd70088;
     animation: goldPulse 2s ease-in-out infinite;
 }
+.user-widget-avatar.rank-admin {
+    background: linear-gradient(135deg, #008080, #00ffff);
+    box-shadow: 0 0 15px #00ffffaa;
+    animation: adminPulse 1.5s ease-in-out infinite;
+}
+@keyframes adminPulse {
+    0%, 100% { box-shadow: 0 0 15px #00ffffaa; }
+    50% { box-shadow: 0 0 25px #00ffff; }
+}
 @keyframes goldPulse {
     0%, 100% { box-shadow: 0 0 12px #ffd70088; }
     50% { box-shadow: 0 0 20px #ffd700cc; }
+}
+.admin-card {
+    border-color: #00ffff44 !important;
+    box-shadow: 0 0 20px #00ffff22 !important;
 }
 .points-display {
     font-weight: 800;
@@ -2551,6 +2569,14 @@ body {
 .progress-fill.rank-gold {
     background: linear-gradient(90deg, #b8860b, #ffd700);
     animation: goldProgressShimmer 2s linear infinite;
+}
+.progress-fill.rank-admin {
+    background: linear-gradient(90deg, #008080, #00ffff);
+    animation: goldProgressShimmer 1.5s linear infinite;
+}
+.level-badge.rank-admin {
+    background: linear-gradient(135deg, #008080, #00ffff);
+    box-shadow: 0 0 15px #00ffff44;
 }
 @keyframes goldProgressShimmer {
     0% { opacity: 0.7; }

@@ -1075,17 +1075,18 @@ function HeaderComponent() {
 
     let accountButton = '';
     if (state.sessionToken) {
+        const isAdmin = state.userEmail === 'sherifahmed200100@gmail.com';
         const userHandle = getUserHandle(state.userEmail);
         const userInitial = getUserInitial(state.userEmail);
         const points = state.userProfile.points || 0;
         const level = state.userProfile.level || 1;
-        const rankClass = level <= 30 ? 'rank-bronze' : level <= 60 ? 'rank-silver' : 'rank-gold';
+        const rankClass = isAdmin ? 'rank-admin' : (level <= 30 ? 'rank-bronze' : level <= 60 ? 'rank-silver' : 'rank-gold');
         accountButton = `
         <div class="user-profile-menu-container">
             <button class="profile-navbar-btn points-badge ${rankClass}" id="nav-profile-btn" title="${state.userEmail || ''}">
                 <span class="profile-navbar-avatar">${userInitial}</span>
                 <span class="profile-navbar-name">${userHandle}</span>
-                <span class="points-badge-text">${points} <i class="fa-solid fa-star" style="font-size:0.6rem;"></i></span>
+                <span class="points-badge-text">${isAdmin ? '🌟' : points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>'}</span>
             </button>
             <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج" aria-label="Logout">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -1529,27 +1530,28 @@ function MangaGridComponent(title, mangasFiltered) {
 function UserProfileWidgetComponent() {
     if (!state.sessionToken) return '';
     const info = state.getUserLevelInfo();
-    const rankClass = info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold';
+    const isAdmin = state.userEmail === 'sherifahmed200100@gmail.com';
+    const rankClass = isAdmin ? 'rank-admin' : (info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold');
     return `
-    <div class="sidebar-card glam-card">
+    <div class="sidebar-card glam-card ${isAdmin ? 'admin-card' : ''}">
         <div class="user-widget-profile">
             <div class="user-widget-avatar ${rankClass}">${state.userProfile.username.charAt(0)}</div>
             <div class="user-widget-info">
                 <h4>${state.userProfile.username}</h4>
-                <p class="${rankClass}">${info.rankTitle}</p>
+                <p class="${rankClass}">${isAdmin ? 'المدير 🌟' : info.rankTitle}</p>
             </div>
         </div>
         <div class="gamification-panel">
-            <div class="level-badge ${rankClass}">المستوى ${info.level}</div>
+            <div class="level-badge ${rankClass}">${isAdmin ? 'جميل' : 'المستوى ' + info.level}</div>
             <div class="level-progress-info">
                 <span>النقاط</span>
-                <span class="points-display">${info.points}</span>
+                <span class="points-display">${isAdmin ? '∞' : info.points}</span>
             </div>
             <div class="progress-bar-glam">
                 <div class="progress-fill ${rankClass}" style="width: ${Math.min(info.levelProgress, 100)}%"></div>
             </div>
             <div class="level-progress-info" style="margin-top: 4px;">
-                <span style="font-size:0.7rem;color:var(--text-dark);">${info.pointsToNext} نقطة للمستوى التالي</span>
+                <span style="font-size:0.7rem;color:var(--text-dark);">${isAdmin ? 'أنت مالك الموقع ✨' : info.pointsToNext + ' نقطة للمستوى التالي'}</span>
             </div>
         </div>
     </div>
