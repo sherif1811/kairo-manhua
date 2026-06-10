@@ -29,8 +29,9 @@ except AttributeError:
     pass
 
 PORT = 8000
-CACHE_DIR = "image_cache"
-DB_FILE = "kairo.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CACHE_DIR = os.path.join(BASE_DIR, "image_cache")
+DB_FILE = os.path.join(BASE_DIR, "kairo.db")
 
 # Create cache directory if it doesn't exist
 if not os.path.exists(CACHE_DIR):
@@ -45,7 +46,7 @@ def is_crawler(user_agent):
     return bool(user_agent and CRAWLER_PATTERN.search(user_agent))
 
 def load_scraped_mangas():
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)) if '__file__' in dir() else '.', 'scraped_mangas.json')
+    path = os.path.join(BASE_DIR, 'scraped_mangas.json')
     if os.path.exists(path):
         try:
             with open(path, 'r', encoding='utf-8') as f:
@@ -128,7 +129,18 @@ def get_seo_for_spa_path(path):
     return None, None, None
 
 def serve_index_html(handler, path):
-    index_path = os.path.join(os.getcwd(), 'index.html')
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        try:
+            c = conn.cursor()
+            c.execute("UPDATE site_stats SET value = value + 1 WHERE key = 'visits'")
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception as e:
+        print("Error incrementing visits:", e)
+    
+    index_path = os.path.join(BASE_DIR, 'index.html')
     try:
         with open(index_path, 'r', encoding='utf-8') as f:
             html = f.read()
@@ -606,13 +618,15 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     expires_at = time.time() + 86400 * 30  # 30 days
                     c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
                     conn.commit()
+                    
+                    # Fetch points/level while connection is still open
+                    c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+                    pu = c.fetchone()
+                    points = pu[0] if pu else 20
+                    level = pu[1] if pu else 1
                 finally:
                     conn.close()
                 
-                c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
-                pu = c.fetchone()
-                points = pu[0] if pu else 20
-                level = pu[1] if pu else 1
                 self.send_cors_response(200, body=json.dumps({
                     "status": "success",
                     "token": token,
@@ -723,14 +737,14 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 
                 # Load existing database
-                OUTPUT_FILE = "scraped_mangas.json"
+                OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
                 scraped_db = []
                 if os.path.exists(OUTPUT_FILE):
                     try:
                         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
                             scraped_db = json.load(f)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"[-] Error reading scraped_mangas.json: {e}")
                 
                 # Merge: remove old if exists
                 scraped_db = [m for m in scraped_db if m["id"] != manga_id]
@@ -765,14 +779,14 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     return
                 
                 # Load existing database
-                OUTPUT_FILE = "scraped_mangas.json"
+                OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
                 scraped_db = []
                 if os.path.exists(OUTPUT_FILE):
                     try:
                         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
                             scraped_db = json.load(f)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"[-] Error reading scraped_mangas.json for delete: {e}")
                 
                 # Delete
                 scraped_db = [m for m in scraped_db if m["id"] != manga_id]
@@ -826,7 +840,10 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
             try:
                 data = json.loads(post_data.decode('utf-8'))
                 manga_id = data.get('manga_id', '').strip()
-                rating = int(data.get('rating', 5))
+                try:
+                    rating = int(data.get('rating', 5))
+                except (ValueError, TypeError):
+                    rating = 5
                 review_text = data.get('review_text', '').strip()
                 if not manga_id or rating < 1 or rating > 5:
                     self.send_cors_response(400, body=json.dumps({"error": "بيانات التقييم غير صالحة"}))
@@ -909,7 +926,7 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     c = conn.cursor()
                     c.execute('SELECT email FROM users WHERE email = ?', (email,))
                     if not c.fetchone():
-                        self.send_cors_response(400, body=json.dumps({"error": "هذا البريد الإلكتروني غير مسجل لدينا"}))
+                        self.send_cors_response(200, body=json.dumps({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}))
                         return
                     
                     # Generate token and store it
@@ -926,10 +943,9 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 
                 try:
                     send_reset_email(email, token, host)
-                    self.send_cors_response(200, body=json.dumps({"status": "success", "message": "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح."}))
+                    self.send_cors_response(200, body=json.dumps({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}))
                 except Exception as ex:
                     print(f"SMTP sending failed: {ex}")
-                    # Write link to console as backup/dev environment helper
                     reset_link = f"http://{host}/#/reset-password?token={token}"
                     print(f"[BACKUP reset link] For {email}: {reset_link}")
                     
@@ -938,8 +954,8 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         self.send_cors_response(400, body=json.dumps({"error": err_str}))
                     else:
                         self.send_cors_response(200, body=json.dumps({
-                            "status": "success", 
-                            "message": f"تم تسجيل رابط الاستعادة بنجاح في سجل خادم الويب (SMTP خامل أو معطل). رابط الاستعادة للمطور: {reset_link}"
+                            "status": "success",
+                            "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."
                         }))
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
@@ -1003,7 +1019,7 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_cors_response(401, body=json.dumps({"error": "فشل التحقق من حساب Google"}))
                     return
                 
-                email = user_info.get('email', '').strip().lower()
+                email = (user_info.get('email') or '').strip().lower()
                 if not email:
                     self.send_cors_response(400, body=json.dumps({"error": "فشل استخراج البريد الإلكتروني من حساب Google"}))
                     return
@@ -1033,13 +1049,15 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     expires_at = time.time() + 86400 * 30
                     c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
                     conn.commit()
+                    
+                    # Fetch points/level while connection is still open
+                    c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+                    pu = c.fetchone()
+                    points = pu[0] if pu else 20
+                    level = pu[1] if pu else 1
                 finally:
                     conn.close()
                 
-                c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
-                pu = c.fetchone()
-                points = pu[0] if pu else 20
-                level = pu[1] if pu else 1
                 self.send_cors_response(200, body=json.dumps({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level}))
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
@@ -1060,7 +1078,7 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_cors_response(401, body=json.dumps({"error": "فشل التحقق من حساب Facebook"}))
                     return
                 
-                email = user_info.get('email', '').strip().lower()
+                email = (user_info.get('email') or '').strip().lower()
                 if not email:
                     fb_id = user_info.get('id')
                     if fb_id:
@@ -1094,13 +1112,15 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                     expires_at = time.time() + 86400 * 30
                     c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
                     conn.commit()
+                    
+                    # Fetch points/level while connection is still open
+                    c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+                    pu = c.fetchone()
+                    points = pu[0] if pu else 20
+                    level = pu[1] if pu else 1
                 finally:
                     conn.close()
                 
-                c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
-                pu = c.fetchone()
-                points = pu[0] if pu else 20
-                level = pu[1] if pu else 1
                 self.send_cors_response(200, body=json.dumps({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level}))
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
@@ -1221,14 +1241,15 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 import csv
                 output = io.StringIO()
                 writer = csv.writer(output)
-                writer.writerow(['Table', 'Field', 'Value'])
                 for table, items in export_data.items():
-                    if isinstance(items, list):
+                    if isinstance(items, list) and items:
+                        writer.writerow([f'=== {table} ==='] + list(items[0].keys()))
                         for item in items:
-                            writer.writerow([table, str(item), ''])
-                    else:
+                            writer.writerow([''] + list(item.values()))
+                    elif isinstance(items, dict):
+                        writer.writerow([f'=== {table} ===', 'key', 'value'])
                         for k, v in items.items():
-                            writer.writerow([table, k, v])
+                            writer.writerow(['', k, v])
                 csv_text = output.getvalue().encode('utf-8')
                 self.send_response(200)
                 self.send_header('Content-Type', 'text/csv; charset=utf-8')
@@ -1295,8 +1316,10 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                 
                 settings_json = row[0] if row else "{}"
                 self.send_cors_response(200, body=settings_json)
+                return
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
+                return
                 
         elif parsed_url.path == '/api/suggestions':
             user = get_session_user(self.headers)
@@ -1320,8 +1343,10 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "created_at": row[3]
                     })
                 self.send_cors_response(200, body=json.dumps(results))
+                return
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
+                return
 
         elif parsed_url.path == '/api/manga_reviews':
             query_params = urllib.parse.parse_qs(parsed_url.query)
@@ -1346,8 +1371,10 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "created_at": row[3]
                     })
                 self.send_cors_response(200, body=json.dumps(results))
+                return
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
+                return
 
         elif parsed_url.path == '/api/chapter_comments':
             query_params = urllib.parse.parse_qs(parsed_url.query)
@@ -1372,8 +1399,10 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
                         "created_at": row[2]
                     })
                 self.send_cors_response(200, body=json.dumps(results))
+                return
             except Exception as e:
                 self.send_cors_response(500, body=json.dumps({"error": str(e)}))
+                return
 
         elif parsed_url.path == '/proxy-image':
             # Handle image proxying
@@ -1381,14 +1410,14 @@ class KairoRequestHandler(http.server.SimpleHTTPRequestHandler):
             image_url = query_params.get('url', [None])[0]
             
             if not image_url:
-                self.send_error(400, "Missing 'url' parameter")
+                self.send_cors_response(400, body=json.dumps({"error": "Missing 'url' parameter"}))
                 return
                 
             try:
                 self.handle_proxy_image(image_url)
             except Exception as e:
                 print(f"Error proxying image {image_url}: {e}")
-                self.send_error(500, f"Error processing image: {e}")
+                self.send_cors_response(500, body=json.dumps({"error": f"Error processing image: {e}"}))
         else:
             # SPA: serve index.html for all non-API, non-file routes
             # Try static file first, fall back to SPA index.html

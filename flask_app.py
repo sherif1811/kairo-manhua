@@ -23,7 +23,7 @@ except AttributeError:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, redirect
+from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, make_response
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -634,7 +634,7 @@ def auth_google():
     if not user_info:
         return jsonify({"error": "فشل التحقق من حساب Google"}), 401
         
-    email = user_info.get('email', '').strip().lower()
+    email = (user_info.get('email') or '').strip().lower()
     if not email:
         return jsonify({"error": "فشل استخراج البريد الإلكتروني من حساب Google"}), 400
         
@@ -684,7 +684,7 @@ def auth_facebook():
     if not user_info:
         return jsonify({"error": "فشل التحقق من حساب Facebook"}), 401
         
-    email = user_info.get('email', '').strip().lower()
+    email = (user_info.get('email') or '').strip().lower()
     # إذا لم يكن الحساب يحتوي على بريد إلكتروني مفعل (نادر الحدوث)، نستخدم معرف الفيسبوك لتوليد بريد وهمي فريد
     if not email:
         fb_id = user_info.get('id')
@@ -981,7 +981,7 @@ def forgot_password():
         c = conn.cursor()
         c.execute('SELECT email FROM users WHERE email = ?', (email,))
         if not c.fetchone():
-            return jsonify({"error": "هذا البريد الإلكتروني غير مسجل لدينا"}), 400
+            return jsonify({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}), 200
             
         token = secrets.token_hex(32)
         expires_at = time.time() + 3600 # 1 hour
@@ -996,7 +996,7 @@ def forgot_password():
     
     try:
         send_reset_email(email, token, host)
-        return jsonify({"status": "success", "message": "تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح."}), 200
+        return jsonify({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}), 200
     except Exception as ex:
         print(f"SMTP sending failed: {ex}")
         reset_link = f"http://{host}/#/reset-password?token={token}"
@@ -1008,7 +1008,7 @@ def forgot_password():
         else:
             return jsonify({
                 "status": "success",
-                "message": f"تم تسجيل رابط الاستعادة بنجاح في سجل خادم الويب (SMTP خامل أو معطل). رابط الاستعادة للمطور: {reset_link}"
+                "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."
             }), 200
 
 @app.route('/api/auth/reset-password', methods=['POST'])
@@ -1159,7 +1159,10 @@ def post_manga_review():
         return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
     data = request.get_json() or {}
     manga_id = data.get('manga_id', '').strip()
-    rating = int(data.get('rating', 5))
+    try:
+        rating = int(data.get('rating', 5))
+    except (ValueError, TypeError):
+        rating = 5
     review_text = data.get('review_text', '').strip()
     if not manga_id or rating < 1 or rating > 5:
         return jsonify({"error": "بيانات التقييم غير صالحة"}), 400
@@ -1298,4 +1301,4 @@ def proxy_image():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8000)
+    app.run(debug=False, port=8000)
