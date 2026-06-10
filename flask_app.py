@@ -282,7 +282,6 @@ def init_db():
                         earned_at REAL,
                         PRIMARY KEY (email, manga_id, chapter_id)
                      )''')
-        c.execute("PRAGMA journal_mode=WAL")
         conn.commit()
     finally:
         conn.close()
