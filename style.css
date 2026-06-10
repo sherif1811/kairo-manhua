@@ -2604,10 +2604,10 @@ body {
     color: #ffd700 !important;
 }
 .rank-admin {
-    color: #00ffff !important;
-    text-shadow: 0 0 10px #00ffff88;
+    color: #a855f7 !important;
+    text-shadow: 0 0 10px #a855f788;
 }
-.points-badge.rank-admin .points-badge-text { color: #00ffff; }
+.points-badge.rank-admin .points-badge-text { color: #a855f7; }
 .user-widget-avatar.rank-bronze {
     background: linear-gradient(135deg, #8B4513, #cd7f32);
     box-shadow: 0 0 10px #cd7f3266;
@@ -2622,21 +2622,21 @@ body {
     animation: goldPulse 2s ease-in-out infinite;
 }
 .user-widget-avatar.rank-admin {
-    background: linear-gradient(135deg, #008080, #00ffff);
-    box-shadow: 0 0 15px #00ffffaa;
+    background: linear-gradient(135deg, #6b21a8, #a855f7);
+    box-shadow: 0 0 15px #a855f7aa;
     animation: adminPulse 1.5s ease-in-out infinite;
 }
 @keyframes adminPulse {
-    0%, 100% { box-shadow: 0 0 15px #00ffffaa; }
-    50% { box-shadow: 0 0 25px #00ffff; }
+    0%, 100% { box-shadow: 0 0 15px #a855f7aa; }
+    50% { box-shadow: 0 0 25px #a855f7; }
 }
 @keyframes goldPulse {
     0%, 100% { box-shadow: 0 0 12px #ffd70088; }
     50% { box-shadow: 0 0 20px #ffd700cc; }
 }
 .admin-card {
-    border-color: #00ffff44 !important;
-    box-shadow: 0 0 20px #00ffff22 !important;
+    border-color: #a855f744 !important;
+    box-shadow: 0 0 20px #a855f722 !important;
 }
 .points-display {
     font-weight: 800;
@@ -2666,12 +2666,12 @@ body {
     animation: goldProgressShimmer 2s linear infinite;
 }
 .progress-fill.rank-admin {
-    background: linear-gradient(90deg, #008080, #00ffff);
+    background: linear-gradient(90deg, #6b21a8, #a855f7);
     animation: goldProgressShimmer 1.5s linear infinite;
 }
 .level-badge.rank-admin {
-    background: linear-gradient(135deg, #008080, #00ffff);
-    box-shadow: 0 0 15px #00ffff44;
+    background: linear-gradient(135deg, #6b21a8, #a855f7);
+    box-shadow: 0 0 15px #a855f744;
 }
 @keyframes goldProgressShimmer {
     0% { opacity: 0.7; }
