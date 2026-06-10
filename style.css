@@ -211,6 +211,86 @@ body {
     box-shadow: 0 0 20px rgba(138, 43, 226, 0.6);
 }
 
+.user-profile-menu-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-navbar-btn,
+.logout-navbar-btn {
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition-fast);
+}
+
+.profile-navbar-btn {
+    max-width: 180px;
+    min-height: 38px;
+    padding: 6px 12px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.profile-navbar-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
+    color: #07080c;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+.points-badge {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+}
+.points-badge-text {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.3);
+}
+.points-badge.rank-bronze .points-badge-text { color: #cd7f32; }
+.points-badge.rank-silver .points-badge-text { color: #c0c0c0; }
+.points-badge.rank-gold .points-badge-text { color: #ffd700; }
+
+.profile-navbar-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+
+.logout-navbar-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-navbar-btn:hover,
+.logout-navbar-btn:hover {
+    border-color: var(--color-secondary);
+    background: rgba(0, 240, 255, 0.08);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.12);
+}
+
 /* المحتوى الرئيسي للرئيسية بنظام عمودين للمنافسة */
 .main-content {
     flex: 1;
@@ -1157,9 +1237,15 @@ body {
     }
     .header-actions {
         order: 2;
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
     }
     .search-box {
         width: 170px;
+    }
+    .profile-navbar-btn {
+        max-width: 150px;
     }
     .main-content {
         padding: 20px 4%;
@@ -1569,6 +1655,7 @@ body {
 /* تبويبات الإدارة */
 .admin-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 12px;
     border-bottom: 2px solid var(--border-color);
     margin-bottom: 30px;
@@ -2236,6 +2323,128 @@ body {
     transform: translateY(-2px);
 }
 
+.bookmark-picker {
+    position: relative;
+    width: 100%;
+}
+
+.bookmark-picker-toggle.detail-btn.btn-fav {
+    background-image: none;
+    justify-content: space-between;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.bookmark-picker-toggle.is-selected {
+    border-color: rgba(0, 240, 255, 0.35);
+    background-color: rgba(0, 240, 255, 0.08);
+}
+
+.bookmark-picker-label {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bookmark-picker-icon,
+.bookmark-option-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+}
+
+.bookmark-picker-icon.cyan,
+.bookmark-option-icon.cyan {
+    background: rgba(0, 240, 255, 0.12);
+    color: var(--color-secondary);
+}
+
+.bookmark-picker-icon.violet,
+.bookmark-option-icon.violet {
+    background: rgba(138, 43, 226, 0.16);
+    color: var(--color-primary);
+}
+
+.bookmark-picker-icon.green,
+.bookmark-option-icon.green {
+    background: rgba(0, 255, 127, 0.12);
+    color: #00ff7f;
+}
+
+.bookmark-picker-chevron {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    transition: transform var(--transition-fast);
+}
+
+.bookmark-picker.open .bookmark-picker-chevron {
+    transform: rotate(180deg);
+}
+
+.bookmark-picker-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 100%;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: rgba(16, 18, 26, 0.98);
+    box-shadow: var(--shadow-lg), 0 0 24px rgba(138, 43, 226, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 25;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    pointer-events: none;
+    transition: opacity var(--transition-fast), transform var(--transition-fast), visibility var(--transition-fast);
+}
+
+.bookmark-picker.open .bookmark-picker-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.bookmark-option {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    border-radius: var(--border-radius-sm);
+    padding: 9px 10px;
+    font-family: var(--font-family);
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: right;
+    transition: var(--transition-fast);
+}
+
+.bookmark-option:hover,
+.bookmark-option.active {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.bookmark-option-check {
+    margin-right: auto;
+    color: var(--color-secondary);
+    font-size: 0.85rem;
+}
+
 .detail-btn.btn-fav option {
     background-color: var(--bg-surface);
     color: var(--text-main);
@@ -2255,8 +2464,140 @@ body {
     transform: translateY(-2px);
 }
 
+/* Page Transitions */
+@keyframes pageFadeIn {
+    from {
+        opacity: 0.85;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
+.page-fade-in {
+    animation: pageFadeIn 0.25s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
 
+/* === Gamification System === */
+.glam-card {
+    background: rgba(20, 22, 36, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(138, 43, 226, 0.2) !important;
+}
+.gamification-panel {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+}
+.level-badge {
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 800;
+    padding: 4px 0;
+    margin-bottom: 8px;
+}
+.rank-bronze {
+    color: #cd7f32 !important;
+}
+.rank-silver {
+    color: #c0c0c0 !important;
+}
+.rank-gold {
+    color: #ffd700 !important;
+}
+.user-widget-avatar.rank-bronze {
+    background: linear-gradient(135deg, #8B4513, #cd7f32);
+    box-shadow: 0 0 10px #cd7f3266;
+}
+.user-widget-avatar.rank-silver {
+    background: linear-gradient(135deg, #4a4a4a, #c0c0c0);
+    box-shadow: 0 0 10px #c0c0c066;
+}
+.user-widget-avatar.rank-gold {
+    background: linear-gradient(135deg, #b8860b, #ffd700);
+    box-shadow: 0 0 12px #ffd70088;
+    animation: goldPulse 2s ease-in-out infinite;
+}
+@keyframes goldPulse {
+    0%, 100% { box-shadow: 0 0 12px #ffd70088; }
+    50% { box-shadow: 0 0 20px #ffd700cc; }
+}
+.points-display {
+    font-weight: 800;
+    font-size: 1rem;
+    color: var(--color-secondary);
+}
+.progress-bar-glam {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 6px 0;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.progress-fill.rank-bronze {
+    background: linear-gradient(90deg, #8B4513, #cd7f32);
+}
+.progress-fill.rank-silver {
+    background: linear-gradient(90deg, #4a4a4a, #c0c0c0);
+}
+.progress-fill.rank-gold {
+    background: linear-gradient(90deg, #b8860b, #ffd700);
+    animation: goldProgressShimmer 2s linear infinite;
+}
+@keyframes goldProgressShimmer {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
 
-
-
+/* Level Up Toast */
+#level-up-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    background: rgba(10, 12, 22, 0.92);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    border-radius: 16px;
+    padding: 20px 28px;
+    box-shadow: 0 0 40px rgba(255, 215, 0, 0.15);
+    transform: translateX(120%) scale(0.9);
+    opacity: 0;
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.4s ease;
+    max-width: 340px;
+}
+#level-up-toast.level-up-visible {
+    transform: translateX(0) scale(1);
+    opacity: 1;
+}
+.level-up-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.level-up-icon {
+    font-size: 2.5rem;
+}
+.level-up-text h3 {
+    margin: 0;
+    color: #ffd700;
+    font-size: 1.1rem;
+}
+.level-up-text p {
+    margin: 4px 0 0;
+    color: var(--text-light);
+    font-size: 0.85rem;
+}
+.level-up-rank {
+    color: var(--color-secondary) !important;
+    font-weight: 700;
+}

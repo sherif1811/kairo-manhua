@@ -1,5 +1,9 @@
 image_cache/
 scratch/
+scratch_out/
 *.log
 *.bat
 .git/
+__pycache__/
+*.db
+.env

@@ -9,10 +9,95 @@
 const DB_NAME = 'kairo_manhua_offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'downloaded_chapters';
+const DEFAULT_COVER_URL = 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=60';
+const GENERIC_BANNER_MARKERS = [
+    'images.unsplash.com/photo-1607604276583-eef5d076aa5f',
+    'images.unsplash.com/photo-1534447677768-be436bb09401',
+    'images.unsplash.com/photo-1518709268805-4e9042af9f23'
+];
+const BOOKMARK_STATUS_META = {
+    '': {
+        label: '\u0625\u0636\u0627\u0641\u0629 \u0644\u0644\u0645\u0641\u0636\u0644\u0629',
+        icon: 'fa-regular fa-bookmark',
+        tone: 'neutral'
+    },
+    reading: {
+        label: '\u0623\u0642\u0631\u0623\u0647 \u062d\u0627\u0644\u064a\u0627\u064b',
+        icon: 'fa-solid fa-book-open-reader',
+        tone: 'cyan'
+    },
+    plan: {
+        label: '\u0623\u0631\u063a\u0628 \u0641\u064a \u0642\u0631\u0627\u0621\u062a\u0647',
+        icon: 'fa-solid fa-bookmark',
+        tone: 'violet'
+    },
+    completed: {
+        label: '\u0645\u0643\u062a\u0645\u0644',
+        icon: 'fa-solid fa-circle-check',
+        tone: 'green'
+    }
+};
+const BOOKMARK_STATUS_ORDER = ['', 'reading', 'plan', 'completed'];
 
-// معرفات التطبيقات لتسجيل الدخول الاجتماعي (استبدلها بالمعرفات الحقيقية الخاصة بك لاحقاً)
-const GOOGLE_CLIENT_ID = '1234567890-placeholder.apps.googleusercontent.com';
-const FACEBOOK_APP_ID = '1234567890-placeholder';
+// معرفات التطبيقات لتسجيل الدخول الاجتماعي (تُحمّل من قاعدة البيانات)
+let GOOGLE_CLIENT_ID = '';
+let FACEBOOK_APP_ID = '';
+
+function isUsableGoogleClientId(clientId = GOOGLE_CLIENT_ID) {
+    const value = (clientId || '').trim();
+    return value && value.endsWith('.apps.googleusercontent.com');
+}
+
+function isUsableFacebookAppId(appId = FACEBOOK_APP_ID) {
+    const value = (appId || '').trim();
+    return value && value.length >= 8;
+}
+
+function getDisplayCover(manga) {
+    const cover = manga && typeof manga.cover === 'string' ? manga.cover.trim() : '';
+    return cover || DEFAULT_COVER_URL;
+}
+
+function getMangaBanner(manga) {
+    const cover = getDisplayCover(manga);
+    const banner = manga && typeof manga.banner === 'string' ? manga.banner.trim() : '';
+    if (!banner) return cover;
+    if (GENERIC_BANNER_MARKERS.some(marker => banner.includes(marker))) return cover;
+    return banner;
+}
+
+function normalizeMangaAssets(manga) {
+    if (!manga || typeof manga !== 'object') return manga;
+    manga.cover = getDisplayCover(manga);
+    manga.banner = getMangaBanner(manga);
+    return manga;
+}
+
+function cssImageUrl(url) {
+    return `url('${String(url || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'")}')`;
+}
+
+function getBookmarkStatusMeta(status) {
+    return BOOKMARK_STATUS_META[status] || BOOKMARK_STATUS_META[''];
+}
+
+function setBookmarkStatus(mangaId, status) {
+    if (!mangaId) return;
+    if (status) {
+        state.bookmarks[mangaId] = status;
+    } else {
+        delete state.bookmarks[mangaId];
+    }
+    state.saveBookmarks();
+}
+
+function getUserHandle(email) {
+    return String(email || '').split('@')[0] || '\u062d\u0633\u0627\u0628\u064a';
+}
+
+function getUserInitial(email) {
+    return getUserHandle(email).charAt(0).toUpperCase();
+}
 
 // تهيئة قاعدة بيانات IndexedDB لحفظ الفصول للقراءة دون اتصال
 function initDB() {
@@ -296,6 +381,7 @@ class AppState {
         
         if (this.sessionToken) {
             this.fetchAndMergeSettings();
+            this.fetchUserProfile();
         }
     }
 
@@ -334,6 +420,8 @@ class AppState {
             this.mangas = DEFAULT_MANGAS;
             this.saveMangas();
         }
+        this.mangas = this.mangas.map(manga => normalizeMangaAssets(manga));
+        this.saveMangas();
     }
 
     async loadScrapedMangas() {
@@ -343,6 +431,7 @@ class AppState {
                 const scraped = await response.json();
                 if (Array.isArray(scraped)) {
                     scraped.forEach(scManga => {
+                        normalizeMangaAssets(scManga);
                         const existsIdx = this.mangas.findIndex(m => m.id === scManga.id || m.title === scManga.title);
                         if (existsIdx === -1) {
                             this.mangas.push(scManga);
@@ -353,9 +442,11 @@ class AppState {
                                 match.chapters = scManga.chapters;
                             }
                             match.cover = scManga.cover || match.cover;
+                            match.banner = scManga.banner || getMangaBanner(match);
                             match.alternative = scManga.alternative || match.alternative;
                             match.synopsis = scManga.synopsis || match.synopsis;
                             match.genres = scManga.genres || match.genres;
+                            normalizeMangaAssets(match);
                         }
                     });
                     this.saveMangas();
@@ -438,6 +529,7 @@ class AppState {
                     if (settings.userProfile) {
                         this.userProfile.username = settings.userProfile.username || this.userProfile.username;
                         this.userProfile.points = Math.max(this.userProfile.points, settings.userProfile.points || 0);
+                        if (settings.userProfile.level) this.userProfile.level = Math.max(this.userProfile.level || 1, settings.userProfile.level);
                     }
                     
                     if (settings.history && Array.isArray(settings.history)) {
@@ -522,8 +614,54 @@ class AppState {
         this.progress[mangaId] = { chapterId, scrollY, percentage, activePageIndex: pageIndex, updatedAt: new Date().toISOString() };
         localStorage.setItem('kairo_progress', JSON.stringify(this.progress));
         this.syncSettings();
-        
         this.addToHistory(mangaId, chapterId, scrollY, percentage, pageIndex);
+        
+        if (this.sessionToken) {
+            fetch('/api/user/reading-progress', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + this.sessionToken },
+                body: JSON.stringify({ manga_id: mangaId, chapter_id: chapterId, page: pageIndex + 1 })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.leveled_up) {
+                    this.userProfile.points = data.points;
+                    this.userProfile.level = data.level;
+                    this.saveUserProfile();
+                    this.showLevelUpToast(data.level, data.rank_name);
+                } else if (data.new_points > 0) {
+                    this.userProfile.points = data.points;
+                    this.userProfile.level = data.level;
+                    this.saveUserProfile();
+                }
+            })
+            .catch(e => console.error("Points sync error:", e));
+        }
+    }
+
+    showLevelUpToast(newLevel, rankName) {
+        const existing = document.getElementById('level-up-toast');
+        if (existing) existing.remove();
+        
+        const toast = document.createElement('div');
+        toast.id = 'level-up-toast';
+        toast.innerHTML = `
+            <div class="level-up-content">
+                <div class="level-up-icon">🎉</div>
+                <div class="level-up-text">
+                    <h3>تهانينا!</h3>
+                    <p>لقد صعدت للمستوى <strong>${newLevel}</strong></p>
+                    <p class="level-up-rank">رتبتك: ${rankName}</p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        
+        requestAnimationFrame(() => toast.classList.add('level-up-visible'));
+        setTimeout(() => {
+            toast.classList.remove('level-up-visible');
+            setTimeout(() => toast.remove(), 500);
+        }, 4000);
     }
 
     loadComments() {
@@ -560,7 +698,8 @@ class AppState {
         const stored = localStorage.getItem('kairo_user_profile');
         this.userProfile = this.safeParse(stored, {
             username: 'أوتلاينر مميز',
-            points: 150
+            points: 0,
+            level: 1
         });
         this.sessionToken = localStorage.getItem('kairo_session_token') || null;
         this.userEmail = localStorage.getItem('kairo_user_email') || null;
@@ -580,24 +719,48 @@ class AppState {
         }
     }
 
-    addPoints(pts) {
-        this.userProfile.points += pts;
-        this.saveUserProfile();
-        this.syncSettings();
+    pointsNeededForLevel(level) {
+        return 50 * level * (level + 1);
+    }
+
+    calculateLevel(points) {
+        if (points <= 0) return 1;
+        const n = Math.floor((-1 + Math.sqrt(1 + 4 * points / 50)) / 2);
+        return Math.max(1, n);
+    }
+
+    getRankName(level) {
+        if (level <= 30) return 'مبتدئ';
+        if (level <= 60) return 'قارئ ممتاز';
+        return 'قارئ أسطوري';
+    }
+
+    async fetchUserProfile() {
+        if (!this.sessionToken) return;
+        try {
+            const res = await fetch('/api/user/profile', {
+                headers: { 'Authorization': 'Bearer ' + this.sessionToken }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.userProfile.points = data.points;
+                this.userProfile.level = data.level;
+                this.saveUserProfile();
+            }
+        } catch (e) {
+            console.error("Failed to fetch user profile:", e);
+        }
     }
 
     getUserLevelInfo() {
-        const points = this.userProfile.points;
-        const level = Math.floor(points / 100) + 1;
-        const levelProgress = points % 100;
-        
-        let rankTitle = 'مبتدئ القراءة';
-        if (level >= 10) rankTitle = 'ملك المانجا 👑';
-        else if (level >= 7) rankTitle = 'أوتلاين أسطوري';
-        else if (level >= 5) rankTitle = 'عاشق المنهوا';
-        else if (level >= 3) rankTitle = 'قارئ نشط';
+        const points = this.userProfile.points || 0;
+        const level = this.userProfile.level || this.calculateLevel(points);
+        const pointsForCurrent = level > 1 ? this.pointsNeededForLevel(level - 1) : 0;
+        const pointsForNext = this.pointsNeededForLevel(level);
+        const levelProgress = pointsForNext > pointsForCurrent ? ((points - pointsForCurrent) / (pointsForNext - pointsForCurrent)) * 100 : 100;
+        const rankTitle = this.getRankName(level);
 
-        return { level, levelProgress, rankTitle };
+        return { level, levelProgress, rankTitle, points, pointsToNext: pointsForNext - points };
     }
 
     loadReaderSettings() {
@@ -614,13 +777,15 @@ class AppState {
     }
 
     async addManga(title, alternative, author, cover, banner, genres, synopsis, type) {
+        const cleanCover = cover && cover.trim() ? cover.trim() : DEFAULT_COVER_URL;
+        const cleanBanner = banner && banner.trim() ? banner.trim() : cleanCover;
         const newManga = {
             id: `lek_${title.toLowerCase().replace(/[^a-z0-9]+/g, '_')}_${Date.now()}`,
             title,
             alternative,
             author,
-            cover: cover || 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500',
-            banner: banner || 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200',
+            cover: cleanCover,
+            banner: cleanBanner,
             rating: 5.0,
             status: 'مستمر',
             type: type || 'منهوا',
@@ -629,6 +794,7 @@ class AppState {
             synopsis,
             chapters: []
         };
+        normalizeMangaAssets(newManga);
 
         if (this.sessionToken && this.userRole === 'admin') {
             try {
@@ -782,6 +948,12 @@ function handleRouting() {
         state.currentView = 'reader';
         state.activeMangaId = mangaId;
         state.activeChapterId = chapterId;
+    } else if (hash.includes('reset-password')) {
+        state.currentView = 'reset-password';
+        const tokenMatch = hash.match(/[?&]token=([^&]+)/);
+        state.resetPasswordToken = tokenMatch ? tokenMatch[1] : '';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
     } else {
         const view = hash.replace('#/', '');
         state.currentView = view;
@@ -791,6 +963,45 @@ function handleRouting() {
     
     state.activePageIndex = 0;
     state.chapterSearchQuery = '';
+    
+    // SEO: تحديث meta tags ديناميكياً حسب المسار
+    var seoTitle = 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
+    var seoDesc = 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.';
+    var seoImg = '';
+    
+    if (state.currentView === 'detail' && state.activeMangaId) {
+        var manga = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
+        if (manga) {
+            seoTitle = manga.title + ' | KAIRO / منهوا';
+            seoDesc = manga.synopsis ? manga.synopsis.substring(0, 200) : seoDesc;
+            seoImg = getDisplayCover(manga);
+        }
+    } else if (state.currentView === 'reader' && state.activeMangaId && state.activeChapterId) {
+        var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
+        if (mangaR) {
+            var chapter = mangaR.chapters.find(function(c) { return c.id === state.activeChapterId; });
+            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
+            seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
+            seoImg = getDisplayCover(mangaR);
+        }
+    } else if (state.currentView === 'bookmarks') {
+        seoTitle = 'المفضلة | KAIRO / منهوا';
+        seoDesc = 'قائمة المانجا والمنهوا المفضلة لديك على KAIRO/منهوا';
+    } else if (state.currentView === 'history') {
+        seoTitle = 'سجل القراءة | KAIRO / منهوا';
+        seoDesc = 'سجل قراءة المانجا والمنهوا على KAIRO/منهوا';
+    } else if (state.currentView === 'downloads') {
+        seoTitle = 'الفصول المحملة | KAIRO / منهوا';
+        seoDesc = 'الفصول المحملة للقراءة دون اتصال على KAIRO/منهوا';
+    } else if (state.currentView === 'admin') {
+        seoTitle = 'لوحة الإدارة | KAIRO / منهوا';
+        seoDesc = 'لوحة تحكم وإدارة موقع KAIRO/منهوا';
+    } else if (state.currentView === 'reset-password') {
+        seoTitle = 'استعادة كلمة المرور | KAIRO / منهوا';
+        seoDesc = 'استعادة كلمة المرور لحسابك على KAIRO/منهوا';
+    }
+    
+    updateSEOMeta(seoTitle, seoDesc, seoImg);
     
     if (state.currentView === 'reader') {
         state.isLoading = false;
@@ -810,6 +1021,32 @@ function handleRouting() {
 
 // استماع لتغيرات الهاش في المتصفح للتنقل
 window.addEventListener('hashchange', handleRouting);
+
+function updateSEOMeta(title, description, image) {
+    document.title = title || 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
+    let desc = description || 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.';
+    let img = image || '';
+    let setMeta = function(name, value) {
+        document.querySelectorAll('meta[name="' + name + '"], meta[property="' + name + '"]').forEach(function(el) { el.remove(); });
+        if (!value) return;
+        var meta = document.createElement('meta');
+        if (name.startsWith('og:') || name.startsWith('twitter:')) {
+            meta.setAttribute('property', name);
+        } else {
+            meta.setAttribute('name', name);
+        }
+        meta.setAttribute('content', value);
+        document.head.appendChild(meta);
+    };
+    setMeta('description', desc);
+    setMeta('og:title', title);
+    setMeta('og:description', desc);
+    setMeta('og:image', img);
+    setMeta('twitter:card', 'summary_large_image');
+    setMeta('twitter:title', title);
+    setMeta('twitter:description', desc);
+    setMeta('twitter:image', img);
+}
 
 function getProxiedImageUrl(url) {
     if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
@@ -838,13 +1075,19 @@ function HeaderComponent() {
 
     let accountButton = '';
     if (state.sessionToken) {
+        const userHandle = getUserHandle(state.userEmail);
+        const userInitial = getUserInitial(state.userEmail);
+        const points = state.userProfile.points || 0;
+        const level = state.userProfile.level || 1;
+        const rankClass = level <= 30 ? 'rank-bronze' : level <= 60 ? 'rank-silver' : 'rank-gold';
         accountButton = `
         <div class="user-profile-menu-container">
-            <button class="profile-navbar-btn" id="nav-profile-btn">
-                <i class="fa-solid fa-user-check"></i>
-                <span>${state.userEmail.split('@')[0]}</span>
+            <button class="profile-navbar-btn points-badge ${rankClass}" id="nav-profile-btn" title="${state.userEmail || ''}">
+                <span class="profile-navbar-avatar">${userInitial}</span>
+                <span class="profile-navbar-name">${userHandle}</span>
+                <span class="points-badge-text">${points} <i class="fa-solid fa-star" style="font-size:0.6rem;"></i></span>
             </button>
-            <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج">
+            <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج" aria-label="Logout">
                 <i class="fa-solid fa-right-from-bracket"></i>
             </button>
         </div>
@@ -871,7 +1114,7 @@ function HeaderComponent() {
             <div class="search-suggestions-dropdown" id="search-suggestions">
                 ${matches.map(m => `
                     <div class="suggestion-item" data-id="${m.id}">
-                        <img src="${m.cover}" class="suggestion-cover" alt="${m.title}">
+                        <img src="${getDisplayCover(m)}" class="suggestion-cover" alt="${m.title}">
                         <div class="suggestion-info">
                             <span class="suggestion-title">${m.title}</span>
                             ${m.alternative ? `<span class="suggestion-alt">${m.alternative}</span>` : ''}
@@ -912,45 +1155,80 @@ function HeaderComponent() {
 function AuthModalComponent() {
     if (!state.showAuthModal) return '';
     const isLogin = state.authModalTab === 'login';
+    const isRegister = state.authModalTab === 'register';
+    const isForgot = state.authModalTab === 'forgot';
+    
+    let bodyHtml = '';
+    if (isForgot) {
+        bodyHtml = `
+        <form id="forgot-password-form" class="auth-form" style="text-align: right;">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="forgot-email">البريد الإلكتروني المسجل</label>
+                <input type="email" id="forgot-email" required placeholder="example@gmail.com" autocomplete="email" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
+            </div>
+            <div id="forgot-error-msg" class="auth-error-msg" style="display:none; margin-bottom: 12px; color: var(--color-accent); font-weight: 700;"></div>
+            <div id="forgot-success-msg" class="auth-success-msg" style="display:none; margin-bottom: 12px; color: #00ff7f; font-weight: 700;"></div>
+            <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%;">
+                <i class="fa-solid fa-paper-plane"></i> إرسال رابط الاستعادة
+            </button>
+            <div style="text-align: center; margin-top: 18px;">
+                <a href="javascript:void(0)" id="back-to-login-btn" style="color: var(--color-secondary); font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">العودة لتسجيل الدخول</a>
+            </div>
+        </form>
+        `;
+    } else {
+        bodyHtml = `
+        <form id="auth-form" class="auth-form">
+            <div class="form-group">
+                <label for="auth-email">البريد الإلكتروني (Gmail)</label>
+                <input type="email" id="auth-email" required placeholder="example@gmail.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="auth-password" style="margin: 0;">كلمة المرور</label>
+                    <a href="javascript:void(0)" id="forgot-password-trigger" style="color: var(--color-secondary); font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">نسيت كلمة المرور؟</a>
+                </div>
+                <input type="password" id="auth-password" required placeholder="********" autocomplete="current-password">
+            </div>
+            <div id="auth-error-msg" class="auth-error-msg" style="display:none;"></div>
+            <div id="auth-success-msg" class="auth-success-msg" style="display:none;"></div>
+            <button type="submit" class="auth-submit-btn neon-pulse-hover">
+                ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> دخول' : '<i class="fa-solid fa-user-plus"></i> إنشاء الحساب'}
+            </button>
+            
+            <div class="auth-divider">
+                <span>أو سجّل الدخول باستخدام</span>
+            </div>
+            
+            <div class="social-login-grid">
+                <button type="button" class="social-btn google-btn" id="google-login-btn">
+                    <i class="fa-brands fa-google"></i> Google
+                </button>
+                <button type="button" class="social-btn facebook-btn" id="facebook-login-btn">
+                    <i class="fa-brands fa-facebook"></i> Facebook
+                </button>
+            </div>
+        </form>
+        `;
+    }
     
     return `
     <div class="auth-modal-overlay" id="auth-modal-overlay">
         <div class="auth-modal-card glass-card">
             <button class="auth-modal-close" id="close-auth-modal">&times;</button>
+            ${!isForgot ? `
             <div class="auth-modal-tabs">
                 <button class="auth-tab-btn ${isLogin ? 'active' : ''}" id="auth-tab-login" data-tab="login">تسجيل الدخول</button>
-                <button class="auth-tab-btn ${!isLogin ? 'active' : ''}" id="auth-tab-register" data-tab="register">حساب جديد</button>
+                <button class="auth-tab-btn ${isRegister ? 'active' : ''}" id="auth-tab-register" data-tab="register">حساب جديد</button>
             </div>
+            ` : `
+            <div style="text-align: center; margin-bottom: 20px;">
+                <span style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;"><i class="fa-solid fa-key" style="color: var(--color-secondary);"></i> استعادة الحساب</span>
+            </div>
+            `}
             
             <div class="auth-modal-body">
-                <form id="auth-form" class="auth-form">
-                    <div class="form-group">
-                        <label for="auth-email">البريد الإلكتروني (Gmail)</label>
-                        <input type="email" id="auth-email" required placeholder="example@gmail.com" autocomplete="email">
-                    </div>
-                    <div class="form-group">
-                        <label for="auth-password">كلمة المرور</label>
-                        <input type="password" id="auth-password" required placeholder="********" autocomplete="current-password">
-                    </div>
-                    <div id="auth-error-msg" class="auth-error-msg" style="display:none;"></div>
-                    <div id="auth-success-msg" class="auth-success-msg" style="display:none;"></div>
-                    <button type="submit" class="auth-submit-btn neon-pulse-hover">
-                        ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> دخول' : '<i class="fa-solid fa-user-plus"></i> إنشاء الحساب'}
-                    </button>
-                    
-                    <div class="auth-divider">
-                        <span>أو سجّل الدخول باستخدام</span>
-                    </div>
-                    
-                    <div class="social-login-grid">
-                        <button type="button" class="social-btn google-btn" id="google-login-btn">
-                            <i class="fa-brands fa-google"></i> Google
-                        </button>
-                        <button type="button" class="social-btn facebook-btn" id="facebook-login-btn">
-                            <i class="fa-brands fa-facebook"></i> Facebook
-                        </button>
-                    </div>
-                </form>
+                ${bodyHtml}
             </div>
         </div>
     </div>
@@ -1032,7 +1310,7 @@ function HeroSliderComponent() {
 
     featured.forEach((manga, idx) => {
         slidesHtml += `
-        <div class="hero-slide ${idx === activeSlideIndex ? 'active' : ''}" style="background-image: url('${manga.banner}')" data-id="${manga.id}">
+        <div class="hero-slide ${idx === activeSlideIndex ? 'active' : ''}" style="background-image: ${cssImageUrl(getMangaBanner(manga))}" data-id="${manga.id}">
             <div class="hero-overlay"></div>
             <div class="hero-content">
                 <span class="hero-badge">${manga.type} المميزة</span>
@@ -1074,7 +1352,7 @@ function ReadingHistoryComponent() {
         historyCardsHtml += `
         <div class="history-item-card" data-manga-id="${hist.mangaId}" data-chap-id="${hist.chapterId}" data-scroll="${hist.scrollY}" data-page="${hist.activePageIndex}">
             <div class="history-item-cover">
-                <img src="${manga.cover}" alt="${manga.title}">
+                <img src="${getDisplayCover(manga)}" alt="${manga.title}">
             </div>
             <div class="history-item-details">
                 <h4 class="history-item-title">${manga.title}</h4>
@@ -1137,7 +1415,7 @@ function HistoryViewComponent() {
         listHtml += `
         <div class="chapter-item history-item-row" data-manga-id="${hist.mangaId}" data-chap-id="${hist.chapterId}" data-scroll="${hist.scrollY}" data-page="${hist.activePageIndex}">
             <div style="display:flex; align-items:center; gap:16px; flex:1; min-width:0;">
-                <img src="${manga.cover}" alt="${manga.title}" style="width:45px; height:65px; object-fit:cover; border-radius:var(--border-radius-sm); border:1px solid var(--border-color); flex-shrink:0;">
+                <img src="${getDisplayCover(manga)}" alt="${manga.title}" style="width:45px; height:65px; object-fit:cover; border-radius:var(--border-radius-sm); border:1px solid var(--border-color); flex-shrink:0;">
                 <div style="min-width:0; flex:1;">
                     <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">${manga.title}</h4>
                     <span style="font-size:0.85rem; color:var(--text-muted); display:inline-block; margin-bottom:4px;">
@@ -1222,7 +1500,7 @@ function MangaGridComponent(title, mangasFiltered) {
         cardsHtml += `
         <div class="manga-card" data-id="${manga.id}">
             <div class="manga-card-cover">
-                <img src="${manga.cover}" alt="${manga.title}" loading="lazy">
+                <img src="${getDisplayCover(manga)}" alt="${manga.title}" loading="lazy">
                 <span class="card-badge">${manga.status}</span>
                 <span class="card-rating"><i class="fa-solid fa-star"></i> ${manga.rating}</span>
             </div>
@@ -1249,25 +1527,30 @@ function MangaGridComponent(title, mangasFiltered) {
 
 // مكونات القائمة الجانبية (Sidebar)
 function UserProfileWidgetComponent() {
+    if (!state.sessionToken) return '';
     const info = state.getUserLevelInfo();
+    const rankClass = info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold';
     return `
-    <div class="sidebar-card">
+    <div class="sidebar-card glam-card">
         <div class="user-widget-profile">
-            <div class="user-widget-avatar">${state.userProfile.username.charAt(0)}</div>
+            <div class="user-widget-avatar ${rankClass}">${state.userProfile.username.charAt(0)}</div>
             <div class="user-widget-info">
                 <h4>${state.userProfile.username}</h4>
-                <p>${info.rankTitle}</p>
+                <p class="${rankClass}">${info.rankTitle}</p>
             </div>
         </div>
-        <div style="margin-top:15px;">
+        <div class="gamification-panel">
+            <div class="level-badge ${rankClass}">المستوى ${info.level}</div>
             <div class="level-progress-info">
-                <span>المستوى الحالي: ${info.level}</span>
-                <span>النقاط: ${state.userProfile.points}</span>
+                <span>النقاط</span>
+                <span class="points-display">${info.points}</span>
             </div>
-            <div class="history-progress-track">
-                <div class="history-progress-bar-fill" style="width: ${info.levelProgress}%"></div>
+            <div class="progress-bar-glam">
+                <div class="progress-fill ${rankClass}" style="width: ${Math.min(info.levelProgress, 100)}%"></div>
             </div>
-            <p style="font-size:0.7rem;color:var(--text-dark);margin-top:5px;text-align:center;">اقرأ فصولاً إضافية لترقية مستواك!</p>
+            <div class="level-progress-info" style="margin-top: 4px;">
+                <span style="font-size:0.7rem;color:var(--text-dark);">${info.pointsToNext} نقطة للمستوى التالي</span>
+            </div>
         </div>
     </div>
     `;
@@ -1282,7 +1565,7 @@ function TrendingSidebarComponent() {
         <div class="trending-item" data-id="${manga.id}">
             <div class="trending-rank">${idx + 1}</div>
             <div class="trending-cover">
-                <img src="${manga.cover}" alt="${manga.title}">
+                <img src="${getDisplayCover(manga)}" alt="${manga.title}">
             </div>
             <div class="trending-details">
                 <h4 class="trending-title">${manga.title}</h4>
@@ -1350,6 +1633,19 @@ async function DetailViewComponent() {
 
     const latestChapter = manga.chapters[0];
     const bookmarkStatus = state.bookmarks[manga.id] || '';
+    const bookmarkMeta = getBookmarkStatusMeta(bookmarkStatus);
+    const bookmarkOptionsHtml = BOOKMARK_STATUS_ORDER.map(status => {
+        const meta = getBookmarkStatusMeta(status);
+        const activeClass = bookmarkStatus === status ? 'active' : '';
+        const checkIcon = bookmarkStatus === status ? '<i class="fa-solid fa-check bookmark-option-check"></i>' : '';
+        return `
+            <button type="button" class="bookmark-option ${activeClass}" data-status="${status}" role="menuitem">
+                <span class="bookmark-option-icon ${meta.tone}"><i class="${meta.icon}"></i></span>
+                <span>${meta.label}</span>
+                ${checkIcon}
+            </button>
+        `;
+    }).join('');
     
     // جلب الفصول المحملة للتأكد من حالة التحميل
     const localDownloads = await getAllDownloadsOffline();
@@ -1501,13 +1797,13 @@ async function DetailViewComponent() {
 
     return `
     <div class="manga-detail-wrapper">
-        <div class="detail-banner" style="background-image: url('${manga.banner}')">
+        <div class="detail-banner" style="background-image: ${cssImageUrl(getMangaBanner(manga))}">
             <div class="detail-banner-blur"></div>
         </div>
         <div class="detail-main">
             <div class="detail-sidebar">
                 <div class="detail-cover">
-                    <img src="${manga.cover}" alt="${manga.title}">
+                    <img src="${getDisplayCover(manga)}" alt="${manga.title}">
                 </div>
                 <div class="detail-actions">
                     ${latestChapter ? `
@@ -1516,12 +1812,16 @@ async function DetailViewComponent() {
                         </button>
                     ` : ''}
                     
-                    <select class="detail-btn btn-fav select-bookmark-status" data-id="${manga.id}">
-                        <option value="" ${bookmarkStatus === '' ? 'selected' : ''}>+ إضافة للمفضلة</option>
-                        <option value="reading" ${bookmarkStatus === 'reading' ? 'selected' : ''}>أقرأه حالياً</option>
-                        <option value="plan" ${bookmarkStatus === 'plan' ? 'selected' : ''}>أرغب في قراءته</option>
-                        <option value="completed" ${bookmarkStatus === 'completed' ? 'selected' : ''}>مكتمل</option>
-                    </select>
+                    <div class="bookmark-picker" data-id="${manga.id}">
+                        <button type="button" class="detail-btn btn-fav bookmark-picker-toggle ${bookmarkStatus ? 'is-selected' : ''}" aria-haspopup="true" aria-expanded="false">
+                            <span class="bookmark-picker-icon ${bookmarkMeta.tone}"><i class="${bookmarkMeta.icon}"></i></span>
+                            <span class="bookmark-picker-label">${bookmarkMeta.label}</span>
+                            <i class="fa-solid fa-chevron-down bookmark-picker-chevron"></i>
+                        </button>
+                        <div class="bookmark-picker-menu" role="menu">
+                            ${bookmarkOptionsHtml}
+                        </div>
+                    </div>
                     
                     ${state.userRole === 'admin' ? `
                         <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
@@ -1735,7 +2035,7 @@ async function ReaderViewComponent() {
     state.saveReadingProgress(manga.id, chapter.id, 0, progressPercent, state.activePageIndex);
 
     return `
-    <div class="reader-wrapper ${themeClass} ${widthClass} ${modeClass}">
+    <div class="reader-wrapper ${themeClass} ${widthClass} ${modeClass} page-fade-in">
         <div class="reader-progress-bar" id="reading-bar" style="width: ${progressPercent}%"></div>
         
         <div class="reader-nav">
@@ -1883,6 +2183,7 @@ function AdminPanelViewComponent() {
             <button class="admin-tab active" id="tab-add-manga">إضافة مانجا/منهوا جديدة</button>
             <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
             <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
+            <button class="admin-tab" id="tab-site-settings">إعدادات الموقع</button>
         </div>
         
         <div class="admin-form-panel" id="panel-add-manga">
@@ -1955,6 +2256,48 @@ function AdminPanelViewComponent() {
                 <p style="text-align:center; padding: 20px; color: var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الشكاوى والاقتراحات...</p>
             </div>
         </div>
+
+        <div class="admin-form-panel" id="panel-site-settings" style="display:none; text-align: right;">
+            <form id="site-settings-form">
+                <div class="admin-form-group">
+                    <label>معرف تطبيق جوجل (Google Client ID)</label>
+                    <input type="text" id="setting-google-id" value="${state.adminConfig?.google_client_id || GOOGLE_CLIENT_ID}" placeholder="مثال: 123456789-abc123xyz.apps.googleusercontent.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Google Cloud Console لتفعيل تسجيل الدخول بجيميل.</span>
+                </div>
+                <div class="admin-form-group">
+                    <label>معرف تطبيق فيسبوك (Facebook App ID)</label>
+                    <input type="text" id="setting-facebook-id" value="${state.adminConfig?.facebook_app_id || FACEBOOK_APP_ID}" placeholder="مثال: 123456789012345" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Meta Developers لتفعيل تسجيل الدخول بفيسبوك.</span>
+                </div>
+                
+                <h3 style="color: var(--text-main); margin-top: 30px; margin-bottom: 15px; border-right: 4px solid var(--color-primary); padding-right: 10px; font-size: 1.15rem; font-weight: 800;"><i class="fa-solid fa-envelope" style="color: var(--color-primary); margin-left: 6px;"></i> إعدادات خادم البريد (SMTP)</h3>
+                
+                <div class="admin-form-group">
+                    <label>خادم SMTP (SMTP Host)</label>
+                    <input type="text" id="setting-smtp-host" value="${state.adminConfig?.smtp_host || 'smtp.gmail.com'}" placeholder="smtp.gmail.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                </div>
+                <div class="admin-form-group">
+                    <label>منفذ SMTP (SMTP Port)</label>
+                    <input type="text" id="setting-smtp-port" value="${state.adminConfig?.smtp_port || '587'}" placeholder="587" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                </div>
+                <div class="admin-form-group">
+                    <label>بريد خادم الإرسال (SMTP Username)</label>
+                    <input type="text" id="setting-smtp-user" value="${state.adminConfig?.smtp_user || ''}" placeholder="example@gmail.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">البريد الإلكتروني الذي سيقوم الخادم باستخدامه لإرسال الرسائل (مثل حساب Gmail).</span>
+                </div>
+                <div class="admin-form-group">
+                    <label>كلمة مرور التطبيق (SMTP Password / Gmail App Password)</label>
+                    <input type="password" id="setting-smtp-pass" value="${state.adminConfig?.smtp_pass || ''}" placeholder="كلمة مرور التطبيق المكونة من 16 حرفاً" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">إذا كنت تستخدم Gmail، يرجى إنشاء كلمة مرور تطبيق (App Password) من إعدادات حساب Google الخاص بك.</span>
+                </div>
+                <div class="admin-form-group">
+                    <label>عنوان واسم المرسل (Sender Email & Name)</label>
+                    <input type="text" id="setting-smtp-sender" value="${state.adminConfig?.smtp_sender || 'KAIRO/منهوا <noreply@kairo-manhua.com>'}" placeholder="KAIRO/منهوا &lt;noreply@kairo-manhua.com&gt;" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                </div>
+                
+                <button type="submit" class="admin-submit-btn">حفظ الإعدادات وتطبيقها</button>
+            </form>
+        </div>
     </div>
     `;
 }
@@ -1992,7 +2335,7 @@ function BookmarksViewComponent() {
             listHtml += `
             <div class="manga-card" data-id="${manga.id}">
                 <div class="manga-card-cover">
-                    <img src="${manga.cover}" alt="${manga.title}" loading="lazy">
+                    <img src="${getDisplayCover(manga)}" alt="${manga.title}" loading="lazy">
                     <span class="card-badge" style="background:var(--color-primary);">${statusText}</span>
                     <span class="card-rating"><i class="fa-solid fa-star"></i> ${manga.rating}</span>
                 </div>
@@ -2082,6 +2425,29 @@ async function DownloadsViewComponent() {
     `;
 }
 
+function ResetPasswordViewComponent() {
+    return `
+    <div class="reset-password-wrapper" style="max-width: 450px; margin: 60px auto; padding: 30px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); text-align: right; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);">
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; border-right: 4px solid var(--color-secondary); padding-right: 12px;"><i class="fa-solid fa-lock" style="color:var(--color-secondary); margin-left: 6px;"></i> استعادة كلمة المرور</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px;">الرجاء إدخال كلمة المرور الجديدة لحسابك.</p>
+        
+        <form id="reset-password-form" style="display: flex; flex-direction: column; gap: 16px;">
+            <div class="form-group" style="text-align: right;">
+                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">كلمة المرور الجديدة</label>
+                <input type="password" id="reset-new-pass" required placeholder="********" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
+            </div>
+            <div class="form-group" style="text-align: right;">
+                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">تأكيد كلمة المرور الجديدة</label>
+                <input type="password" id="reset-confirm-pass" required placeholder="********" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
+            </div>
+            <div id="reset-error-msg" class="auth-error-msg" style="display:none; margin-bottom: 8px; color: var(--color-accent); font-weight: 700;"></div>
+            <div id="reset-success-msg" class="auth-success-msg" style="display:none; margin-bottom: 8px; color: #00ff7f; font-weight: 700;"></div>
+            <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%;">تحديث كلمة المرور</button>
+        </form>
+    </div>
+    `;
+}
+
 // تجميع وتصيير التطبيق بالكامل
 async function renderApp() {
     const root = document.getElementById('app');
@@ -2142,6 +2508,9 @@ async function renderApp() {
     } else if (state.currentView === 'history') {
         viewHtml = HistoryViewComponent();
         if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'reset-password') {
+        viewHtml = ResetPasswordViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
     }
 
     // 3. بناء وتصيير الهيكل الأساسي للواجهة
@@ -2156,7 +2525,7 @@ async function renderApp() {
         root.innerHTML = `
         <div id="app-root">
             ${HeaderComponent()}
-            <main class="main-content">
+            <main class="main-content page-fade-in">
                 ${viewHtml}
             </main>
             ${AuthModalComponent()}
@@ -2186,6 +2555,8 @@ async function handleGoogleLogin(response) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
             state.userRole = result.role;
+            if (result.points !== undefined) state.userProfile.points = result.points;
+            if (result.level !== undefined) state.userProfile.level = result.level;
             state.saveUserProfile();
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
@@ -2212,6 +2583,8 @@ async function verifyGoogleAccessToken(accessToken) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
             state.userRole = result.role;
+            if (result.points !== undefined) state.userProfile.points = result.points;
+            if (result.level !== undefined) state.userProfile.level = result.level;
             state.saveUserProfile();
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
@@ -2238,6 +2611,8 @@ async function verifyFacebookAccessToken(accessToken) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
             state.userRole = result.role;
+            if (result.points !== undefined) state.userProfile.points = result.points;
+            if (result.level !== undefined) state.userProfile.level = result.level;
             state.saveUserProfile();
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
@@ -2269,7 +2644,8 @@ function handleFacebookLoginClick() {
 
 function initSocialAuths() {
     // 1. تهيئة Google Sign-In & One Tap
-    if (typeof google !== 'undefined') {
+    googleTokenClient = null;
+    if (isUsableGoogleClientId() && typeof google !== 'undefined') {
         try {
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
@@ -2299,6 +2675,7 @@ function initSocialAuths() {
 
     // 2. تهيئة Facebook SDK وتحميلها تلقائياً
     window.fbAsyncInit = function() {
+        if (!isUsableFacebookAppId()) return;
         try {
             FB.init({
                 appId      : FACEBOOK_APP_ID,
@@ -2312,6 +2689,7 @@ function initSocialAuths() {
     };
     
     (function(d, s, id) {
+        if (!isUsableFacebookAppId()) return;
         var js, fjs = d.getElementsByTagName(s)[0];
         if (d.getElementById(id)) return;
         js = d.createElement(s); js.id = id;
@@ -2524,19 +2902,35 @@ function attachEventListeners() {
     });
 
     // صفحة التفاصيل: حجز المفضلة
-    const favSelector = document.querySelector('.select-bookmark-status');
-    if (favSelector) {
-        favSelector.onchange = (e) => {
-            const mangaId = e.target.dataset.id;
-            const status = e.target.value;
-            state.bookmarks[mangaId] = status;
-            if (status === '') {
-                delete state.bookmarks[mangaId];
-            }
-            state.saveBookmarks();
-            renderApp();
+    const bookmarkPickers = document.querySelectorAll('.bookmark-picker');
+    bookmarkPickers.forEach(picker => {
+        const toggle = picker.querySelector('.bookmark-picker-toggle');
+        const menu = picker.querySelector('.bookmark-picker-menu');
+        if (!toggle || !menu) return;
+
+        toggle.onclick = (e) => {
+            e.stopPropagation();
+            const isOpen = picker.classList.toggle('open');
+            toggle.setAttribute('aria-expanded', String(isOpen));
+            document.querySelectorAll('.bookmark-picker.open').forEach(other => {
+                if (other !== picker) {
+                    other.classList.remove('open');
+                    const otherToggle = other.querySelector('.bookmark-picker-toggle');
+                    if (otherToggle) otherToggle.setAttribute('aria-expanded', 'false');
+                }
+            });
         };
-    }
+
+        menu.querySelectorAll('.bookmark-option').forEach(option => {
+            option.onclick = (e) => {
+                e.stopPropagation();
+                setBookmarkStatus(picker.dataset.id, option.dataset.status || '');
+                picker.classList.remove('open');
+                toggle.setAttribute('aria-expanded', 'false');
+                renderApp();
+            };
+        });
+    });
 
     // صفحة التفاصيل: الضغط على قراءة أول فصل
     const startReadingBtn = document.querySelector('.start-reading-btn');
@@ -2818,37 +3212,72 @@ function attachEventListeners() {
         };
     }
 
-    // القارئ: إرسال تعليق
-    const commentForm = document.getElementById('comment-form');
-    if (commentForm) {
-        commentForm.onsubmit = (e) => {
-            e.preventDefault();
-            const user = document.getElementById('comment-user').value;
-            const text = document.getElementById('comment-text').value;
-            state.addComment(state.activeMangaId, state.activeChapterId, user, text);
-            renderApp();
+    // الإدارة: تبديل التبويبات وتفعيل التبويب المختار
+    const tabAddManga = document.getElementById('tab-add-manga');
+    const tabAddChapter = document.getElementById('tab-add-chapter');
+    const tabSuggestions = document.getElementById('tab-suggestions');
+    const tabSiteSettings = document.getElementById('tab-site-settings');
+
+    const panelManga = document.getElementById('panel-add-manga');
+    const panelChapter = document.getElementById('panel-add-chapter');
+    const panelSuggestions = document.getElementById('panel-suggestions');
+    const panelSiteSettings = document.getElementById('panel-site-settings');
+
+    if (tabAddManga) {
+        tabAddManga.onclick = () => {
+            tabAddManga.classList.add('active');
+            if (tabAddChapter) tabAddChapter.classList.remove('active');
+            if (tabSuggestions) tabSuggestions.classList.remove('active');
+            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
+            
+            if (panelManga) panelManga.style.display = 'block';
+            if (panelChapter) panelChapter.style.display = 'none';
+            if (panelSuggestions) panelSuggestions.style.display = 'none';
+            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
         };
     }
 
-    // الإدارة: تبديل التبويبات
-    const tabAddManga = document.getElementById('tab-add-manga');
-    const tabAddChapter = document.getElementById('tab-add-chapter');
-    const panelManga = document.getElementById('panel-add-manga');
-    const panelChapter = document.getElementById('panel-add-chapter');
-
-    if (tabAddManga && tabAddChapter) {
-        tabAddManga.onclick = () => {
-            tabAddManga.classList.add('active');
-            tabAddChapter.classList.remove('active');
-            panelManga.style.display = 'block';
-            panelChapter.style.display = 'none';
-        };
-
+    if (tabAddChapter) {
         tabAddChapter.onclick = () => {
             tabAddChapter.classList.add('active');
-            tabAddManga.classList.remove('active');
-            panelChapter.style.display = 'block';
-            panelManga.style.display = 'none';
+            if (tabAddManga) tabAddManga.classList.remove('active');
+            if (tabSuggestions) tabSuggestions.classList.remove('active');
+            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
+            
+            if (panelChapter) panelChapter.style.display = 'block';
+            if (panelManga) panelManga.style.display = 'none';
+            if (panelSuggestions) panelSuggestions.style.display = 'none';
+            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
+        };
+    }
+
+    if (tabSuggestions) {
+        tabSuggestions.onclick = () => {
+            tabSuggestions.classList.add('active');
+            if (tabAddManga) tabAddManga.classList.remove('active');
+            if (tabAddChapter) tabAddChapter.classList.remove('active');
+            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
+            
+            if (panelSuggestions) panelSuggestions.style.display = 'block';
+            if (panelManga) panelManga.style.display = 'none';
+            if (panelChapter) panelChapter.style.display = 'none';
+            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
+            loadAdminSuggestions();
+        };
+    }
+
+    if (tabSiteSettings) {
+        tabSiteSettings.onclick = () => {
+            tabSiteSettings.classList.add('active');
+            if (tabAddManga) tabAddManga.classList.remove('active');
+            if (tabAddChapter) tabAddChapter.classList.remove('active');
+            if (tabSuggestions) tabSuggestions.classList.remove('active');
+            
+            if (panelSiteSettings) panelSiteSettings.style.display = 'block';
+            if (panelManga) panelManga.style.display = 'none';
+            if (panelChapter) panelChapter.style.display = 'none';
+            if (panelSuggestions) panelSuggestions.style.display = 'none';
+            loadAdminConfig();
         };
     }
 
@@ -3025,6 +3454,10 @@ function attachEventListeners() {
     const googleLoginBtn = document.getElementById('google-login-btn');
     if (googleLoginBtn) {
         googleLoginBtn.onclick = () => {
+            if (!isUsableGoogleClientId()) {
+                alert("⚠️ لم يتم تكوين Google Client ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بجوجل.");
+                return;
+            }
             if (typeof google !== 'undefined' && googleTokenClient) {
                 googleTokenClient.requestAccessToken();
             } else {
@@ -3036,6 +3469,10 @@ function attachEventListeners() {
     const facebookLoginBtn = document.getElementById('facebook-login-btn');
     if (facebookLoginBtn) {
         facebookLoginBtn.onclick = () => {
+            if (!isUsableFacebookAppId()) {
+                alert("⚠️ لم يتم تكوين Facebook App ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بفيسبوك.");
+                return;
+            }
             handleFacebookLoginClick();
         };
     }
@@ -3046,6 +3483,106 @@ function attachEventListeners() {
             if (e.target === sugOverlay) {
                 state.showSuggestionsModal = false;
                 renderApp();
+            }
+        };
+    }
+
+    const forgotTrigger = document.getElementById('forgot-password-trigger');
+    if (forgotTrigger) {
+        forgotTrigger.onclick = () => {
+            state.authModalTab = 'forgot';
+            renderApp();
+        };
+    }
+
+    const backToLoginBtn = document.getElementById('back-to-login-btn');
+    if (backToLoginBtn) {
+        backToLoginBtn.onclick = () => {
+            state.authModalTab = 'login';
+            renderApp();
+        };
+    }
+
+    const forgotPasswordForm = document.getElementById('forgot-password-form');
+    if (forgotPasswordForm) {
+        forgotPasswordForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value;
+            const errorMsg = document.getElementById('forgot-error-msg');
+            const successMsg = document.getElementById('forgot-success-msg');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    successMsg.innerText = result.message || 'تم إرسال رابط استعادة كلمة المرور!';
+                    successMsg.style.display = 'block';
+                } else {
+                    errorMsg.innerText = result.error || 'فشل إرسال الطلب';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.style.display = 'block';
+            }
+        };
+    }
+
+    const resetPasswordForm = document.getElementById('reset-password-form');
+    if (resetPasswordForm) {
+        resetPasswordForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const newPass = document.getElementById('reset-new-pass').value;
+            const confirmPass = document.getElementById('reset-confirm-pass').value;
+            const errorMsg = document.getElementById('reset-error-msg');
+            const successMsg = document.getElementById('reset-success-msg');
+            
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+            
+            if (newPass.length < 6) {
+                errorMsg.innerText = 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            if (newPass !== confirmPass) {
+                errorMsg.innerText = 'كلمتا المرور غير متطابقتين';
+                errorMsg.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        token: state.resetPasswordToken,
+                        password: newPass
+                    })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    successMsg.innerText = 'تم تحديث كلمة المرور بنجاح! سيتم توجيهك الآن لتسجيل الدخول.';
+                    successMsg.style.display = 'block';
+                    setTimeout(() => {
+                        state.showAuthModal = true;
+                        state.authModalTab = 'login';
+                        navigate('home');
+                    }, 2000);
+                } else {
+                    errorMsg.innerText = result.error || 'فشل تحديث كلمة المرور';
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.style.display = 'block';
             }
         };
     }
@@ -3076,6 +3613,8 @@ function attachEventListeners() {
                         state.sessionToken = result.token;
                         state.userEmail = result.email;
                         state.userRole = result.role;
+                        if (result.points !== undefined) state.userProfile.points = result.points;
+                        if (result.level !== undefined) state.userProfile.level = result.level;
                         state.saveUserProfile();
                         successMsg.innerText = 'تم تسجيل الدخول بنجاح!';
                         successMsg.style.display = 'block';
@@ -3215,18 +3754,58 @@ function attachEventListeners() {
         };
     }
 
-    // الإدارة: تبويب الشكاوى والاقتراحات
-    const tabSuggestions = document.getElementById('tab-suggestions');
-    const panelSuggestions = document.getElementById('panel-suggestions');
-    if (tabSuggestions) {
-        tabSuggestions.onclick = () => {
-            tabSuggestions.classList.add('active');
-            if (tabAddManga) tabAddManga.classList.remove('active');
-            if (tabAddChapter) tabAddChapter.classList.remove('active');
-            if (panelSuggestions) panelSuggestions.style.display = 'block';
-            if (panelManga) panelManga.style.display = 'none';
-            if (panelChapter) panelChapter.style.display = 'none';
-            loadAdminSuggestions();
+    // الإدارة: حفظ إعدادات الموقع ديناميكياً
+    const siteSettingsForm = document.getElementById('site-settings-form');
+    if (siteSettingsForm) {
+        siteSettingsForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const googleId = document.getElementById('setting-google-id')?.value.trim() || '';
+            const facebookId = document.getElementById('setting-facebook-id')?.value.trim() || '';
+            const smtpHost = document.getElementById('setting-smtp-host')?.value.trim() || '';
+            const smtpPort = document.getElementById('setting-smtp-port')?.value.trim() || '';
+            const smtpUser = document.getElementById('setting-smtp-user')?.value.trim() || '';
+            const smtpPass = document.getElementById('setting-smtp-pass')?.value.trim() || '';
+            const smtpSender = document.getElementById('setting-smtp-sender')?.value.trim() || '';
+            
+            try {
+                const response = await fetch('/api/admin/config', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.sessionToken}`
+                    },
+                    body: JSON.stringify({
+                        google_client_id: googleId,
+                        facebook_app_id: facebookId,
+                        smtp_host: smtpHost,
+                        smtp_port: smtpPort,
+                        smtp_user: smtpUser,
+                        smtp_pass: smtpPass,
+                        smtp_sender: smtpSender
+                    })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    GOOGLE_CLIENT_ID = googleId;
+                    FACEBOOK_APP_ID = facebookId;
+                    state.adminConfig = {
+                        google_client_id: googleId,
+                        facebook_app_id: facebookId,
+                        smtp_host: smtpHost,
+                        smtp_port: smtpPort,
+                        smtp_user: smtpUser,
+                        smtp_pass: smtpPass,
+                        smtp_sender: smtpSender
+                    };
+                    alert("تم حفظ إعدادات الموقع بنجاح!");
+                    initSocialAuths();
+                    renderApp();
+                } else {
+                    alert(result.error || "فشل حفظ الإعدادات");
+                }
+            } catch (err) {
+                alert("خطأ في الاتصال بالخادم أثناء حفظ الإعدادات");
+            }
         };
     }
 }
@@ -3235,92 +3814,70 @@ function attachEventListeners() {
 // 6. تشغيل القارئ والتحميل الكسول
 // ==========================================
 
+function loadSingleImage(container, src) {
+    var retries = parseInt(container.dataset.retries || '0', 10);
+    if (retries >= 2) {
+        showImageError(container, src, true);
+        return;
+    }
+    var img = document.createElement('img');
+    img.src = src;
+    img.onload = function() {
+        container.innerHTML = '';
+        container.appendChild(img);
+    };
+    img.onerror = function() {
+        container.dataset.retries = String(retries + 1);
+        if (src && src.startsWith('/proxy-image?url=')) {
+            var originalUrl = decodeURIComponent(src.split('?url=')[1]);
+            loadSingleImage(container, originalUrl);
+        } else {
+            showImageError(container, src, false);
+        }
+    };
+}
+
+function showImageError(container, src, exhausted) {
+    container.innerHTML = '<div class="reader-image-error" style="padding:40px 20px;text-align:center;color:var(--color-accent);display:flex;flex-direction:column;align-items:center;gap:8px;">' +
+        '<i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:8px;"></i>' +
+        '<p style="font-weight:700;">' + (exhausted ? 'تعذر تحميل الصورة بعد عدة محاولات' : 'فشل تحميل هذه الصفحة') + '</p>' +
+        (exhausted ? '' : '<button class="retry-btn" style="background:var(--color-primary);color:white;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;">إعادة المحاولة</button>') +
+        '</div>';
+    var retryBtn = container.querySelector('.retry-btn');
+    if (retryBtn) {
+        retryBtn.onclick = function(e) {
+            e.stopPropagation();
+            container.innerHTML = '<div class="reader-image-placeholder">' +
+                '<i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>' +
+                '<span>جاري إعادة تحميل الصفحة...</span></div>';
+            var retrySrc = src;
+            if (src.includes('/proxy-image')) {
+                retrySrc = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+            }
+            container.dataset.retries = '0';
+            loadSingleImage(container, retrySrc);
+        };
+    }
+}
+
 function initLazyLoading() {
-    const containers = document.querySelectorAll('.lazy-load-container');
+    var containers = document.querySelectorAll('.lazy-load-container');
     if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
                 if (entry.isIntersecting) {
-                    const container = entry.target;
-                    const src = container.dataset.src;
-                    
-                    const img = document.createElement('img');
-                    img.src = src;
-                    img.onload = () => {
-                        container.innerHTML = '';
-                        container.appendChild(img);
-                    };
-                    img.onerror = () => {
-                        if (src && src.startsWith('/proxy-image?url=')) {
-                            const originalUrl = decodeURIComponent(src.split('?url=')[1]);
-                            console.warn("Proxy failed, trying direct load for:", originalUrl);
-                            img.src = originalUrl;
-                        } else {
-                            container.innerHTML = `
-                            <div class="reader-image-error" style="padding: 40px 20px; text-align: center; color: var(--color-accent); display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; margin-bottom:8px;"></i>
-                                <p style="font-weight: 700;">فشل تحميل هذه الصفحة</p>
-                                <button class="retry-btn" style="background: var(--color-primary); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: var(--font-family); font-weight: 700; transition: all 0.2s;">إعادة المحاولة</button>
-                            </div>`;
-                            const retryBtn = container.querySelector('.retry-btn');
-                            if (retryBtn) {
-                                retryBtn.onclick = (e) => {
-                                    e.stopPropagation();
-                                    container.innerHTML = `
-                                    <div class="reader-image-placeholder">
-                                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
-                                        <span>جاري إعادة تحميل الصفحة...</span>
-                                    </div>`;
-                                    const retryImg = document.createElement('img');
-                                    retryImg.src = src;
-                                    retryImg.onload = () => {
-                                        container.innerHTML = '';
-                                        container.appendChild(retryImg);
-                                    };
-                                    retryImg.onerror = () => {
-                                        if (src && src.startsWith('/proxy-image?url=')) {
-                                            const originalUrl = decodeURIComponent(src.split('?url=')[1]);
-                                            retryImg.src = originalUrl;
-                                        } else {
-                                            container.innerHTML = `
-                                            <div class="reader-image-error" style="padding: 40px 20px; text-align: center; color: var(--color-accent); display: flex; flex-direction: column; align-items: center; gap: 8px;">
-                                                <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; margin-bottom:8px;"></i>
-                                                <p style="font-weight: 700;">فشل التحميل. حاول مجدداً</p>
-                                                <button class="retry-btn-final" style="background: var(--color-primary); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: var(--font-family); font-weight: 700;">إعادة محاولة أخيرة</button>
-                                            </div>`;
-                                            const retryFinal = container.querySelector('.retry-btn-final');
-                                            if (retryFinal) {
-                                                retryFinal.onclick = () => {
-                                                    retryImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
-                                                };
-                                            }
-                                        }
-                                    };
-                                };
-                            }
-                        }
-                    };
+                    var container = entry.target;
+                    var src = container.dataset.src;
+                    loadSingleImage(container, src);
                     observer.unobserve(container);
                 }
             });
         }, { rootMargin: '400px' });
-
-        containers.forEach(c => observer.observe(c));
+        containers.forEach(function(c) { observer.observe(c); });
     } else {
-        containers.forEach(container => {
-            const src = container.dataset.src;
-            const img = document.createElement('img');
-            img.src = src;
-            img.onload = () => {
-                container.innerHTML = '';
-                container.appendChild(img);
-            };
-            img.onerror = () => {
-                if (src && src.startsWith('/proxy-image?url=')) {
-                    const originalUrl = decodeURIComponent(src.split('?url=')[1]);
-                    img.src = originalUrl;
-                }
-            };
+        containers.forEach(function(container) {
+            var src = container.dataset.src;
+            loadSingleImage(container, src);
         });
     }
 }
@@ -3412,8 +3969,33 @@ async function loadAdminSuggestions() {
     }
 }
 
+async function loadAdminConfig() {
+    if (!state.sessionToken) return;
+    try {
+        const response = await fetch('/api/admin/config', {
+            headers: {
+                'Authorization': `Bearer ${state.sessionToken}`
+            }
+        });
+        if (response.ok) {
+            state.adminConfig = await response.json();
+            renderApp();
+        }
+    } catch (e) {
+        console.error("Error loading admin config:", e);
+    }
+}
+
 // إغلاق مقترحات البحث عند النقر خارج صندوق البحث
 document.addEventListener('click', (e) => {
+    document.querySelectorAll('.bookmark-picker.open').forEach(picker => {
+        if (!picker.contains(e.target)) {
+            picker.classList.remove('open');
+            const toggle = picker.querySelector('.bookmark-picker-toggle');
+            if (toggle) toggle.setAttribute('aria-expanded', 'false');
+        }
+    });
+
     const searchBox = document.querySelector('.search-box');
     if (searchBox && !searchBox.contains(e.target)) {
         if (state.showSearchSuggestions) {
@@ -3423,13 +4005,24 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// تشغيل التطبيق
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        initSocialAuths();
-        handleRouting();
-    });
-} else {
+async function bootstrapConfig() {
+    try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+            const config = await res.json();
+            if (config.google_client_id) GOOGLE_CLIENT_ID = config.google_client_id;
+            if (config.facebook_app_id) FACEBOOK_APP_ID = config.facebook_app_id;
+        }
+    } catch (e) {
+        console.error("Failed to bootstrap public configurations:", e);
+    }
     initSocialAuths();
     handleRouting();
+}
+
+// تشغيل التطبيق
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootstrapConfig);
+} else {
+    bootstrapConfig();
 }
