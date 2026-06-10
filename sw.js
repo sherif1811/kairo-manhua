@@ -38,6 +38,8 @@ self.addEventListener('activate', event => {
 
 // Fetch: Cache First for static, Network First for API, Cache First for images
 self.addEventListener('fetch', event => {
+    // Skip non-HTTP(S) requests (chrome-extension, file, data, etc.)
+    if (!event.request.url.startsWith('http')) return;
     const url = new URL(event.request.url);
     const isStaticAsset = STATIC_ASSETS.includes(url.pathname);
     const isCDN = CDN_ORIGINS.some(o => event.request.url.startsWith(o));
