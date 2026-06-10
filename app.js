@@ -749,29 +749,67 @@ const state = new AppState();
 // ==========================================
 
 function navigate(view, mangaId = null, chapterId = null) {
-    state.currentView = view;
-    state.activeMangaId = mangaId;
-    state.activeChapterId = chapterId;
+    let hash = '';
+    if (view === 'home') {
+        hash = '#/';
+    } else if (view === 'detail') {
+        hash = `#/manga/${mangaId}`;
+    } else if (view === 'reader') {
+        hash = `#/reader/${mangaId}/${chapterId}`;
+    } else {
+        hash = `#/${view}`;
+    }
+    window.location.hash = hash;
+}
+
+function handleRouting() {
+    const hash = window.location.hash || '#/';
+    
+    if (hash === '#/' || hash === '#/home' || hash === '') {
+        state.currentView = 'home';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/manga/')) {
+        const parts = hash.split('#/manga/');
+        const mangaId = parts[1];
+        state.currentView = 'detail';
+        state.activeMangaId = mangaId;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/reader/')) {
+        const parts = hash.split('/');
+        const mangaId = parts[2];
+        const chapterId = parts[3];
+        state.currentView = 'reader';
+        state.activeMangaId = mangaId;
+        state.activeChapterId = chapterId;
+    } else {
+        const view = hash.replace('#/', '');
+        state.currentView = view;
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    }
     
     state.activePageIndex = 0;
     state.chapterSearchQuery = '';
     
-    if (view === 'reader') {
+    if (state.currentView === 'reader') {
         state.isLoading = false;
         window.scrollTo(0, 0);
         renderApp();
-        return;
-    }
-    
-    state.isLoading = true;
-    window.scrollTo(0, 0);
-    renderApp();
-
-    setTimeout(() => {
-        state.isLoading = false;
+    } else {
+        state.isLoading = true;
+        window.scrollTo(0, 0);
         renderApp();
-    }, 600);
+        
+        setTimeout(() => {
+            state.isLoading = false;
+            renderApp();
+        }, 600);
+    }
 }
+
+// استماع لتغيرات الهاش في المتصفح للتنقل
+window.addEventListener('hashchange', handleRouting);
 
 function getProxiedImageUrl(url) {
     if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
@@ -2336,7 +2374,7 @@ function attachEventListeners() {
             state.searchQuery = e.target.value;
             state.showSearchSuggestions = e.target.value.trim() !== '';
             if (state.currentView !== 'home') {
-                state.currentView = 'home';
+                navigate('home');
             }
             renderApp();
             
@@ -3212,10 +3250,60 @@ function initLazyLoading() {
                         container.innerHTML = '';
                         container.appendChild(img);
                     };
+                    img.onerror = () => {
+                        if (src && src.startsWith('/proxy-image?url=')) {
+                            const originalUrl = decodeURIComponent(src.split('?url=')[1]);
+                            console.warn("Proxy failed, trying direct load for:", originalUrl);
+                            img.src = originalUrl;
+                        } else {
+                            container.innerHTML = `
+                            <div class="reader-image-error" style="padding: 40px 20px; text-align: center; color: var(--color-accent); display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; margin-bottom:8px;"></i>
+                                <p style="font-weight: 700;">فشل تحميل هذه الصفحة</p>
+                                <button class="retry-btn" style="background: var(--color-primary); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: var(--font-family); font-weight: 700; transition: all 0.2s;">إعادة المحاولة</button>
+                            </div>`;
+                            const retryBtn = container.querySelector('.retry-btn');
+                            if (retryBtn) {
+                                retryBtn.onclick = (e) => {
+                                    e.stopPropagation();
+                                    container.innerHTML = `
+                                    <div class="reader-image-placeholder">
+                                        <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
+                                        <span>جاري إعادة تحميل الصفحة...</span>
+                                    </div>`;
+                                    const retryImg = document.createElement('img');
+                                    retryImg.src = src;
+                                    retryImg.onload = () => {
+                                        container.innerHTML = '';
+                                        container.appendChild(retryImg);
+                                    };
+                                    retryImg.onerror = () => {
+                                        if (src && src.startsWith('/proxy-image?url=')) {
+                                            const originalUrl = decodeURIComponent(src.split('?url=')[1]);
+                                            retryImg.src = originalUrl;
+                                        } else {
+                                            container.innerHTML = `
+                                            <div class="reader-image-error" style="padding: 40px 20px; text-align: center; color: var(--color-accent); display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                                                <i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem; margin-bottom:8px;"></i>
+                                                <p style="font-weight: 700;">فشل التحميل. حاول مجدداً</p>
+                                                <button class="retry-btn-final" style="background: var(--color-primary); color: white; border: none; padding: 8px 18px; border-radius: 20px; cursor: pointer; font-family: var(--font-family); font-weight: 700;">إعادة محاولة أخيرة</button>
+                                            </div>`;
+                                            const retryFinal = container.querySelector('.retry-btn-final');
+                                            if (retryFinal) {
+                                                retryFinal.onclick = () => {
+                                                    retryImg.src = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
+                                                };
+                                            }
+                                        }
+                                    };
+                                };
+                            }
+                        }
+                    };
                     observer.unobserve(container);
                 }
             });
-        }, { rootMargin: '300px' });
+        }, { rootMargin: '400px' });
 
         containers.forEach(c => observer.observe(c));
     } else {
@@ -3223,8 +3311,16 @@ function initLazyLoading() {
             const src = container.dataset.src;
             const img = document.createElement('img');
             img.src = src;
-            container.innerHTML = '';
-            container.appendChild(img);
+            img.onload = () => {
+                container.innerHTML = '';
+                container.appendChild(img);
+            };
+            img.onerror = () => {
+                if (src && src.startsWith('/proxy-image?url=')) {
+                    const originalUrl = decodeURIComponent(src.split('?url=')[1]);
+                    img.src = originalUrl;
+                }
+            };
         });
     }
 }
@@ -3331,9 +3427,9 @@ document.addEventListener('click', (e) => {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         initSocialAuths();
-        renderApp();
+        handleRouting();
     });
 } else {
     initSocialAuths();
-    renderApp();
+    handleRouting();
 }

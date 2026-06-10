@@ -1019,6 +1019,87 @@ body {
 }
 
 /* ==========================================
+   تفاصيل المانجا - المظهر الاحترافي لسطح المكتب (Manga Details Desktop Layout)
+   ========================================== */
+.manga-detail-wrapper {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.detail-banner {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+    overflow: hidden;
+}
+
+.detail-banner-blur {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(7, 8, 12, 0.2), var(--bg-base));
+}
+
+.detail-main {
+    display: flex;
+    gap: 40px;
+    padding: 0 6%;
+    margin-top: -160px; /* pull cover up over the banner */
+    position: relative;
+    z-index: 10;
+    direction: rtl; /* RTL alignment */
+}
+
+.detail-sidebar {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-content {
+    flex: 1;
+    padding-top: 170px; /* align with sidebar content top */
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.detail-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.detail-author {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.detail-meta-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin: 10px 0;
+}
+
+.meta-item {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+/* ==========================================
    التجاوب المعدل للموبايل والشاشات
 ========================================== */
 
