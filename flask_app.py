@@ -82,6 +82,15 @@ def init_db():
                     comment_text TEXT,
                     created_at REAL
                  )''')
+    c.execute('''CREATE TABLE IF NOT EXISTS site_stats (
+                    key TEXT PRIMARY KEY,
+                    value INTEGER DEFAULT 0
+                 )''')
+    c.execute("INSERT OR IGNORE INTO site_stats VALUES ('visits', 0)")
+    try:
+        c.execute("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'email'")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
 
@@ -153,6 +162,14 @@ def options_handler(path=''):
 # ============================================================
 @app.route('/')
 def index():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("UPDATE site_stats SET value = value + 1 WHERE key = 'visits'")
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Error incrementing visits:", e)
     return send_from_directory(BASE_DIR, 'index.html')
 
 @app.route('/<path:filename>')
@@ -177,7 +194,7 @@ def register():
         return jsonify({"error": "هذا البريد الإلكتروني مسجل بالفعل"}), 400
     role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
     password_hash = hash_password(password)
-    c.execute('INSERT INTO users VALUES (?, ?, ?)', (email, password_hash, role))
+    c.execute('INSERT INTO users (email, password_hash, role, provider) VALUES (?, ?, ?, ?)', (email, password_hash, role, 'email'))
     conn.commit()
     conn.close()
     return jsonify({"status": "success", "message": "تم التسجيل بنجاح"}), 200
@@ -277,7 +294,7 @@ def auth_google():
         random_pass = secrets.token_hex(16)
         password_hash = hash_password(random_pass)
         role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
-        c.execute('INSERT INTO users VALUES (?, ?, ?)', (email, password_hash, role))
+        c.execute('INSERT INTO users (email, password_hash, role, provider) VALUES (?, ?, ?, ?)', (email, password_hash, role, 'google'))
         conn.commit()
         user_role = role
     else:
@@ -326,7 +343,7 @@ def auth_facebook():
         random_pass = secrets.token_hex(16)
         password_hash = hash_password(random_pass)
         role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
-        c.execute('INSERT INTO users VALUES (?, ?, ?)', (email, password_hash, role))
+        c.execute('INSERT INTO users (email, password_hash, role, provider) VALUES (?, ?, ?, ?)', (email, password_hash, role, 'facebook'))
         conn.commit()
         user_role = role
     else:
@@ -343,6 +360,43 @@ def auth_facebook():
     conn.close()
     
     return jsonify({"status": "success", "token": token, "email": email, "role": user_role}), 200
+
+@app.route('/api/admin/stats', methods=['GET'])
+def get_admin_stats():
+    user = get_session_user()
+    if not user or user['role'] != 'admin':
+        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    
+    # Visits
+    c.execute("SELECT value FROM site_stats WHERE key = 'visits'")
+    visits_row = c.fetchone()
+    visits = visits_row[0] if visits_row else 0
+    
+    # User counts by provider
+    c.execute("SELECT provider, COUNT(*) FROM users GROUP BY provider")
+    rows = c.fetchall()
+    
+    stats = {
+        "visits": visits,
+        "total_users": 0,
+        "email": 0,
+        "google": 0,
+        "facebook": 0
+    }
+    
+    for provider, count in rows:
+        if provider in stats:
+            stats[provider] = count
+            
+    # Calculate total users
+    c.execute("SELECT COUNT(*) FROM users")
+    stats["total_users"] = c.fetchone()[0]
+    
+    conn.close()
+    return jsonify(stats), 200
 
 # ============================================================
 # SETTINGS

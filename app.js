@@ -287,9 +287,10 @@ class AppState {
         this.chapterSearchQuery = '';
         this.activeGenre = 'الكل';
         this.downloadProgress = {};
-        this.isLoading = false;
         this.showAuthModal = false;
         this.authModalTab = 'login';
+        this.adminStats = null;
+        this.adminStatsLoading = false;
         this.loadScrapedMangas();
         
         if (this.sessionToken) {
@@ -1758,6 +1759,10 @@ async function ReaderViewComponent() {
 
 // لوحة الإدارة
 function AdminPanelViewComponent() {
+    if (!state.adminStats) {
+        loadAdminStats();
+    }
+
     let mangaOptions = '';
     state.mangas.forEach(m => {
         mangaOptions += `<option value="${m.id}">${m.title}</option>`;
@@ -1767,6 +1772,33 @@ function AdminPanelViewComponent() {
     <div class="admin-container">
         <h2 class="admin-title">لوحة التحكم والإدارة للموقع <span>(KAIRO/منهوا)</span></h2>
         
+        <!-- لوحة الإحصائيات الحيوية -->
+        <div class="admin-stats-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px;">
+            ${state.adminStats ? `
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-eye" style="color: var(--color-secondary); margin-left: 6px;"></i> زيارات الموقع الكلية</span>
+                    <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.visits}</strong>
+                </div>
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-users" style="color: var(--color-primary); margin-left: 6px;"></i> إجمالي المشتركين</span>
+                    <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.total_users}</strong>
+                </div>
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-google" style="color: #ea4335; margin-left: 6px;"></i> التسجيل بـ Google</span>
+                    <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.google}</strong>
+                </div>
+                <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-facebook" style="color: #1877f2; margin-left: 6px;"></i> التسجيل بـ Facebook</span>
+                    <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.facebook}</strong>
+                </div>
+            ` : `
+                <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
+                <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
+                <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
+                <div class="stat-card glass-card skeleton-shimmer" style="height: 80px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.01); animation: shimmer 1.5s infinite;"></div>
+            `}
+        </div>
+
         <div class="admin-tabs">
             <button class="admin-tab active" id="tab-add-manga">إضافة مانجا/منهوا جديدة</button>
             <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
@@ -3134,6 +3166,26 @@ function initProgressTracker() {
             state.saveReadingProgress(state.activeMangaId, state.activeChapterId, winScroll, scrolled);
         }
     };
+}
+
+async function loadAdminStats() {
+    if (state.adminStatsLoading || state.adminStats) return;
+    state.adminStatsLoading = true;
+    try {
+        const response = await fetch('/api/admin/stats', {
+            headers: {
+                'Authorization': `Bearer ${state.sessionToken}`
+            }
+        });
+        if (response.ok) {
+            state.adminStats = await response.json();
+            renderApp();
+        }
+    } catch (e) {
+        console.error("Error loading admin stats:", e);
+    } finally {
+        state.adminStatsLoading = false;
+    }
 }
 
 async function loadAdminSuggestions() {
