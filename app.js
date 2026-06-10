@@ -1073,7 +1073,7 @@ function prefetchNextChapter(images) {
 function HeaderComponent() {
     const activeView = state.currentView;
     const isAdmin = state.userRole === 'admin';
-    const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-screwdriver-wrench"></i> الإدارة</button>` : '';
+    const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-sliders"></i> الإدارة</button>` : '';
 
     let accountButton = '';
     if (state.sessionToken) {
@@ -1134,8 +1134,8 @@ function HeaderComponent() {
         <a class="header-logo" id="logo-btn">KAIRO<span>/منهوا</span></a>
         
         <nav class="header-nav">
-            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home"><i class="fa-solid fa-house"></i> الرئيسة</span>
-            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks"><i class="fa-solid fa-bookmark"></i> المفضلة</span>
+            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home"><i class="fa-solid fa-house-chimney"></i> الرئيسة</span>
+            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks"><i class="fa-solid fa-heart"></i> المفضلة</span>
             <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads"><i class="fa-solid fa-circle-down"></i> المحملة</span>
             <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history"><i class="fa-solid fa-clock-rotate-left"></i> السجل</span>
             <span class="nav-link" id="open-suggestions-btn"><i class="fa-solid fa-comments"></i> الاقتراحات والشكاوى</span>
@@ -1812,7 +1812,7 @@ async function DetailViewComponent() {
                 <div class="detail-actions">
                     ${latestChapter ? `
                         <button class="detail-btn btn-read start-reading-btn" data-chap-id="${latestChapter.id}">
-                            <i class="fa-solid fa-book-open"></i> قراءة أول فصل
+                            <i class="fa-solid fa-play"></i> قراءة أول فصل
                         </button>
                     ` : ''}
                     
@@ -1830,6 +1830,12 @@ async function DetailViewComponent() {
                     ${state.userRole === 'admin' ? `
                         <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
                             <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
+                        </button>
+                    ` : ''}
+                    
+                    ${state.progress[manga.id] ? `
+                        <button class="detail-btn btn-continue continue-reading-btn" data-chap-id="${state.progress[manga.id].chapterId}">
+                            <i class="fa-solid fa-arrow-rotate-right"></i> متابعة القراءة
                         </button>
                     ` : ''}
                 </div>
@@ -2349,8 +2355,8 @@ function BookmarksViewComponent() {
     let listHtml = '';
     if (mangasFiltered.length === 0) {
         listHtml = `
-        <div class="empty-state">
-            <i class="fa-regular fa-bookmark"></i>
+        <div class="empty-state empty-state-glow">
+            <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 15px;"></i>
             <h3>المفضلة فارغة</h3>
             <p>تصفح الأعمال وقم بإضافتها لمفضلتك لتظهر هنا وتتابعها أولاً بأول.</p>
         </div>
@@ -2387,10 +2393,10 @@ function BookmarksViewComponent() {
             <h2 class="section-title">مكتبتك ومفضلتك <span>الخاصة</span></h2>
         </div>
         <div class="bookmarks-tabs">
-            <button class="bookmark-tab ${currentTab === 'all' ? 'active' : ''}" data-tab="all">الكل</button>
-            <button class="bookmark-tab ${currentTab === 'reading' ? 'active' : ''}" data-tab="reading">أقرأه حالياً</button>
-            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan">أرغب في قراءته</button>
-            <button class="bookmark-tab ${currentTab === 'completed' ? 'active' : ''}" data-tab="completed">مكتمل</button>
+            <button class="bookmark-tab ${currentTab === 'all' ? 'active' : ''}" data-tab="all"><i class="fa-solid fa-layer-group"></i> الكل</button>
+            <button class="bookmark-tab ${currentTab === 'reading' ? 'active' : ''}" data-tab="reading"><i class="fa-solid fa-book-open-reader"></i> أقرأه حالياً</button>
+            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan"><i class="fa-solid fa-clock"></i> أرغب في قراءته</button>
+            <button class="bookmark-tab ${currentTab === 'completed' ? 'active' : ''}" data-tab="completed"><i class="fa-solid fa-circle-check"></i> مكتمل</button>
         </div>
         ${listHtml}
     </div>
