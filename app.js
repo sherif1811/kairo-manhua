@@ -916,6 +916,21 @@ const state = new AppState();
 // 3. محرك التنقل والتحكم والواجهات (Routing & Views)
 // ==========================================
 
+// دالة موحدة لمقارنة وتطبيع معرفات الفصول لمنع أي تعارض في الأنواع أو التنسيقات
+function normalizeChapterId(id) {
+    if (id === null || id === undefined) return '';
+    // إزالة أي معاملات إضافية بعد علامة الاستفهام إن وجدت (مثل ?v=1.9)
+    let cleanId = String(id).split('?')[0].trim();
+    // تحويل الأرقام العشرية الصافية مثل 200.0 إلى 200
+    if (!isNaN(cleanId) && cleanId.includes('.')) {
+        const parsed = parseFloat(cleanId);
+        if (parsed % 1 === 0) {
+            return String(parsed);
+        }
+    }
+    return cleanId;
+}
+
 function navigate(view, mangaId = null, chapterId = null) {
     let hash = '';
     if (view === 'home') {
@@ -931,6 +946,13 @@ function navigate(view, mangaId = null, chapterId = null) {
 }
 
 function handleRouting() {
+    // التحويل التلقائي للمسارات النظيفة (Clean URLs) إلى مسارات الهاش (Hash URLs) لمنع التوجيه الخاطئ
+    const path = window.location.pathname;
+    if (path.startsWith('/manga/') || path.startsWith('/reader/')) {
+        window.location.replace('/#' + path + window.location.search);
+        return;
+    }
+    
     const hash = window.location.hash || '#/';
     
     if (hash === '#/' || hash === '#/home' || hash === '') {
@@ -1904,7 +1926,7 @@ async function ReaderViewComponent() {
         await state.loadSoloLevelingChapters();
     }
     
-    const chapterIndex = manga.chapters.findIndex(c => c.id === state.activeChapterId);
+    const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
     if (chapterIndex === -1) return '<p>الفصل غير متوفر</p>';
     
     const chapter = manga.chapters[chapterIndex];
@@ -2071,7 +2093,7 @@ async function ReaderViewComponent() {
                             ${manga.chapters.map(ch => {
                                 const subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
                                 return `
-                                    <div class="dropdown-item-opt ${ch.id === chapter.id ? 'active' : ''}" data-value="${ch.id}">
+                                    <div class="dropdown-item-opt ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'active' : ''}" data-value="${ch.id}">
                                         <span class="opt-num">الفصل ${ch.id}</span>
                                         ${subtitle ? `<span class="opt-title">${subtitle}</span>` : ''}
                                     </div>
@@ -2976,6 +2998,15 @@ function attachEventListeners() {
         };
     }
 
+    // صفحة التفاصيل: الضغط على متابعة القراءة
+    const continueReadingBtn = document.querySelector('.continue-reading-btn');
+    if (continueReadingBtn) {
+        continueReadingBtn.onclick = () => {
+            const chapId = continueReadingBtn.dataset.chapId;
+            navigate('reader', state.activeMangaId, chapId);
+        };
+    }
+
     // صفحة التفاصيل: الضغط على فصل لقراءته
     const chapterItems = document.querySelectorAll('.chapter-item');
     chapterItems.forEach(item => {
@@ -3159,7 +3190,7 @@ function attachEventListeners() {
     if (prevBtn && !prevBtn.classList.contains('disabled')) {
         prevBtn.onclick = () => {
             const manga = state.mangas.find(m => m.id === state.activeMangaId);
-            const chapterIndex = manga.chapters.findIndex(c => c.id === state.activeChapterId);
+            const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
             if (chapterIndex < manga.chapters.length - 1) {
                 const prevChapId = manga.chapters[chapterIndex + 1].id;
                 navigate('reader', state.activeMangaId, prevChapId);
@@ -3172,7 +3203,7 @@ function attachEventListeners() {
     if (nextBtn && !nextBtn.classList.contains('disabled')) {
         nextBtn.onclick = () => {
             const manga = state.mangas.find(m => m.id === state.activeMangaId);
-            const chapterIndex = manga.chapters.findIndex(c => c.id === state.activeChapterId);
+            const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
             if (chapterIndex > 0) {
                 const nextChapId = manga.chapters[chapterIndex - 1].id;
                 navigate('reader', state.activeMangaId, nextChapId);
@@ -3219,7 +3250,7 @@ function attachEventListeners() {
     const hNextZone = document.getElementById('h-next-zone');
     if (hPrevZone && hNextZone) {
         const manga = state.mangas.find(m => m.id === state.activeMangaId);
-        const chapter = manga.chapters.find(c => c.id === state.activeChapterId);
+        const chapter = manga.chapters.find(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
         const totalPages = chapter.images.length;
 
         hPrevZone.onclick = (e) => {
@@ -3228,7 +3259,7 @@ function attachEventListeners() {
                 state.activePageIndex--;
                 renderApp();
             } else {
-                const chapterIndex = manga.chapters.findIndex(c => c.id === state.activeChapterId);
+                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
                 if (chapterIndex < manga.chapters.length - 1) {
                     const prevChapId = manga.chapters[chapterIndex + 1].id;
                     state.activePageIndex = 0;
@@ -3245,7 +3276,7 @@ function attachEventListeners() {
                 state.activePageIndex++;
                 renderApp();
             } else {
-                const chapterIndex = manga.chapters.findIndex(c => c.id === state.activeChapterId);
+                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
                 if (chapterIndex > 0) {
                     const nextChapId = manga.chapters[chapterIndex - 1].id;
                     state.activePageIndex = 0;

@@ -193,6 +193,7 @@ def init_db():
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
+        c.execute("PRAGMA journal_mode=WAL")
         c.execute('''CREATE TABLE IF NOT EXISTS users (
                         email TEXT PRIMARY KEY,
                         password_hash TEXT,
@@ -284,7 +285,6 @@ def init_db():
                         earned_at REAL,
                         PRIMARY KEY (email, manga_id, chapter_id)
                      )''')
-        c.execute("PRAGMA journal_mode=WAL")
         conn.commit()
     finally:
         conn.close()
