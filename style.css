@@ -1922,5 +1922,30 @@ body {
     box-shadow: var(--shadow-neon);
 }
 
+/* YouTube Navigation Link Premium Style */
+.youtube-nav-link {
+    color: var(--text-muted) !important;
+    font-weight: 600;
+    transition: var(--transition-fast) !important;
+}
+
+.youtube-nav-link i {
+    color: #ff0000;
+    font-size: 1.1rem;
+    transition: transform var(--transition-fast), text-shadow var(--transition-fast);
+}
+
+.youtube-nav-link:hover {
+    color: #ffffff !important;
+    background: rgba(255, 0, 0, 0.12) !important;
+}
+
+.youtube-nav-link:hover i {
+    color: #ff3333;
+    transform: scale(1.15) rotate(-3deg);
+    text-shadow: 0 0 8px rgba(255, 0, 0, 0.8);
+}
+
+
 
 
