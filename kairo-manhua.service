@@ -1,0 +1,17 @@
+[Unit]
+Description=KAIRO/منهوا - Manga Reading Platform (Gunicorn)
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kairo-manhua
+Environment="PATH=/var/www/kairo-manhua/venv/bin"
+ExecStart=/var/www/kairo-manhua/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 flask_app:app
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
