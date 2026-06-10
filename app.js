@@ -284,6 +284,7 @@ class AppState {
         
         this.activePageIndex = 0;
         this.searchQuery = '';
+        this.showSearchSuggestions = false;
         this.chapterSearchQuery = '';
         this.activeGenre = 'الكل';
         this.downloadProgress = {};
@@ -805,6 +806,31 @@ function HeaderComponent() {
         `;
     }
 
+    let suggestionsHtml = '';
+    if (state.showSearchSuggestions && state.searchQuery && state.searchQuery.trim() !== '' && state.mangas) {
+        const query = state.searchQuery.toLowerCase().trim();
+        const matches = state.mangas.filter(m => 
+            m.title.toLowerCase().includes(query) || 
+            (m.alternative && m.alternative.toLowerCase().includes(query))
+        ).slice(0, 6);
+        
+        if (matches.length > 0) {
+            suggestionsHtml = `
+            <div class="search-suggestions-dropdown" id="search-suggestions">
+                ${matches.map(m => `
+                    <div class="suggestion-item" data-id="${m.id}">
+                        <img src="${m.cover}" class="suggestion-cover" alt="${m.title}">
+                        <div class="suggestion-info">
+                            <span class="suggestion-title">${m.title}</span>
+                            ${m.alternative ? `<span class="suggestion-alt">${m.alternative}</span>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            `;
+        }
+    }
+
     return `
     <header class="header">
         <a class="header-logo" id="logo-btn">KAIRO<span>/منهوا</span></a>
@@ -822,6 +848,7 @@ function HeaderComponent() {
             <div class="search-box">
                 <input type="text" placeholder="ابحث عن المانجا..." id="search-input" value="${state.searchQuery}">
                 <i class="fa-solid fa-magnifying-glass"></i>
+                ${suggestionsHtml}
             </div>
             ${accountButton}
             ${adminButton}
@@ -2276,21 +2303,56 @@ function attachEventListeners() {
     const navAdmin = document.getElementById('nav-admin');
     if (navAdmin) navAdmin.onclick = () => navigate('admin');
 
-    // شريط البحث
+    // شريط البحث ومقترحات البحث
     const searchInput = document.getElementById('search-input');
     if (searchInput) {
+        searchInput.onfocus = () => {
+            if (state.searchQuery && state.searchQuery.trim() !== '' && !state.showSearchSuggestions) {
+                state.showSearchSuggestions = true;
+                renderApp();
+                const newInput = document.getElementById('search-input');
+                if (newInput) {
+                    newInput.focus();
+                    newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+                }
+            }
+        };
+
         searchInput.oninput = (e) => {
             state.searchQuery = e.target.value;
+            state.showSearchSuggestions = e.target.value.trim() !== '';
             if (state.currentView !== 'home') {
                 state.currentView = 'home';
             }
             renderApp();
             
             const newInput = document.getElementById('search-input');
-            newInput.focus();
-            newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+            if (newInput) {
+                newInput.focus();
+                newInput.setSelectionRange(newInput.value.length, newInput.value.length);
+            }
+        };
+
+        searchInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                state.showSearchSuggestions = false;
+                renderApp();
+            }
         };
     }
+
+    // النقر على مقترح بحث
+    const suggestionItems = document.querySelectorAll('.suggestion-item');
+    suggestionItems.forEach(item => {
+        item.onclick = (e) => {
+            e.stopPropagation();
+            const id = e.currentTarget.dataset.id;
+            state.searchQuery = '';
+            state.showSearchSuggestions = false;
+            navigate('detail', id);
+        };
+    });
+
 
     // تصفية التصنيفات
     const genreTags = document.querySelectorAll('.genre-tag');
@@ -3239,6 +3301,17 @@ async function loadAdminSuggestions() {
         container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">حدث خطأ أثناء الاتصال بالخادم.</p>';
     }
 }
+
+// إغلاق مقترحات البحث عند النقر خارج صندوق البحث
+document.addEventListener('click', (e) => {
+    const searchBox = document.querySelector('.search-box');
+    if (searchBox && !searchBox.contains(e.target)) {
+        if (state.showSearchSuggestions) {
+            state.showSearchSuggestions = false;
+            renderApp();
+        }
+    }
+});
 
 // تشغيل التطبيق
 if (document.readyState === 'loading') {
