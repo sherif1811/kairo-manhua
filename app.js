@@ -1374,21 +1374,21 @@ async function DetailViewComponent() {
         reviewFormHtml = `
         <div class="review-form-container glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 16px; text-align: right;">
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">
-                \${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
+                ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
             </h4>
             <div style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
                 <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم بالنجوم:</span>
                 <div class="stars-picker" id="manga-stars-picker" style="display: flex; gap: 6px; direction: ltr;">
-                    \${starsPickerHtml}
+                    ${starsPickerHtml}
                 </div>
-                <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">\${userRating} / 5</span>
+                <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">${userRating} / 5</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <label for="manga-review-text" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">رأيك أو مراجعتك (اختياري):</label>
-                <textarea id="manga-review-text" rows="3" placeholder="اكتب رأيك أو مراجعتك النصية هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;">\${userText}</textarea>
+                <textarea id="manga-review-text" rows="3" placeholder="اكتب رأيك أو مراجعتك النصية هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;">${userText}</textarea>
             </div>
             <button class="detail-btn btn-read" id="submit-manga-review-btn" style="padding: 10px 24px; font-size: 0.95rem; font-weight: 800; border-radius: 30px; width: fit-content; align-self: flex-start;">
-                \${userReview ? 'تحديث المراجعة والتقييم' : 'إرسال التقييم والمراجعة'}
+                ${userReview ? 'تحديث المراجعة والتقييم' : 'إرسال التقييم والمراجعة'}
             </button>
         </div>
         `;
@@ -1412,20 +1412,20 @@ async function DetailViewComponent() {
                     <img src="${manga.cover}" alt="${manga.title}">
                 </div>
                 <div class="detail-actions">
-                    \${latestChapter ? `
-                        <button class="detail-btn btn-read start-reading-btn" data-chap-id="\${latestChapter.id}">
+                    ${latestChapter ? `
+                        <button class="detail-btn btn-read start-reading-btn" data-chap-id="${latestChapter.id}">
                             <i class="fa-solid fa-book-open"></i> قراءة أول فصل
                         </button>
                     ` : ''}
                     
                     <select class="detail-btn btn-fav select-bookmark-status" data-id="${manga.id}">
-                        <option value="" \${bookmarkStatus === '' ? 'selected' : ''}>+ إضافة للمفضلة</option>
-                        <option value="reading" \${bookmarkStatus === 'reading' ? 'selected' : ''}>أقرأه حالياً</option>
-                        <option value="plan" \${bookmarkStatus === 'plan' ? 'selected' : ''}>أرغب في قراءته</option>
-                        <option value="completed" \${bookmarkStatus === 'completed' ? 'selected' : ''}>مكتمل</option>
+                        <option value="" ${bookmarkStatus === '' ? 'selected' : ''}>+ إضافة للمفضلة</option>
+                        <option value="reading" ${bookmarkStatus === 'reading' ? 'selected' : ''}>أقرأه حالياً</option>
+                        <option value="plan" ${bookmarkStatus === 'plan' ? 'selected' : ''}>أرغب في قراءته</option>
+                        <option value="completed" ${bookmarkStatus === 'completed' ? 'selected' : ''}>مكتمل</option>
                     </select>
                     
-                    \${state.userRole === 'admin' ? `
+                    ${state.userRole === 'admin' ? `
                         <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
                             <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
                         </button>
@@ -1456,14 +1456,14 @@ async function DetailViewComponent() {
                 <div class="chapters-section" style="margin-top: 30px;">
                     <div class="chapters-header" style="margin-bottom: 20px;">
                         <h3>تقييمات ومراجعات المتابعين</h3>
-                        <span>متوسط التقييم: <i class="fa-solid fa-star" style="color: #ffb703;"></i> \${manga.rating}</span>
+                        <span>متوسط التقييم: <i class="fa-solid fa-star" style="color: #ffb703;"></i> ${manga.rating}</span>
                     </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 20px;">
-                        \${reviewFormHtml}
+                        ${reviewFormHtml}
                         
                         <div style="display: flex; flex-direction: column; gap: 14px; max-height: 400px; overflow-y: auto; padding-left: 6px;">
-                            \${reviewsListHtml}
+                            ${reviewsListHtml}
                         </div>
                     </div>
                 </div>
@@ -1472,13 +1472,13 @@ async function DetailViewComponent() {
                     <div class="chapters-header">
                         <h3>فصول المانجا المتاحة</h3>
                         <div class="chapters-search-box">
-                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="\${state.chapterSearchQuery || ''}" autocomplete="off">
+                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
-                        <span>إجمالي الفصول: \${manga.chapters.length}</span>
+                        <span>إجمالي الفصول: ${manga.chapters.length}</span>
                     </div>
                     <div class="chapters-list">
-                        \${chaptersHtml}
+                        ${chaptersHtml}
                     </div>
                 </div>
             </div>
@@ -1535,7 +1535,7 @@ async function ReaderViewComponent() {
     // خيارات الفصول
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
-        optionsHtml += `<option value="${ch.id}" \${ch.id === chapter.id ? 'selected' : ''}>الفصل \${ch.id}</option>`;
+        optionsHtml += `<option value="${ch.id}" ${ch.id === chapter.id ? 'selected' : ''}>الفصل ${ch.id}</option>`;
     });
 
     // تفضيل الفصل
@@ -1554,8 +1554,8 @@ async function ReaderViewComponent() {
             const isActivePage = index === state.activePageIndex;
             const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container \${isActivePage ? 'active-page' : ''}" data-index="\${index}">
-                <img src="\${proxiedUrl}" alt="صفحة \${index + 1}">
+            <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
+                <img src="${proxiedUrl}" alt="صفحة ${index + 1}">
             </div>
             `;
         });
@@ -1563,10 +1563,10 @@ async function ReaderViewComponent() {
         pages.forEach((pageUrl, index) => {
             const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container lazy-load-container" data-src="\${proxiedUrl}">
+            <div class="reader-image-container lazy-load-container" data-src="${proxiedUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
-                    <span>جاري تحميل الصفحة \${index + 1}...</span>
+                    <span>جاري تحميل الصفحة ${index + 1}...</span>
                 </div>
             </div>
             `;
@@ -1577,7 +1577,7 @@ async function ReaderViewComponent() {
     let chapterComments = [];
     let commentsListHtml = '';
     try {
-        const response = await fetch(`/api/chapter_comments?manga_id=\${manga.id}&chapter_id=\${chapter.id}`);
+        const response = await fetch(`/api/chapter_comments?manga_id=${manga.id}&chapter_id=${chapter.id}`);
         if (response.ok) {
             chapterComments = await response.json();
             if (chapterComments.length === 0) {
@@ -1589,13 +1589,13 @@ async function ReaderViewComponent() {
                     const dateStr = new Date(comm.created_at * 1000).toLocaleDateString('ar-EG');
                     commentsListHtml += `
                     <div class="comment-item">
-                        <div class="comment-avatar">\${firstLetter}</div>
+                        <div class="comment-avatar">${firstLetter}</div>
                         <div class="comment-body">
                             <div class="comment-header">
-                                <span class="comment-username">\${userDisplay}</span>
-                                <span class="comment-time">\${dateStr}</span>
+                                <span class="comment-username">${userDisplay}</span>
+                                <span class="comment-time">${dateStr}</span>
                             </div>
-                            <p class="comment-text">\${comm.comment_text}</p>
+                            <p class="comment-text">${comm.comment_text}</p>
                         </div>
                     </div>
                     `;
@@ -1613,7 +1613,7 @@ async function ReaderViewComponent() {
         commentFormHtml = `
         <form class="comments-form" id="chapter-comment-form" style="display: flex; flex-direction: column; gap: 10px; text-align: right;">
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">
-                <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> التعليق باسم: <strong>\${state.userEmail.split('@')[0]}</strong>
+                <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> التعليق باسم: <strong>${state.userEmail.split('@')[0]}</strong>
             </div>
             <div style="display: flex; gap: 12px; width: 100%;">
                 <input type="text" placeholder="شاركنا رأيك حول الفصل..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
@@ -1637,21 +1637,21 @@ async function ReaderViewComponent() {
     state.saveReadingProgress(manga.id, chapter.id, 0, progressPercent, state.activePageIndex);
 
     return `
-    <div class="reader-wrapper \${themeClass} \${widthClass} \${modeClass}">
-        <div class="reader-progress-bar" id="reading-bar" style="width: \${progressPercent}%"></div>
+    <div class="reader-wrapper ${themeClass} ${widthClass} ${modeClass}">
+        <div class="reader-progress-bar" id="reading-bar" style="width: ${progressPercent}%"></div>
         
         <div class="reader-nav">
             <button class="reader-btn return-to-manga" title="العودة لصفحة المانجا"><i class="fa-solid fa-arrow-right"></i></button>
             <div class="reader-title-info">
-                <h2>\${manga.title}</h2>
-                <p>\${chapter.title} \${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
+                <h2>${manga.title}</h2>
+                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
             </div>
             <div class="reader-controls">
-                <button class="reader-btn prev-chapter-btn \${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
-                        <span>الفصل \${chapter.id}</span>
+                        <span>الفصل ${chapter.id}</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-content">
@@ -1660,12 +1660,12 @@ async function ReaderViewComponent() {
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <div class="dropdown-items-list">
-                            \${manga.chapters.map(ch => {
+                            ${manga.chapters.map(ch => {
                                 const subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
                                 return `
-                                    <div class="dropdown-item-opt \${ch.id === chapter.id ? 'active' : ''}" data-value="\${ch.id}">
-                                        <span class="opt-num">الفصل \${ch.id}</span>
-                                        \${subtitle ? `<span class="opt-title">\${subtitle}</span>` : ''}
+                                    <div class="dropdown-item-opt ${ch.id === chapter.id ? 'active' : ''}" data-value="${ch.id}">
+                                        <span class="opt-num">الفصل ${ch.id}</span>
+                                        ${subtitle ? `<span class="opt-title">${subtitle}</span>` : ''}
                                     </div>
                                 `;
                             }).join('')}
@@ -1673,28 +1673,28 @@ async function ReaderViewComponent() {
                     </div>
                 </div>
 
-                <button class="reader-btn next-chapter-btn \${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
             </div>
         </div>
         
         <div class="reader-content-images">
-            \${imagesHtml}
+            ${imagesHtml}
             
-            \${settings.mode === 'horizontal' ? `
+            ${settings.mode === 'horizontal' ? `
                 <div class="horizontal-click-navigator">
                     <div class="nav-zone nav-zone-right" id="h-prev-zone" title="الصفحة السابقة"><i class="fa-solid fa-chevron-right"></i></div>
                     <div class="nav-zone nav-zone-left" id="h-next-zone" title="الصفحة التالية"><i class="fa-solid fa-chevron-left"></i></div>
                 </div>
                 <div class="horizontal-page-indicator">
-                    صفحة \${state.activePageIndex + 1} من \${pages.length}
+                    صفحة ${state.activePageIndex + 1} من ${pages.length}
                 </div>
             ` : ''}
         </div>
 
         <div class="chapter-likes-interactive">
-            <button class="like-chapter-btn \${isLiked ? 'liked' : ''}" id="chapter-like-btn">
-                <i class="fa-\${isLiked ? 'solid' : 'regular'} fa-heart"></i>
-                <span id="like-text">\${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
+            <button class="like-chapter-btn ${isLiked ? 'liked' : ''}" id="chapter-like-btn">
+                <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
+                <span id="like-text">${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
             </button>
         </div>
         
@@ -1704,34 +1704,34 @@ async function ReaderViewComponent() {
             <div class="setting-row">
                 <label>اتجاه القراءة</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn \${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
-                    <button class="setting-btn \${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
+                    <button class="setting-btn ${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
+                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
                 </div>
             </div>
             <div class="setting-row">
                 <label>لون الخلفية</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn \${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
-                    <button class="setting-btn \${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
-                    <button class="setting-btn \${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">مريح للعين</button>
+                    <button class="setting-btn ${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
+                    <button class="setting-btn ${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
+                    <button class="setting-btn ${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">مريح للعين</button>
                 </div>
             </div>
             <div class="setting-row">
                 <label>عرض الصور</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn \${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">مضغوط</button>
-                    <button class="setting-btn \${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">متوسط</button>
-                    <button class="setting-btn \${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
+                    <button class="setting-btn ${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">مضغوط</button>
+                    <button class="setting-btn ${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">متوسط</button>
+                    <button class="setting-btn ${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
                 </div>
             </div>
         </div>
         
         <div class="main-content" style="max-width: 800px; margin: 0 auto; width: 100%;">
             <div class="comments-container" style="margin-bottom: 50px;">
-                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (\${chapterComments.length})</h3>
-                \${commentFormHtml}
+                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (${chapterComments.length})</h3>
+                ${commentFormHtml}
                 <div class="comments-list">
-                    \${commentsListHtml}
+                    ${commentsListHtml}
                 </div>
             </div>
         </div>
