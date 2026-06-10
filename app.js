@@ -1511,7 +1511,7 @@ async function ReaderViewComponent() {
     // فحص ما إذا كان هذا الفصل محمل أوفلاين
     let pages = chapter.images;
     const offlineData = await getChapterOffline(manga.id, chapter.id);
-    const isOfflineAvailable = !offlineData;
+    const isOfflineAvailable = !!offlineData;
     if (isOfflineAvailable) {
         pages = offlineData.images;
         console.log("تم تحميل صفحات الفصل المحفوظة من الـ IndexedDB محلياً.");
