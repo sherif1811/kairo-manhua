@@ -1,0 +1,27 @@
+{
+    "name": "KAIRO / منهوا",
+    "short_name": "KAIRO",
+    "description": "منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#0a0b0e",
+    "theme_color": "#0a0b0e",
+    "scope": "/",
+    "lang": "ar",
+    "dir": "rtl",
+    "icons": [
+        {
+            "src": "/icon-192.svg",
+            "sizes": "192x192",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-192.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
+        }
+    ]
+}

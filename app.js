@@ -4022,6 +4022,13 @@ async function bootstrapConfig() {
     handleRouting();
 }
 
+// ==========================================
+// Online / Offline Detection
+// ==========================================
+let isOnline = navigator.onLine;
+window.addEventListener('online', () => { isOnline = true; document.body.classList.remove('is-offline'); renderApp(); });
+window.addEventListener('offline', () => { isOnline = false; document.body.classList.add('is-offline'); renderApp(); });
+
 // تشغيل التطبيق
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bootstrapConfig);

@@ -2627,3 +2627,32 @@ body {
     color: var(--color-secondary) !important;
     font-weight: 700;
 }
+
+/* ===========================
+   PWA / Offline Indicator
+   =========================== */
+.is-offline .offline-indicator {
+    display: flex !important;
+}
+.offline-indicator {
+    display: none;
+    position: fixed;
+    bottom: 90px;
+    left: 16px;
+    z-index: 9999;
+    background: #ff4444;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 6px 12px;
+    border-radius: 20px;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 2px 12px rgba(255, 68, 68, 0.4);
+    animation: offlinePulse 2s ease-in-out infinite;
+    direction: ltr;
+}
+@keyframes offlinePulse {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}

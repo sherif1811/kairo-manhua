@@ -23,6 +23,11 @@
     <meta name="twitter:title" content="KAIRO / منهوا">
     <meta name="twitter:description" content="منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية.">
     <meta name="twitter:image" content="">
+    <!-- Web App Manifest for PWA Install -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <!-- مكتبة Google Identity Services لتسجيل الدخول الاجتماعي -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     
@@ -39,6 +44,8 @@
     </script>
 </head>
 <body>
+    <!-- PWA Offline Indicator -->
+    <div class="offline-indicator"><i class="fa-solid fa-wifi"></i> غير متصل</div>
     <!-- الهيكل الرئيسي للتطبيق -->
     <div id="app">
         <!-- سيتم تحميل المحتوى بالكامل ديناميكياً بواسطة JavaScript -->
@@ -51,6 +58,16 @@
         </div>
     </div>
 
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                console.log('SW registered:', reg.scope);
+            }).catch(err => {
+                console.error('SW registration failed:', err);
+            });
+        }
+    </script>
     <!-- المنطق البرمجي الرئيسي للموقع -->
     <script src="app.js?v=1.9" type="module"></script>
 </body>

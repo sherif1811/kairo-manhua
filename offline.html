@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIRO - غير متصل</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0b0e;
+            color: #e0e0e0;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            direction: rtl;
+        }
+        .offline-container { text-align: center; padding: 2rem; }
+        .offline-icon { font-size: 4rem; margin-bottom: 1rem; }
+        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; color: #fff; }
+        p { color: #888; margin-bottom: 1.5rem; line-height: 1.6; }
+        .btn {
+            display: inline-block;
+            padding: 12px 32px;
+            background: linear-gradient(135deg, #6c63ff, #b34aff);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📡</div>
+        <h1>لا يوجد اتصال بالإنترنت</h1>
+        <p>الفصول التي قمت بتحميلها مسبقاً متاحة للقراءة بدون اتصال.<br>تفضل بزيارة صفحة "المحملة" لقراءتها.</p>
+        <a href="/" class="btn">العودة للرئيسية</a>
+    </div>
+</body>
+</html>
