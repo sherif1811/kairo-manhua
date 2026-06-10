@@ -610,7 +610,7 @@ class AppState {
             status: 'مستمر',
             type: type || 'منهوا',
             views: 1500,
-            genres: genres.split(',').map(g => g.trim()),
+            genres: genres.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g !== ''),
             synopsis,
             chapters: []
         };

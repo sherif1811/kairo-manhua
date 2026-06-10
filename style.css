@@ -1882,4 +1882,45 @@ body {
     box-shadow: 0 0 10px rgba(24, 119, 242, 0.15);
 }
 
+/* ==========================================
+   تنسيقات شريط التصنيفات (Genres Filter Styles)
+   ========================================== */
+.genres-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 30px;
+    justify-content: flex-start;
+}
+
+.genre-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition-fast);
+    user-select: none;
+}
+
+.genre-tag:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-main);
+    border-color: var(--color-secondary);
+    transform: translateY(-1px);
+}
+
+.genre-tag.active {
+    background: var(--color-primary) !important;
+    color: #fff !important;
+    border-color: var(--color-primary) !important;
+    box-shadow: var(--shadow-neon);
+}
+
+
 
