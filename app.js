@@ -1106,7 +1106,7 @@ function HeaderComponent() {
             <button class="profile-navbar-btn points-badge ${rankClass}" id="nav-profile-btn" title="${state.userEmail || ''}">
                 <span class="profile-navbar-avatar">${userInitial}</span>
                 <span class="profile-navbar-name">${userHandle}</span>
-                <span class="points-badge-text">${isAdmin ? 'أسطوري' : points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>'}</span>
+                <span class="points-badge-text">${isAdmin ? '🌟' : points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>'}</span>
             </button>
             <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج" aria-label="Logout">
                 <i class="fa-solid fa-right-from-bracket"></i>
@@ -1558,11 +1558,11 @@ function UserProfileWidgetComponent() {
             <div class="user-widget-avatar ${rankClass}">${state.userProfile.username.charAt(0)}</div>
             <div class="user-widget-info">
                 <h4>${state.userProfile.username}</h4>
-                <p class="${rankClass}">${isAdmin ? 'الكاتب الأسطوري 🌟' : info.rankTitle}</p>
+                <p class="${rankClass}">${isAdmin ? 'المدير 🌟' : info.rankTitle}</p>
             </div>
         </div>
         <div class="gamification-panel">
-            <div class="level-badge ${rankClass}">${isAdmin ? '200' : 'المستوى ' + info.level}</div>
+            <div class="level-badge ${rankClass}">${isAdmin ? 'جميل' : 'المستوى ' + info.level}</div>
             <div class="level-progress-info">
                 <span>النقاط</span>
                 <span class="points-display">${isAdmin ? '∞' : info.points}</span>
