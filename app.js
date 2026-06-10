@@ -10,6 +10,10 @@ const DB_NAME = 'kairo_manhua_offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'downloaded_chapters';
 
+// معرفات التطبيقات لتسجيل الدخول الاجتماعي (استبدلها بالمعرفات الحقيقية الخاصة بك لاحقاً)
+const GOOGLE_CLIENT_ID = '1234567890-placeholder.apps.googleusercontent.com';
+const FACEBOOK_APP_ID = '1234567890-placeholder';
+
 // تهيئة قاعدة بيانات IndexedDB لحفظ الفصول للقراءة دون اتصال
 function initDB() {
     return new Promise((resolve, reject) => {
@@ -852,6 +856,19 @@ function AuthModalComponent() {
                     <button type="submit" class="auth-submit-btn neon-pulse-hover">
                         ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> دخول' : '<i class="fa-solid fa-user-plus"></i> إنشاء الحساب'}
                     </button>
+                    
+                    <div class="auth-divider">
+                        <span>أو سجّل الدخول باستخدام</span>
+                    </div>
+                    
+                    <div class="social-login-grid">
+                        <button type="button" class="social-btn google-btn" id="google-login-btn">
+                            <i class="fa-brands fa-google"></i> Google
+                        </button>
+                        <button type="button" class="social-btn facebook-btn" id="facebook-login-btn">
+                            <i class="fa-brands fa-facebook"></i> Facebook
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -2040,6 +2057,158 @@ async function renderApp() {
 }
 
 // ==========================================
+// 4.5. التوثيق الاجتماعي (Google & Facebook OAuth)
+// ==========================================
+let googleTokenClient = null;
+
+async function handleGoogleLogin(response) {
+    const credential = response.credential;
+    try {
+        const res = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ credential })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            state.sessionToken = result.token;
+            state.userEmail = result.email;
+            state.userRole = result.role;
+            state.saveUserProfile();
+            await state.fetchAndMergeSettings();
+            state.showAuthModal = false;
+            renderApp();
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
+        } else {
+            alert(result.error || 'فشل تسجيل الدخول بـ Google');
+        }
+    } catch (e) {
+        console.error("Google Auth error:", e);
+        alert('خطأ في الاتصال بالخادم أثناء تسجيل الدخول بـ Google');
+    }
+}
+
+async function verifyGoogleAccessToken(accessToken) {
+    try {
+        const res = await fetch('/api/auth/google', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: accessToken })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            state.sessionToken = result.token;
+            state.userEmail = result.email;
+            state.userRole = result.role;
+            state.saveUserProfile();
+            await state.fetchAndMergeSettings();
+            state.showAuthModal = false;
+            renderApp();
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
+        } else {
+            alert(result.error || 'فشل تسجيل الدخول بـ Google');
+        }
+    } catch (e) {
+        console.error("Google access token verification error:", e);
+        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Google');
+    }
+}
+
+async function verifyFacebookAccessToken(accessToken) {
+    try {
+        const res = await fetch('/api/auth/facebook', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ access_token: accessToken })
+        });
+        const result = await res.json();
+        if (res.ok) {
+            state.sessionToken = result.token;
+            state.userEmail = result.email;
+            state.userRole = result.role;
+            state.saveUserProfile();
+            await state.fetchAndMergeSettings();
+            state.showAuthModal = false;
+            renderApp();
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Facebook باسم ${result.email.split('@')[0]}`);
+        } else {
+            alert(result.error || 'فشل تسجيل الدخول بـ Facebook');
+        }
+    } catch (e) {
+        console.error("Facebook access token verification error:", e);
+        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Facebook');
+    }
+}
+
+function handleFacebookLoginClick() {
+    if (typeof FB === 'undefined') {
+        alert("مكتبة الفيسبوك لم يتم تحميلها بعد. يرجى المحاولة مرة أخرى.");
+        return;
+    }
+    FB.login(function(response) {
+        if (response.authResponse) {
+            const accessToken = response.authResponse.accessToken;
+            verifyFacebookAccessToken(accessToken);
+        } else {
+            console.log('User cancelled login or did not fully authorize.');
+        }
+    }, { scope: 'email' });
+}
+
+function initSocialAuths() {
+    // 1. تهيئة Google Sign-In & One Tap
+    if (typeof google !== 'undefined') {
+        try {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleLogin,
+                auto_select: false
+            });
+            
+            // تفعيل Google One Tap تلقائياً عند فتح الموقع إذا لم يكن مسجلاً
+            if (!state.sessionToken) {
+                google.accounts.id.prompt();
+            }
+            
+            // تهيئة عميل التوكن للزر المخصص
+            googleTokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: 'email profile',
+                callback: async (tokenResponse) => {
+                    if (tokenResponse.access_token) {
+                        await verifyGoogleAccessToken(tokenResponse.access_token);
+                    }
+                }
+            });
+        } catch (err) {
+            console.error("Error initializing Google Identity Services:", err);
+        }
+    }
+
+    // 2. تهيئة Facebook SDK وتحميلها تلقائياً
+    window.fbAsyncInit = function() {
+        try {
+            FB.init({
+                appId      : FACEBOOK_APP_ID,
+                cookie     : true,
+                xfbml      : true,
+                version    : 'v18.0'
+            });
+        } catch (e) {
+            console.error("Facebook Init Error:", e);
+        }
+    };
+    
+    (function(d, s, id) {
+        var js, fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s); js.id = id;
+        js.src = "https://connect.facebook.net/en_US/sdk.js";
+        fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+}
+
+// ==========================================
 // 5. إدارة الأحداث والاتصال مع الـ DOM (Events Binding)
 // ==========================================
 
@@ -2705,6 +2874,25 @@ function attachEventListeners() {
         };
     }
     
+    // التوثيق: تسجيل الدخول الاجتماعي عبر الأزرار
+    const googleLoginBtn = document.getElementById('google-login-btn');
+    if (googleLoginBtn) {
+        googleLoginBtn.onclick = () => {
+            if (typeof google !== 'undefined' && googleTokenClient) {
+                googleTokenClient.requestAccessToken();
+            } else {
+                alert("مكتبة جوجل لم يتم تحميلها بعد أو المعرّف غير صحيح. يرجى المحاولة لاحقاً.");
+            }
+        };
+    }
+
+    const facebookLoginBtn = document.getElementById('facebook-login-btn');
+    if (facebookLoginBtn) {
+        facebookLoginBtn.onclick = () => {
+            handleFacebookLoginClick();
+        };
+    }
+    
     const sugOverlay = document.getElementById('suggestions-modal-overlay');
     if (sugOverlay) {
         sugOverlay.onclick = (e) => {
@@ -3001,7 +3189,11 @@ async function loadAdminSuggestions() {
 
 // تشغيل التطبيق
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', renderApp);
+    document.addEventListener('DOMContentLoaded', () => {
+        initSocialAuths();
+        renderApp();
+    });
 } else {
+    initSocialAuths();
     renderApp();
 }

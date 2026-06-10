@@ -220,6 +220,131 @@ def logout():
     return jsonify({"status": "success"}), 200
 
 # ============================================================
+# SOCIAL AUTH (GOOGLE & FACEBOOK OAUTH)
+# ============================================================
+def verify_google_token(credential=None, access_token=None):
+    try:
+        if credential:
+            url = f"https://oauth2.googleapis.com/tokeninfo?id_token={urllib.parse.quote(credential)}"
+        elif access_token:
+            url = f"https://www.googleapis.com/oauth2/v3/userinfo?access_token={urllib.parse.quote(access_token)}"
+        else:
+            return None
+        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            return data
+    except Exception as e:
+        print("Google token verification error:", e)
+        return None
+
+def verify_facebook_token(access_token):
+    try:
+        url = f"https://graph.facebook.com/me?fields=email,name&access_token={urllib.parse.quote(access_token)}"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            data = json.loads(response.read().decode('utf-8'))
+            return data
+    except Exception as e:
+        print("Facebook token verification error:", e)
+        return None
+
+@app.route('/api/auth/google', methods=['POST'])
+def auth_google():
+    data = request.get_json() or {}
+    credential = data.get('credential')
+    access_token = data.get('access_token')
+    
+    if not credential and not access_token:
+        return jsonify({"error": "بيانات التوثيق مفقودة"}), 400
+        
+    user_info = verify_google_token(credential=credential, access_token=access_token)
+    if not user_info:
+        return jsonify({"error": "فشل التحقق من حساب Google"}), 401
+        
+    email = user_info.get('email', '').strip().lower()
+    if not email:
+        return jsonify({"error": "فشل استخراج البريد الإلكتروني من حساب Google"}), 400
+        
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('SELECT email, role FROM users WHERE email = ?', (email,))
+    row = c.fetchone()
+    
+    if not row:
+        # تسجيل تلقائي
+        random_pass = secrets.token_hex(16)
+        password_hash = hash_password(random_pass)
+        role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+        c.execute('INSERT INTO users VALUES (?, ?, ?)', (email, password_hash, role))
+        conn.commit()
+        user_role = role
+    else:
+        user_role = row[1]
+        if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+            c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
+            conn.commit()
+            user_role = 'admin'
+            
+    token = secrets.token_hex(32)
+    expires_at = time.time() + 86400 * 30
+    c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success", "token": token, "email": email, "role": user_role}), 200
+
+@app.route('/api/auth/facebook', methods=['POST'])
+def auth_facebook():
+    data = request.get_json() or {}
+    access_token = data.get('access_token')
+    
+    if not access_token:
+        return jsonify({"error": "توكن الفيسبوك مفقود"}), 400
+        
+    user_info = verify_facebook_token(access_token)
+    if not user_info:
+        return jsonify({"error": "فشل التحقق من حساب Facebook"}), 401
+        
+    email = user_info.get('email', '').strip().lower()
+    # إذا لم يكن الحساب يحتوي على بريد إلكتروني مفعل (نادر الحدوث)، نستخدم معرف الفيسبوك لتوليد بريد وهمي فريد
+    if not email:
+        fb_id = user_info.get('id')
+        if fb_id:
+            email = f"fb_{fb_id}@kairo-facebook.com"
+        else:
+            return jsonify({"error": "فشل استخراج بيانات الحساب من Facebook"}), 400
+            
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute('SELECT email, role FROM users WHERE email = ?', (email,))
+    row = c.fetchone()
+    
+    if not row:
+        # تسجيل تلقائي
+        random_pass = secrets.token_hex(16)
+        password_hash = hash_password(random_pass)
+        role = 'admin' if email == 'sherifahmed200100@gmail.com' else 'user'
+        c.execute('INSERT INTO users VALUES (?, ?, ?)', (email, password_hash, role))
+        conn.commit()
+        user_role = role
+    else:
+        user_role = row[1]
+        if email == 'sherifahmed200100@gmail.com' and user_role != 'admin':
+            c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
+            conn.commit()
+            user_role = 'admin'
+            
+    token = secrets.token_hex(32)
+    expires_at = time.time() + 86400 * 30
+    c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"status": "success", "token": token, "email": email, "role": user_role}), 200
+
+# ============================================================
 # SETTINGS
 # ============================================================
 @app.route('/api/get_settings', methods=['GET'])

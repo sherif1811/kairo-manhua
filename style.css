@@ -1818,3 +1818,68 @@ body {
     box-shadow: var(--shadow-neon);
 }
 
+/* ==========================================
+   تنسيقات تسجيل الدخول الاجتماعي (Social Login Styles)
+   ========================================== */
+.auth-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.social-login-grid {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.social-btn {
+    flex: 1;
+    padding: 10px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 30px;
+    color: var(--text-main);
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--transition-fast);
+}
+
+.social-btn i {
+    font-size: 1rem;
+}
+
+.social-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+}
+
+.google-btn:hover {
+    border-color: #ea4335;
+    box-shadow: 0 0 10px rgba(234, 67, 53, 0.15);
+}
+
+.facebook-btn:hover {
+    border-color: #1877f2;
+    box-shadow: 0 0 10px rgba(24, 119, 242, 0.15);
+}
+
+
