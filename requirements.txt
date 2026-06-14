@@ -1,4 +1,20 @@
-Pillow==10.4.0
-flask>=3.0.0
-gunicorn>=22.0.0
-numpy>=1.26.0
+# Kairo Manhwa - Auto Translation Pipeline
+celery[redis]==5.4.0
+paddlepaddle>=2.6.2
+paddleocr==2.8.1
+opencv-python==4.9.0.80
+numpy==1.26.4
+Pillow==10.3.0
+arabic-reshaper==3.0.0
+python-bidi==0.6.0
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.2.1
+flask==3.0.2
+
+gunicorn==22.0.0
+redis==5.0.3
+psycopg2-binary==2.9.9
+cloudscraper==1.2.71
+playwright==1.60.0
+playwright-stealth==2.0.3

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kairo-cache-v3';
+const CACHE_NAME = 'kairo-cache-v27';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -41,24 +41,27 @@ self.addEventListener('fetch', event => {
     // Skip non-HTTP(S) requests (chrome-extension, file, data, etc.)
     if (!event.request.url.startsWith('http')) return;
     const url = new URL(event.request.url);
+
+    // Bypass cache completely for API calls or versioned requests
+    if (url.pathname.startsWith('/api/') || url.search.includes('v=')) {
+        return;
+    }
+    const isDoc = url.pathname === '/' || url.pathname === '/index.html';
     const isStaticAsset = STATIC_ASSETS.includes(url.pathname);
     const isCDN = CDN_ORIGINS.some(o => event.request.url.startsWith(o));
     const isImage = event.request.destination === 'image' ||
         url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/i);
     const isAPI = url.pathname.startsWith('/api/');
 
-    if (isStaticAsset) {
-        // Cache First for app shell
-        event.respondWith(cacheFirst(event.request));
-    } else if (isCDN) {
-        // Cache First for CDN fonts/icons
-        event.respondWith(cacheFirst(event.request));
+    if (isDoc) {
+        // Network First for the document to always serve fresh HTML
+        event.respondWith(networkFirst(event.request));
+    } else if (isStaticAsset) {
+        // Stale-While-Revalidate: serve cached instantly, fetch latest in background
+        event.respondWith(staleWhileRevalidate(event.request));
     } else if (isImage) {
         // Cache First for images with network fallback
         event.respondWith(cacheFirst(event.request));
-    } else if (isAPI) {
-        // Network First for API calls
-        event.respondWith(networkFirst(event.request));
     } else {
         // Network First for everything else
         event.respondWith(networkFirst(event.request));
@@ -70,7 +73,7 @@ async function cacheFirst(request) {
     if (cached) return cached;
     try {
         const response = await fetch(request);
-        if (response.ok) {
+        if (response.ok && request.method === 'GET') {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, response.clone());
         }
@@ -80,10 +83,22 @@ async function cacheFirst(request) {
     }
 }
 
+async function staleWhileRevalidate(request) {
+    const cached = await caches.match(request);
+    const fetchPromise = fetch(request).then(response => {
+        if (response.ok && request.method === 'GET') {
+            const cache = caches.open(CACHE_NAME);
+            cache.then(c => c.put(request, response.clone()));
+        }
+        return response;
+    }).catch(() => cached);
+    return cached || fetchPromise;
+}
+
 async function networkFirst(request) {
     try {
         const response = await fetch(request);
-        if (response.ok) {
+        if (response.ok && request.method === 'GET') {
             const cache = await caches.open(CACHE_NAME);
             cache.put(request, response.clone());
         }

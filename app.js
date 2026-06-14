@@ -1,11 +1,13 @@
 /* ----------------------------------------------------
    KAIRO/منهوا - MAIN APPLICATION JS CONTROLLER (PRO UPGRADE)
+   VERSION: 2.5
 ------------------------------------------------------- */
 
 // ==========================================
 // 1. قاعدة البيانات والبيانات الافتراضية (IndexedDB & State)
 // ==========================================
 
+const APP_VERSION = '2.5';
 const DB_NAME = 'kairo_manhua_offline';
 const DB_VERSION = 1;
 const STORE_NAME = 'downloaded_chapters';
@@ -70,6 +72,10 @@ function normalizeMangaAssets(manga) {
     if (!manga || typeof manga !== 'object') return manga;
     manga.cover = getDisplayCover(manga);
     manga.banner = getMangaBanner(manga);
+    if (typeof manga.genres === 'string') {
+        manga.genres = manga.genres.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g !== '');
+    }
+    if (!Array.isArray(manga.genres)) manga.genres = [];
     return manga;
 }
 
@@ -291,51 +297,6 @@ const DEFAULT_MANGAS = [
         genres: ["أكشن", "مغامرة", "خيال", "قوى خارقة"],
         synopsis: "في عالم يربط فيه بوابة غامضة عالم البشر بعالم الوحوش، يكتشف الصياد الأضعف سونغ جين وو نظاماً غامضاً يمنحه القدرة الفريدة على رفع مستواه بلا حدود.",
         chapters: populateDefaultChapters(200, false)
-    },
-    {
-        id: "2",
-        title: "قاتل الشياطين (Kimetsu no Yaiba)",
-        alternative: "Demon Slayer",
-        author: "Koyoharu Gotouge",
-        cover: "https://images.unsplash.com/photo-1618336753974-aae8e04506aa?w=500&auto=format&fit=crop&q=60",
-        banner: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200&auto=format&fit=crop&q=80",
-        rating: 4.8,
-        status: "مكتمل",
-        type: "مانجا",
-        views: 0,
-        genres: ["أكشن", "شياطين", "تاريخي", "خيال"],
-        synopsis: "تانجيرو فتى طيب يعيش برفقة عائلته، لكن حياته تنقلب رأساً على عقب عندما تذبح عائلته على يد شيطان وتتحول شقيقته نيزوكو إلى شيطانة.",
-        chapters: populateDefaultChapters(205, false)
-    },
-    {
-        id: "3",
-        title: "برج الإله (Tower of God)",
-        alternative: "Kami no Tou",
-        author: "SIU",
-        cover: "https://images.unsplash.com/photo-1560942485-b2a11cc13456?w=500&auto=format&fit=crop&q=60",
-        banner: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80",
-        rating: 4.7,
-        status: "مستمر",
-        type: "منهوا",
-        views: 0,
-        genres: ["مغامرة", "غموض", "دراما", "خيال"],
-        synopsis: "ما هي رغبتك؟ الثروة؟ المجد؟ القوة؟ كل هذا وأكثر ينتظرك في قمة البرج. يدخل الفتى (بام) البرج بحثاً عن الفتاة الوحيدة التي أنارت عتمة حياته.",
-        chapters: populateDefaultChapters(550, false)
-    },
-    {
-        id: "4",
-        title: "كينجدوم (Kingdom)",
-        alternative: "Kingdom",
-        author: "Yasuhisa Hara",
-        cover: "kingdom_cover.png",
-        banner: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=1200",
-        rating: 4.9,
-        status: "مستمر",
-        type: "مانجا",
-        views: 0,
-        genres: ["أكشن", "تاريخي", "عسكري", "دراما", "سينين"],
-        synopsis: "في عصر الدول المتحاربة في الصين القديمة، يطمح الشابان اليتيمان شين وهيو بأن يصبحا أعظم جنرالين تحت السماء. ولكن بعد مأساة تغير مسار حياتهما، يسعى شين جاهداً لمساعدة ملك مقاطعة تشين الشاب في توحيد الصين بأكملها وإنهاء الحروب المستمرة.",
-        chapters: populateDefaultChapters(800, true) // توليد 800 فصل تلقائياً
     }
 ];
 
@@ -375,6 +336,8 @@ class AppState {
         this.downloadProgress = {};
         this.showAuthModal = false;
         this.authModalTab = 'login';
+        this.showSettingsModal = false;
+        this.editMangaId = null;
         this.adminStats = null;
         this.adminStatsLoading = false;
         this.adminDateFrom = '';
@@ -388,41 +351,24 @@ class AppState {
     }
 
     loadMangas() {
+        this.deletedIds = new Set(JSON.parse(localStorage.getItem('kairo_deleted_ids') || '[]'));
         const stored = localStorage.getItem('kairo_mangas');
         if (stored) {
             try {
                 this.mangas = JSON.parse(stored);
             } catch (e) {
-                console.error("Failed to parse kairo_mangas, resetting to default:", e);
+                console.error("Failed to parse kairo_mangas:", e);
                 this.mangas = DEFAULT_MANGAS;
-            }
-            
-            // تصفير المشاهدات التجريبية للأعمال الافتراضية
-            let updated = false;
-            this.mangas.forEach(m => {
-                if (["1", "2", "3", "4"].includes(m.id)) {
-                    if (m.views > 0) {
-                        m.views = 0;
-                        updated = true;
-                    }
-                }
-            });
-            if (updated) {
-                this.saveMangas();
-            }
-
-            // تحقق ما إذا كانت فصول كينجدوم تحتاج لتحديث وتوسيع لتشمل الـ 800 فصل بالكامل
-            const kingdom = this.mangas.find(m => m.id === "4");
-            const solo = this.mangas.find(m => m.id === "1");
-            if (!kingdom || kingdom.chapters.length < 10 || !solo || solo.chapters.length !== 200) {
-                this.mangas = DEFAULT_MANGAS;
-                this.saveMangas();
             }
         } else {
-            this.mangas = DEFAULT_MANGAS;
+            this.mangas = JSON.parse(JSON.stringify(DEFAULT_MANGAS));
             this.saveMangas();
         }
         this.mangas = this.mangas.map(manga => normalizeMangaAssets(manga));
+        // Strict Blacklist Filter
+        if (this.deletedIds && this.deletedIds.size > 0) {
+            this.mangas = this.mangas.filter(m => !this.deletedIds.has(m.id));
+        }
         this.saveMangas();
     }
 
@@ -433,12 +379,12 @@ class AppState {
                 const scraped = await response.json();
                 if (Array.isArray(scraped)) {
                     scraped.forEach(scManga => {
+                        if (this.deletedIds && this.deletedIds.has(scManga.id)) return;
                         normalizeMangaAssets(scManga);
                         const existsIdx = this.mangas.findIndex(m => m.id === scManga.id || m.title === scManga.title);
                         if (existsIdx === -1) {
                             this.mangas.push(scManga);
                         } else {
-                            // Update existing manga content/chapters if scraped version has more chapters
                             const match = this.mangas[existsIdx];
                             if (scManga.chapters && scManga.chapters.length > 0) {
                                 match.chapters = scManga.chapters;
@@ -588,8 +534,8 @@ class AppState {
     }
 
     addToHistory(mangaId, chapterId, scrollY = 0, percentage = 0, pageIndex = 0) {
+        // Remove existing history for this manga to avoid duplication
         this.history = this.history.filter(h => h.mangaId !== mangaId);
-        
         this.history.unshift({
             mangaId,
             chapterId,
@@ -599,11 +545,20 @@ class AppState {
             updatedAt: new Date().toISOString()
         });
 
-        if (this.history.length > 30) {
-            this.history.pop();
+        if (this.history.length > 100) {
+            this.history = this.history.slice(0, 100);
         }
         
         this.saveHistory();
+    }
+
+    getOverallProgress(mangaId) {
+        const manga = this.mangas.find(m => m.id === mangaId);
+        if (!manga || !manga.chapters || manga.chapters.length === 0) return 0;
+        const readChapters = new Set(
+            this.history.filter(h => h.mangaId === mangaId).map(h => h.chapterId)
+        );
+        return Math.round((readChapters.size / manga.chapters.length) * 100);
     }
 
     loadReadingProgress() {
@@ -732,9 +687,10 @@ class AppState {
     }
 
     getRankName(level) {
-        if (level <= 30) return 'مبتدئ';
-        if (level <= 60) return 'قارئ ممتاز';
-        return 'قارئ أسطوري';
+    if (level <= 30) return 'مبتدئ';
+    if (level <= 60) return 'قارئ ممتاز';
+    if (level <= 99) return 'قارئ أسطوري';
+    return 'مدير المشروع';
     }
 
     async fetchUserProfile() {
@@ -1095,7 +1051,7 @@ function HeaderComponent() {
 
     let accountButton = '';
     if (state.sessionToken) {
-        const isAdmin = state.userEmail === 'sherifahmed181199@gmail.com';
+        const isAdmin = state.userRole === 'admin';
         const userHandle = getUserHandle(state.userEmail);
         const userInitial = getUserInitial(state.userEmail);
         const points = state.userProfile.points || 0;
@@ -1299,6 +1255,60 @@ function SuggestionsModalComponent() {
     `;
 }
 
+function SettingsModalComponent() {
+    if (!state.showSettingsModal) return '';
+    const info = state.getUserLevelInfo ? state.getUserLevelInfo() : { points: 0, level: 1, rankTitle: 'مبتدئ' };
+    const isAdmin = state.userRole === 'admin';
+    return `
+    <div class="auth-modal-overlay" id="settings-modal-overlay">
+        <div class="auth-modal-card glass-card" style="max-width: 480px; position: relative;">
+            <button class="settings-close-btn" id="close-settings-modal"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 16px; text-align: right; border-right: 4px solid var(--color-primary); padding-right: 10px;">
+                <i class="fa-solid fa-user-gear" style="color: var(--color-primary);"></i> إعدادات المستخدم
+            </h3>
+            <div class="settings-info-row">
+                <div class="settings-info-card">
+                    <span class="settings-info-label">البريد الإلكتروني</span>
+                    <span class="settings-info-value" style="font-size:0.85rem;">${state.userEmail || '—'}</span>
+                </div>
+                <div class="settings-info-card">
+                    <span class="settings-info-label">النقاط</span>
+                    <span class="settings-info-value">${isAdmin ? '∞' : info.points}</span>
+                </div>
+                <div class="settings-info-card">
+                    <span class="settings-info-label">المستوى</span>
+                    <span class="settings-info-value">${isAdmin ? 'المدير' : info.level}</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3><i class="fa-solid fa-pen"></i> تغيير اسم المستخدم</h3>
+                <div class="form-group">
+                    <label>اسم المستخدم الحالي: <strong>${state.userProfile?.username || '—'}</strong></label>
+                    <input type="text" id="settings-new-username" placeholder="أدخل اسم المستخدم الجديد" value="${state.userProfile?.username || ''}" style="margin-top: 6px;">
+                </div>
+                <button class="auth-submit-btn" id="btn-save-username" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #07080c; border: none; padding: 10px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px;">حفظ اسم المستخدم</button>
+                <div id="username-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></div>
+            </div>
+
+            <div class="settings-section">
+                <h3><i class="fa-solid fa-lock"></i> تغيير كلمة المرور</h3>
+                <div class="form-group">
+                    <label>كلمة المرور الحالية</label>
+                    <input type="password" id="settings-current-password" placeholder="أدخل كلمة المرور الحالية">
+                </div>
+                <div class="form-group">
+                    <label>كلمة المرور الجديدة</label>
+                    <input type="password" id="settings-new-password" placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)">
+                </div>
+                <button class="auth-submit-btn" id="btn-save-password" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 10px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px;">تغيير كلمة المرور</button>
+                <div id="password-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+    `;
+}
+
 // السلايدر الرئيسي (Hero Slider)
 let activeSlideIndex = 0;
 let sliderInterval = null;
@@ -1334,7 +1344,7 @@ function HeroSliderComponent() {
         <div class="hero-slide ${idx === activeSlideIndex ? 'active' : ''}" style="background-image: ${cssImageUrl(getMangaBanner(manga))}" data-id="${manga.id}">
             <div class="hero-overlay"></div>
             <div class="hero-content">
-                <span class="hero-badge">${manga.type} المميزة</span>
+                <span class="hero-badge">${manga.type || 'منهوا'} المميزة</span>
                 <h2 class="hero-title">${manga.title}</h2>
                 <div class="hero-meta">
                     <span class="rating-stars"><i class="fa-solid fa-star"></i> ${manga.rating}</span>
@@ -1368,7 +1378,25 @@ function ReadingHistoryComponent() {
         const manga = state.mangas.find(m => m.id === hist.mangaId);
         if (!manga) return;
 
-        const percentage = hist.percentage || 0;
+        const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(hist.chapterId));
+        let overallPercentage = 0;
+        if (chapterIndex !== -1 && manga.chapters.length > 0) {
+            let isReversed = false;
+            if (manga.chapters.length > 1) {
+                let firstNum = parseFloat(String(manga.chapters[0].id).replace(/[^0-9.]/g, '')) || 0;
+                let lastNum = parseFloat(String(manga.chapters[manga.chapters.length - 1].id).replace(/[^0-9.]/g, '')) || 0;
+                if (firstNum > lastNum) {
+                    isReversed = true;
+                }
+            }
+            if (isReversed) {
+                overallPercentage = Math.round(((manga.chapters.length - chapterIndex) / manga.chapters.length) * 100);
+            } else {
+                overallPercentage = Math.round(((chapterIndex + 1) / manga.chapters.length) * 100);
+            }
+        }
+        const percentage = overallPercentage || hist.percentage || 0;
+        let numClean = String(hist.chapterId).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.');
 
         historyCardsHtml += `
         <div class="history-item-card" data-manga-id="${hist.mangaId}" data-chap-id="${hist.chapterId}" data-scroll="${hist.scrollY}" data-page="${hist.activePageIndex}">
@@ -1377,7 +1405,7 @@ function ReadingHistoryComponent() {
             </div>
             <div class="history-item-details">
                 <h4 class="history-item-title">${manga.title}</h4>
-                <span class="history-item-chapter">الفصل ${hist.chapterId}</span>
+                <span class="history-item-chapter">الفصل ${numClean}</span>
                 <div style="margin-top:4px;">
                     <div class="level-progress-info" style="margin-bottom: 2px;">
                         <span class="history-item-progress-text">تقدم القراءة</span>
@@ -1517,7 +1545,12 @@ function MangaGridComponent(title, mangasFiltered) {
 
     let cardsHtml = '';
     mangasFiltered.forEach(manga => {
-        const latestChap = manga.chapters[0] ? manga.chapters[0].id : 'قريباً';
+        const totalChaps = manga.chapters ? manga.chapters.length : 0;
+        const chapsLabel = totalChaps > 0 ? totalChaps + ' فصل' : 'قريباً';
+        const typeLabel = manga.type || 'منهوا';
+        const ongoing = manga.status === 'Ongoing' || manga.status === 'مستمرة' || manga.status === 'مستمر';
+        const statusText = ongoing ? 'مستمرة' : 'مكتملة';
+        const statusColor = ongoing ? '#ffb703' : '#00ff7f';
         cardsHtml += `
         <div class="manga-card" data-id="${manga.id}">
             <div class="manga-card-cover">
@@ -1528,8 +1561,12 @@ function MangaGridComponent(title, mangasFiltered) {
             <div class="manga-card-info">
                 <h3 class="manga-card-title">${manga.title}</h3>
                 <div class="manga-card-chapter">
-                    <span>${manga.type}</span>
-                    <span class="chap-num">فصل ${latestChap}</span>
+                    <span>${typeLabel}</span>
+                    <span class="chap-num">${chapsLabel}</span>
+                </div>
+                <div style="display:flex;gap:8px;font-size:0.75rem;color:var(--text-dark);margin-top:4px;align-items:center;">
+                    <span style="color:${statusColor};">●</span>
+                    <span>${statusText}</span>
                 </div>
             </div>
         </div>
@@ -1550,7 +1587,7 @@ function MangaGridComponent(title, mangasFiltered) {
 function UserProfileWidgetComponent() {
     if (!state.sessionToken) return '';
     const info = state.getUserLevelInfo();
-    const isAdmin = state.userEmail === 'sherifahmed181199@gmail.com';
+    const isAdmin = state.userRole === 'admin';
     const rankClass = isAdmin ? 'rank-admin' : (info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold');
     return `
     <div class="sidebar-card glam-card ${isAdmin ? 'admin-card' : ''}">
@@ -1558,11 +1595,11 @@ function UserProfileWidgetComponent() {
             <div class="user-widget-avatar ${rankClass}">${state.userProfile.username.charAt(0)}</div>
             <div class="user-widget-info">
                 <h4>${state.userProfile.username}</h4>
-                <p class="${rankClass}">${isAdmin ? 'المدير 🌟' : info.rankTitle}</p>
+                <p class="${rankClass}">${isAdmin ? 'مدير المشروع 🌟' : info.rankTitle}</p>
             </div>
         </div>
         <div class="gamification-panel">
-            <div class="level-badge ${rankClass}">${isAdmin ? 'جميل' : 'المستوى ' + info.level}</div>
+            <div class="level-badge ${rankClass}">${isAdmin ? 'مدير المشروع' : 'المستوى ' + info.level}</div>
             <div class="level-progress-info">
                 <span>النقاط</span>
                 <span class="points-display">${isAdmin ? '∞' : info.points}</span>
@@ -1571,7 +1608,7 @@ function UserProfileWidgetComponent() {
                 <div class="progress-fill ${rankClass}" style="width: ${Math.min(info.levelProgress, 100)}%"></div>
             </div>
             <div class="level-progress-info" style="margin-top: 4px;">
-                <span style="font-size:0.7rem;color:var(--text-dark);">${isAdmin ? 'أنت مالك الموقع ✨' : info.pointsToNext + ' نقطة للمستوى التالي'}</span>
+                <span style="font-size:0.7rem;color:var(--text-dark);">${isAdmin ? 'أنت مدير المشروع ✨' : info.pointsToNext + ' نقطة للمستوى التالي'}</span>
             </div>
         </div>
     </div>
@@ -1677,7 +1714,7 @@ async function DetailViewComponent() {
 
     let genresHtml = '';
     manga.genres.forEach(g => {
-        genresHtml += `<span class="genre-tag">${g}</span>`;
+        genresHtml += `<span class="genre-tag clickable-genre" style="cursor: pointer;" onclick="event.stopPropagation(); state.activeGenre='${g}'; navigate('home'); window.scrollTo(0, 0);">${g}</span>`;
     });
 
     const searchQ = (state.chapterSearchQuery || '').trim().toLowerCase();
@@ -1846,11 +1883,22 @@ async function DetailViewComponent() {
                     </div>
                     
                     ${state.userRole === 'admin' ? `
-                        <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+                        <button class="detail-btn edit-manga-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(0,255,127,0.1); border:1px solid #00ff7f; color:#00ff7f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
+                            <i class="fa-solid fa-pen-to-square"></i> تعديل هذا العمل
+                        </button>
+                        <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:6px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
                             <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
                         </button>
                     ` : ''}
                     
+                    ${state.sessionToken ? `
+                        <div class="overall-progress-container">
+                            <div class="overall-progress-label"><i class="fa-solid fa-chart-simple"></i> تقدم القراءة الإجمالي: ${state.getOverallProgress(manga.id)}%</div>
+                            <div class="overall-progress-track">
+                                <div class="overall-progress-fill" style="width:${state.getOverallProgress(manga.id)}%"></div>
+                            </div>
+                        </div>
+                    ` : ''}
                     ${state.progress[manga.id] ? `
                         <button class="detail-btn btn-continue continue-reading-btn" data-chap-id="${state.progress[manga.id].chapterId}">
                             <i class="fa-solid fa-arrow-rotate-right"></i> متابعة القراءة
@@ -1863,8 +1911,8 @@ async function DetailViewComponent() {
                 <p class="detail-author">اسم آخر: ${manga.alternative} • المؤلف: ${manga.author}</p>
                 
                 <div class="detail-meta-grid">
-                    <div class="meta-item"><strong>النوع:</strong> ${manga.type}</div>
-                    <div class="meta-item"><strong>الحالة:</strong> ${manga.status}</div>
+                    <div class="meta-item"><strong>النوع:</strong> ${manga.type || 'منهوا'}</div>
+                    <div class="meta-item"><strong>الحالة:</strong> ${manga.status === 'Ongoing' ? 'مستمرة' : manga.status === 'Completed' ? 'مكتملة' : manga.status}</div>
                     <div class="meta-item"><strong>المشاهدات:</strong> <i class="fa-solid fa-eye" style="color:var(--color-secondary)"></i> ${manga.views || 0}</div>
                     <div class="meta-item"><strong>التقييم:</strong> <i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</div>
                 </div>
@@ -1999,6 +2047,11 @@ async function ReaderViewComponent() {
         });
     }
 
+    // --- التحميل التلقائي للفصل التالي (Infinite Scroll) ---
+    if (chapterIndex > 0 && settings.mode !== 'horizontal') {
+        imagesHtml += '<div id="next-chapter-sentinel" style="height:1px;width:100%;"></div>';
+    }
+
     // جلب تعليقات الفصل من السيرفر
     let chapterComments = [];
     let commentsListHtml = '';
@@ -2077,7 +2130,7 @@ async function ReaderViewComponent() {
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
-                        <span>الفصل ${chapter.id}</span>
+                        <span>الفصل ${String(chapter.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-content">
@@ -2087,10 +2140,17 @@ async function ReaderViewComponent() {
                         </div>
                         <div class="dropdown-items-list">
                             ${manga.chapters.map(ch => {
-                                const subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
+                                let numClean = String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.');
+                                let subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
+                                
+                                // Prevent duplication if subtitle is exactly "الفصل X" or "chapter X"
+                                if (subtitle.replace(/[^0-9.]/g, '') === numClean) {
+                                    subtitle = '';
+                                }
+
                                 return `
                                     <div class="dropdown-item-opt ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'active' : ''}" data-value="${ch.id}">
-                                        <span class="opt-num">الفصل ${ch.id}</span>
+                                        <span class="opt-num">الفصل ${numClean}</span>
                                         ${subtitle ? `<span class="opt-title">${subtitle}</span>` : ''}
                                     </div>
                                 `;
@@ -2100,6 +2160,10 @@ async function ReaderViewComponent() {
                 </div>
 
                 <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
+                ${state.sessionUser && state.sessionUser.role === 'admin' ? `
+                <button class="reader-btn translate-chapter-btn" title="ترجمة هذا الفصل" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
+                    <i class="fa-solid fa-language"></i>
+                </button>` : ''}
             </div>
         </div>
         
@@ -2122,6 +2186,12 @@ async function ReaderViewComponent() {
                 <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
                 <span id="like-text">${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
             </button>
+        </div>
+        
+        <div class="reader-bottom-nav">
+            <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i> الفصل السابق</button>
+            <button class="reader-btn return-to-manga" title="العودة لصفحة المانهوا">رجوع إلى المانهوا</button>
+            <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي">الفصل التالي <i class="fa-solid fa-chevron-left"></i></button>
         </div>
         
         <button class="reader-settings-toggle-btn" id="settings-panel-toggle" title="تخصيص القراءة"><i class="fa-solid fa-gear"></i></button>
@@ -2180,7 +2250,8 @@ function AdminPanelViewComponent() {
     const dateTo = state.adminDateTo || '';
     const statsTitle = state.adminDateFrom && state.adminDateTo ? `إحصائيات (${state.adminDateFrom} → ${state.adminDateTo})` : 'لوحة الإحصائيات الحيوية';
     return `
-    <div class="admin-container">
+    <div class="admin-container" style="position: relative;">
+        <button class="settings-close-btn" id="close-admin-btn" title="خروج من لوحة الإدارة" style="position: absolute; top: 12px; left: 12px;"><i class="fa-solid fa-xmark"></i></button>
         <h2 class="admin-title">لوحة التحكم والإدارة للموقع <span>(KAIRO/منهوا)</span></h2>
         
         <!-- Date Range + Export Controls -->
@@ -2235,8 +2306,71 @@ function AdminPanelViewComponent() {
         <div class="admin-tabs">
             <button class="admin-tab active" id="tab-add-manga">إضافة مانجا/منهوا جديدة</button>
             <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
+            <button class="admin-tab" id="tab-edit-manga">تعديل مانجا/منهوا</button>
             <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
             <button class="admin-tab" id="tab-site-settings">إعدادات الموقع</button>
+            <button class="admin-tab" id="tab-alt-sources">مصادر بديلة</button>
+        </div>
+        
+        <div class="admin-form-panel" id="panel-edit-manga" style="display:none;">
+            <form id="edit-manga-form">
+                <div class="admin-form-group">
+                    <label>اختر المانجا/المنهوا للتعديل</label>
+                    <select id="edit-manga-id" required>
+                        <option value="">-- اختر --</option>
+                        ${mangaOptions}
+                    </select>
+                </div>
+                <div id="edit-manga-fields" style="display:none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+                    <div class="admin-form-group">
+                        <label>رابط صورة الغلاف (Cover)</label>
+                        <input type="url" id="edit-manga-cover" placeholder="رابط URL للغلاف">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>التصنيفات (تفصل بفاصلة)</label>
+                        <input type="text" id="edit-manga-genres" placeholder="أكشن, مغامرة, خيال, عسكري">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>العنوان</label>
+                        <input type="text" id="edit-manga-title" placeholder="عنوان المانجا">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>العنوان البديل</label>
+                        <input type="text" id="edit-manga-alt" placeholder="العنوان بالإنجليزي أو البديل">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>المؤلف</label>
+                        <input type="text" id="edit-manga-author" placeholder="اسم المؤلف أو الرسام">
+                    </div>
+                    <div class="admin-form-group">
+                        <label>القصة (الوصف)</label>
+                        <textarea id="edit-manga-synopsis" rows="4" placeholder="وصف القصة"></textarea>
+                    </div>
+                    <div class="admin-form-group">
+                        <label>حالة العمل</label>
+                        <select id="edit-manga-status">
+                            <option value="مستمر">مستمر</option>
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="متوقف">متوقف</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات</button>
+                    <div id="edit-manga-msg" style="margin-top: 12px; font-size: 0.9rem; text-align: center;"></div>
+                </div>
+            </form>
+        </div>
+
+        <div class="admin-form-panel" id="panel-alt-sources" style="display:none;">
+            <form id="alt-source-form">
+                <div class="admin-form-group">
+                    <label>اختر المانجا/المنهوا</label>
+                    <select id="alt-manga-id" required>
+                        ${mangaOptions}
+                    </select>
+                </div>
+                <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-search"></i> بحث عن مصادر بديلة</button>
+            </form>
+            <div id="alt-source-results" style="margin-top:20px;"></div>
         </div>
         
         <div class="admin-form-panel" id="panel-add-manga">
@@ -2568,7 +2702,7 @@ async function renderApp() {
 
     // 3. بناء وتصيير الهيكل الأساسي للواجهة
     if (state.currentView === 'reader') {
-        root.innerHTML = `<div id="app-root">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()}</div>`;
+        root.innerHTML = `<div id="app-root">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()}</div>`;
         
         if (state.readerSettings.mode !== 'horizontal') {
             initLazyLoading();
@@ -2583,6 +2717,7 @@ async function renderApp() {
             </main>
             ${AuthModalComponent()}
             ${SuggestionsModalComponent()}
+            ${SettingsModalComponent()}
         </div>
         `;
     }
@@ -2783,6 +2918,15 @@ function attachEventListeners() {
     const navHistory = document.getElementById('nav-history');
     if (navHistory) navHistory.onclick = () => navigate('history');
 
+    const navProfileBtn = document.getElementById('nav-profile-btn');
+    if (navProfileBtn) navProfileBtn.onclick = () => {
+        state.showSettingsModal = true;
+        renderApp();
+    };
+
+    const closeAdminBtn = document.getElementById('close-admin-btn');
+    if (closeAdminBtn) closeAdminBtn.onclick = () => navigate('home');
+
     const navAdmin = document.getElementById('nav-admin');
     if (navAdmin) navAdmin.onclick = () => navigate('admin');
 
@@ -2841,10 +2985,15 @@ function attachEventListeners() {
     const genreTags = document.querySelectorAll('.genre-tag');
     genreTags.forEach(tag => {
         tag.onclick = (e) => {
-            const genre = e.target.dataset.genre;
+            const genre = e.target.dataset.genre || e.target.textContent.trim();
             if (genre) {
                 state.activeGenre = genre;
-                renderApp();
+                if (state.currentView !== 'home') {
+                    navigate('home');
+                } else {
+                    renderApp();
+                }
+                window.scrollTo(0, 0);
             }
         };
     });
@@ -3102,6 +3251,8 @@ function attachEventListeners() {
                 const result = await response.json();
                 if (response.ok) {
                     state.mangas = state.mangas.filter(m => m.id !== mangaId);
+                    state.deletedIds.add(mangaId);
+                    localStorage.setItem('kairo_deleted_ids', JSON.stringify([...state.deletedIds]));
                     state.saveMangas();
                     navigate('home');
                 } else {
@@ -3110,6 +3261,17 @@ function attachEventListeners() {
             } catch (err) {
                 alert('خطأ في الاتصال بالخادم');
             }
+        };
+    });
+
+    const editMangaBtns = document.querySelectorAll('.edit-manga-btn');
+    editMangaBtns.forEach(btn => {
+        btn.onclick = (e) => {
+            e.stopPropagation();
+            const mangaId = btn.dataset.id;
+            state.editMangaId = mangaId;
+            navigate('admin');
+            // Will be loaded when the edit panel renders
         };
     });
 
@@ -3123,12 +3285,16 @@ function attachEventListeners() {
     });
 
     // القارئ: العودة لصفحة تفاصيل المانجا
-    const returnBtn = document.querySelector('.return-to-manga');
-    if (returnBtn) {
-        returnBtn.onclick = () => {
-            navigate('detail', state.activeMangaId);
+    const returnBtns = document.querySelectorAll('.return-to-manga');
+    returnBtns.forEach(btn => {
+        btn.onclick = () => {
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري الرجوع...</span>';
+            btn.style.pointerEvents = 'none';
+            setTimeout(() => {
+                navigate('detail', state.activeMangaId);
+            }, 50);
         };
-    }
+    });
 
     // القارئ: إدارة القائمة المنسدلة المخصصة للفصول
     const dropdown = document.getElementById('chapter-dropdown');
@@ -3182,29 +3348,82 @@ function attachEventListeners() {
     }
 
     // القارئ: الفصل السابق
-    const prevBtn = document.querySelector('.prev-chapter-btn');
-    if (prevBtn && !prevBtn.classList.contains('disabled')) {
-        prevBtn.onclick = () => {
-            const manga = state.mangas.find(m => m.id === state.activeMangaId);
-            const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-            if (chapterIndex < manga.chapters.length - 1) {
-                const prevChapId = manga.chapters[chapterIndex + 1].id;
-                navigate('reader', state.activeMangaId, prevChapId);
-            }
-        };
-    }
+    const prevBtns = document.querySelectorAll('.prev-chapter-btn');
+    prevBtns.forEach(btn => {
+        if (!btn.classList.contains('disabled')) {
+            btn.onclick = () => {
+                const manga = state.mangas.find(m => m.id === state.activeMangaId);
+                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+                if (chapterIndex < manga.chapters.length - 1) {
+                    const prevChapId = manga.chapters[chapterIndex + 1].id;
+                    navigate('reader', state.activeMangaId, prevChapId);
+                    window.scrollTo(0, 0);
+                }
+            };
+        }
+    });
 
     // القارئ: الفصل التالي
-    const nextBtn = document.querySelector('.next-chapter-btn');
-    if (nextBtn && !nextBtn.classList.contains('disabled')) {
-        nextBtn.onclick = () => {
-            const manga = state.mangas.find(m => m.id === state.activeMangaId);
-            const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-            if (chapterIndex > 0) {
-                const nextChapId = manga.chapters[chapterIndex - 1].id;
-                navigate('reader', state.activeMangaId, nextChapId);
+    const nextBtns = document.querySelectorAll('.next-chapter-btn');
+    nextBtns.forEach(btn => {
+        if (!btn.classList.contains('disabled')) {
+            btn.onclick = () => {
+                const manga = state.mangas.find(m => m.id === state.activeMangaId);
+                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+                if (chapterIndex > 0) {
+                    const nextChapId = manga.chapters[chapterIndex - 1].id;
+                    navigate('reader', state.activeMangaId, nextChapId);
+                    window.scrollTo(0, 0);
+                }
+            };
+        }
+    });
+
+    // القارئ: ترجمة الفصل
+    document.querySelectorAll('.translate-chapter-btn').forEach(btn => {
+        btn.onclick = async function() {
+            const url = this.dataset.url;
+            const mangaId = this.dataset.mangaId;
+            const chapterId = this.dataset.chapterId;
+            this.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            this.disabled = true;
+            try {
+                const res = await fetch('/api/admin/auto-translate', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({url, manga_id: mangaId, chapter_id: chapterId})
+                });
+                const data = await res.json();
+                if (data.status === 'queued') {
+                    alert('تمت إضافة الفصل لطابور الترجمة');
+                } else {
+                    alert(data.error || 'فشلت الترجمة');
+                }
+            } catch (e) {
+                alert('خطأ في الاتصال بالخادم');
             }
+            this.innerHTML = '<i class="fa-solid fa-language"></i>';
+            this.disabled = false;
         };
+    });
+
+    // --- التحميل التلقائي للفصل التالي عند التمرير (Infinite Scroll) ---
+    var sentinel = document.getElementById('next-chapter-sentinel');
+    if (sentinel && 'IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    observer.disconnect();
+                    var manga = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
+                    if (!manga) return;
+                    var chapterIndex = manga.chapters.findIndex(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
+                    if (chapterIndex <= 0) return;
+                    var nextChapId = manga.chapters[chapterIndex - 1].id;
+                    navigate('reader', state.activeMangaId, nextChapId);
+                }
+            });
+        }, { rootMargin: '400px' });
+        observer.observe(sentinel);
     }
 
     // القارئ: فتح/إغلاق لوحة الإعدادات العائمة للتخصيص
@@ -3307,69 +3526,81 @@ function attachEventListeners() {
     // الإدارة: تبديل التبويبات وتفعيل التبويب المختار
     const tabAddManga = document.getElementById('tab-add-manga');
     const tabAddChapter = document.getElementById('tab-add-chapter');
+    const tabEditManga = document.getElementById('tab-edit-manga');
     const tabSuggestions = document.getElementById('tab-suggestions');
     const tabSiteSettings = document.getElementById('tab-site-settings');
+    const tabAltSources = document.getElementById('tab-alt-sources');
 
     const panelManga = document.getElementById('panel-add-manga');
     const panelChapter = document.getElementById('panel-add-chapter');
+    const panelEditManga = document.getElementById('panel-edit-manga');
     const panelSuggestions = document.getElementById('panel-suggestions');
     const panelSiteSettings = document.getElementById('panel-site-settings');
+    const panelAltSources = document.getElementById('panel-alt-sources');
+
+    function hideAllAdminPanels() {
+        if (panelManga) panelManga.style.display = 'none';
+        if (panelChapter) panelChapter.style.display = 'none';
+        if (panelEditManga) panelEditManga.style.display = 'none';
+        if (panelSuggestions) panelSuggestions.style.display = 'none';
+        if (panelSiteSettings) panelSiteSettings.style.display = 'none';
+        if (panelAltSources) panelAltSources.style.display = 'none';
+        if (tabAddManga) tabAddManga.classList.remove('active');
+        if (tabAddChapter) tabAddChapter.classList.remove('active');
+        if (tabEditManga) tabEditManga.classList.remove('active');
+        if (tabSuggestions) tabSuggestions.classList.remove('active');
+        if (tabSiteSettings) tabSiteSettings.classList.remove('active');
+        if (tabAltSources) tabAltSources.classList.remove('active');
+    }
 
     if (tabAddManga) {
         tabAddManga.onclick = () => {
+            hideAllAdminPanels();
             tabAddManga.classList.add('active');
-            if (tabAddChapter) tabAddChapter.classList.remove('active');
-            if (tabSuggestions) tabSuggestions.classList.remove('active');
-            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
-            
             if (panelManga) panelManga.style.display = 'block';
-            if (panelChapter) panelChapter.style.display = 'none';
-            if (panelSuggestions) panelSuggestions.style.display = 'none';
-            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
         };
     }
 
     if (tabAddChapter) {
         tabAddChapter.onclick = () => {
+            hideAllAdminPanels();
             tabAddChapter.classList.add('active');
-            if (tabAddManga) tabAddManga.classList.remove('active');
-            if (tabSuggestions) tabSuggestions.classList.remove('active');
-            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
-            
             if (panelChapter) panelChapter.style.display = 'block';
-            if (panelManga) panelManga.style.display = 'none';
-            if (panelSuggestions) panelSuggestions.style.display = 'none';
-            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
+        };
+    }
+
+    if (tabEditManga) {
+        tabEditManga.onclick = () => {
+            hideAllAdminPanels();
+            tabEditManga.classList.add('active');
+            if (panelEditManga) panelEditManga.style.display = 'block';
+            loadEditMangaData();
         };
     }
 
     if (tabSuggestions) {
         tabSuggestions.onclick = () => {
+            hideAllAdminPanels();
             tabSuggestions.classList.add('active');
-            if (tabAddManga) tabAddManga.classList.remove('active');
-            if (tabAddChapter) tabAddChapter.classList.remove('active');
-            if (tabSiteSettings) tabSiteSettings.classList.remove('active');
-            
             if (panelSuggestions) panelSuggestions.style.display = 'block';
-            if (panelManga) panelManga.style.display = 'none';
-            if (panelChapter) panelChapter.style.display = 'none';
-            if (panelSiteSettings) panelSiteSettings.style.display = 'none';
             loadAdminSuggestions();
         };
     }
 
     if (tabSiteSettings) {
         tabSiteSettings.onclick = () => {
+            hideAllAdminPanels();
             tabSiteSettings.classList.add('active');
-            if (tabAddManga) tabAddManga.classList.remove('active');
-            if (tabAddChapter) tabAddChapter.classList.remove('active');
-            if (tabSuggestions) tabSuggestions.classList.remove('active');
-            
             if (panelSiteSettings) panelSiteSettings.style.display = 'block';
-            if (panelManga) panelManga.style.display = 'none';
-            if (panelChapter) panelChapter.style.display = 'none';
-            if (panelSuggestions) panelSuggestions.style.display = 'none';
             loadAdminConfig();
+        };
+    }
+
+    if (tabAltSources) {
+        tabAltSources.onclick = () => {
+            hideAllAdminPanels();
+            tabAltSources.classList.add('active');
+            if (panelAltSources) panelAltSources.style.display = 'block';
         };
     }
 
@@ -3634,6 +3865,24 @@ function attachEventListeners() {
         };
     }
 
+    const closeSettingsBtn = document.getElementById('close-settings-modal');
+    if (closeSettingsBtn) {
+        closeSettingsBtn.onclick = () => {
+            state.showSettingsModal = false;
+            renderApp();
+        };
+    }
+
+    const settingsOverlay = document.getElementById('settings-modal-overlay');
+    if (settingsOverlay) {
+        settingsOverlay.onclick = (e) => {
+            if (e.target === settingsOverlay) {
+                state.showSettingsModal = false;
+                renderApp();
+            }
+        };
+    }
+
     const forgotTrigger = document.getElementById('forgot-password-trigger');
     if (forgotTrigger) {
         forgotTrigger.onclick = () => {
@@ -3771,12 +4020,28 @@ function attachEventListeners() {
                             renderApp();
                         }, 1200);
                     } else {
-                        successMsg.innerText = result.message || 'تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول';
-                        successMsg.style.display = 'block';
-                        setTimeout(() => {
-                            state.authModalTab = 'login';
-                            renderApp();
-                        }, 1500);
+                        if (result.token) {
+                            state.sessionToken = result.token;
+                            state.userEmail = result.email;
+                            state.userRole = result.role;
+                            if (result.points !== undefined) state.userProfile.points = result.points;
+                            if (result.level !== undefined) state.userProfile.level = result.level;
+                            state.saveUserProfile();
+                            successMsg.innerText = 'تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...';
+                            successMsg.style.display = 'block';
+                            setTimeout(async () => {
+                                await state.fetchAndMergeSettings();
+                                state.showAuthModal = false;
+                                renderApp();
+                            }, 1200);
+                        } else {
+                            successMsg.innerText = result.message || 'تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول';
+                            successMsg.style.display = 'block';
+                            setTimeout(() => {
+                                state.authModalTab = 'login';
+                                renderApp();
+                            }, 1500);
+                        }
                     }
                 } else {
                     errorMsg.innerText = result.error || 'حدث خطأ ما';
@@ -3955,6 +4220,223 @@ function attachEventListeners() {
             }
         };
     }
+
+    // الإدارة: البحث عن مصادر بديلة
+    const altSourceForm = document.getElementById('alt-source-form');
+    if (altSourceForm) {
+        altSourceForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const mangaId = document.getElementById('alt-manga-id')?.value;
+            if (!mangaId) return;
+            const resultsDiv = document.getElementById('alt-source-results');
+            if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> جاري البحث...</p>';
+            try {
+                const resp = await fetch('/api/admin/find-alternative-sources', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}`},
+                    body: JSON.stringify({manga_id: mangaId})
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.results || data.results.length === 0) {
+                    if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);">لم نعثر على مصادر بديلة.</p>';
+                    return;
+                }
+                let html = '<h3 style="color:var(--text-main);margin-bottom:16px;">المصادر البديلة المتاحة:</h3>';
+                data.results.forEach(r => {
+                    html += `
+                    <div style="padding:16px;border:1px solid var(--border-color);border-radius:var(--border-radius-md);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                            <strong style="color:var(--text-main);">${r.title}</strong>
+                            <span style="display:block;font-size:0.85rem;color:var(--text-dark);">المصدر: ${r.source} • ${r.chapters ? r.chapters.length + ' فصل' : ''}</span>
+                        </div>
+                        <button class="admin-submit-btn link-alt-source-btn" style="padding:8px 16px;font-size:0.85rem;" data-manga-id="${mangaId}" data-source="${r.source}" data-url="${r.url}">
+                            <i class="fa-solid fa-link"></i> ربط
+                        </button>
+                    </div>`;
+                });
+                if (resultsDiv) resultsDiv.innerHTML = html;
+                // Attach link buttons
+                document.querySelectorAll('.link-alt-source-btn').forEach(btn => {
+                    btn.onclick = async () => {
+                        const mid = btn.dataset.mangaId;
+                        const src = btn.dataset.source;
+                        const url = btn.dataset.url;
+                        try {
+                            const lresp = await fetch('/api/admin/link-alternative-source', {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}`},
+                                body: JSON.stringify({manga_id: mid, source: src, source_url: url})
+                            });
+                            const ldata = await lresp.json();
+                            alert(ldata.error || 'تم ربط المصدر البديل بنجاح!');
+                            if (lresp.ok) btn.disabled = true;
+                        } catch (err) {
+                            alert('خطأ في الاتصال');
+                        }
+                    };
+                });
+            } catch (err) {
+                if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:#ff007f;">خطأ في الاتصال بالخادم.</p>';
+            }
+        };
+    }
+
+    // إعدادات المستخدم: حفظ اسم المستخدم
+    const btnSaveUsername = document.getElementById('btn-save-username');
+    if (btnSaveUsername) {
+        btnSaveUsername.onclick = async () => {
+            const input = document.getElementById('settings-new-username');
+            const msg = document.getElementById('username-msg');
+            const username = input.value.trim();
+            if (!username || username.length < 2) {
+                msg.innerHTML = '<span style="color:#ff007f;">اسم المستخدم يجب أن يكون حرفين على الأقل</span>';
+                return;
+            }
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            try {
+                const res = await fetch('/api/auth/change-username', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}`},
+                    body: JSON.stringify({ username })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    state.userProfile.username = username;
+                    state.saveUserProfile();
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم تحديث اسم المستخدم بنجاح</span>';
+                } else {
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التحديث'}</span>`;
+                }
+            } catch (err) {
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+            }
+        };
+    }
+
+    // إعدادات المستخدم: تغيير كلمة المرور
+    const btnSavePassword = document.getElementById('btn-save-password');
+    if (btnSavePassword) {
+        btnSavePassword.onclick = async () => {
+            const currentPass = document.getElementById('settings-current-password');
+            const newPass = document.getElementById('settings-new-password');
+            const msg = document.getElementById('password-msg');
+            if (!currentPass.value) {
+                msg.innerHTML = '<span style="color:#ff007f;">الرجاء إدخال كلمة المرور الحالية</span>';
+                return;
+            }
+            if (!newPass.value || newPass.value.length < 6) {
+                msg.innerHTML = '<span style="color:#ff007f;">كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل</span>';
+                return;
+            }
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            try {
+                const res = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}`},
+                    body: JSON.stringify({ current_password: currentPass.value, new_password: newPass.value })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم تغيير كلمة المرور بنجاح</span>';
+                    currentPass.value = '';
+                    newPass.value = '';
+                } else {
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التغيير'}</span>`;
+                }
+            } catch (err) {
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+            }
+        };
+    }
+
+    // الإدارة: تحميل بيانات المنهوا في نموذج التعديل عند اختيارها
+    const editMangaSelect = document.getElementById('edit-manga-id');
+    if (editMangaSelect) {
+        editMangaSelect.onchange = () => {
+            const mangaId = editMangaSelect.value;
+            if (!mangaId) {
+                document.getElementById('edit-manga-fields').style.display = 'none';
+                return;
+            }
+            const manga = state.mangas.find(m => m.id === mangaId);
+            if (!manga) return;
+            document.getElementById('edit-manga-cover').value = manga.cover || '';
+            document.getElementById('edit-manga-genres').value = (Array.isArray(manga.genres) ? manga.genres.join('، ') : manga.genres || '');
+            document.getElementById('edit-manga-title').value = manga.title || '';
+            document.getElementById('edit-manga-alt').value = manga.alternative || '';
+            document.getElementById('edit-manga-author').value = manga.author || '';
+            document.getElementById('edit-manga-synopsis').value = manga.synopsis || '';
+            const statusMap = { 'Ongoing': 'مستمر', 'مستمر': 'مستمر', 'Completed': 'مكتمل', 'مكتمل': 'مكتمل', 'متوقف': 'متوقف' };
+            const statusSelect = document.getElementById('edit-manga-status');
+            statusSelect.value = statusMap[manga.status] || 'مستمر';
+            document.getElementById('edit-manga-fields').style.display = 'block';
+            document.getElementById('edit-manga-msg').innerHTML = '';
+        };
+    }
+
+    // الإدارة: حفظ تعديلات المنهوا
+    const editMangaForm = document.getElementById('edit-manga-form');
+    if (editMangaForm) {
+        editMangaForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const mangaId = document.getElementById('edit-manga-id').value;
+            if (!mangaId) return;
+            const msg = document.getElementById('edit-manga-msg');
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            try {
+                const manga = state.mangas.find(m => m.id === mangaId);
+                if (!manga) {
+                    msg.innerHTML = '<span style="color:#ff007f;">المنهوا غير موجودة</span>';
+                    return;
+                }
+                const updated = { ...manga };
+                updated.cover = document.getElementById('edit-manga-cover').value || manga.cover;
+                const genresRaw = document.getElementById('edit-manga-genres').value;
+                updated.genres = genresRaw ? genresRaw.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g) : manga.genres;
+                updated.title = document.getElementById('edit-manga-title').value || manga.title;
+                updated.alternative = document.getElementById('edit-manga-alt').value || manga.alternative || '';
+                updated.author = document.getElementById('edit-manga-author').value || manga.author;
+                updated.synopsis = document.getElementById('edit-manga-synopsis').value || manga.synopsis || '';
+                const statusSelect = document.getElementById('edit-manga-status');
+                const statusMapRev = { 'مستمر': 'Ongoing', 'مكتمل': 'Completed', 'متوقف': 'Hiatus' };
+                updated.status = statusMapRev[statusSelect.value] || manga.status;
+
+                const res = await fetch('/api/save_manga', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}`},
+                    body: JSON.stringify(updated)
+                });
+                if (res.ok) {
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم حفظ التعديلات بنجاح! سيتم التحديث بعد إعادة تحميل الصفحة.</span>';
+                    const idx = state.mangas.findIndex(m => m.id === mangaId);
+                    if (idx !== -1) state.mangas[idx] = updated;
+                    state.saveMangas();
+                } else {
+                    const errData = await res.json();
+                    msg.innerHTML = `<span style="color:#ff007f;">${errData.error || 'فشل الحفظ'}</span>`;
+                }
+            } catch (err) {
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+            }
+        };
+    }
+}
+
+// ==========================================
+// 5.5. دوال مساعدة للإدارة
+// ==========================================
+
+function loadEditMangaData() {
+    const select = document.getElementById('edit-manga-id');
+    if (!select) return;
+    if (state.editMangaId) {
+        select.value = state.editMangaId;
+        select.dispatchEvent(new Event('change'));
+        state.editMangaId = null;
+    } else if (select.value) {
+        // Already selected, re-trigger load
+        select.dispatchEvent(new Event('change'));
+    }
 }
 
 // ==========================================
@@ -3985,11 +4467,43 @@ function loadSingleImage(container, src) {
 }
 
 function showImageError(container, src, exhausted) {
+    var mangaId = state.activeMangaId || '';
+    var chapterId = state.activeChapterId || '';
     container.innerHTML = '<div class="reader-image-error" style="padding:40px 20px;text-align:center;color:var(--color-accent);display:flex;flex-direction:column;align-items:center;gap:8px;">' +
         '<i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:8px;"></i>' +
         '<p style="font-weight:700;">' + (exhausted ? 'تعذر تحميل الصورة بعد عدة محاولات' : 'فشل تحميل هذه الصفحة') + '</p>' +
         (exhausted ? '' : '<button class="retry-btn" style="background:var(--color-primary);color:white;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;">إعادة المحاولة</button>') +
+        '<button class="alt-source-btn" data-manga-id="' + mangaId + '" data-chap-id="' + chapterId + '" style="background:var(--color-secondary);color:#07080c;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;margin-top:4px;"><i class="fa-solid fa-compass"></i> مصدر بديل</button>' +
         '</div>';
+    var altBtn = container.querySelector('.alt-source-btn');
+    if (altBtn) {
+        altBtn.onclick = function(e) {
+            e.stopPropagation();
+            var mid = this.dataset.mangaId;
+            var cid = this.dataset.chapId;
+            if (mid && cid) {
+                fetch('/api/admin/import-alt-chapter-images', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (state.sessionToken || '')},
+                    body: JSON.stringify({manga_id: mid, chapter_id: cid, alt_url: ''})
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    if (data.alt_images && data.alt_images.length > 0) {
+                        var manga = state.mangas.find(function(m) { return m.id === mid; });
+                        if (manga) {
+                            var ch = manga.chapters.find(function(c) { return c.id === cid; });
+                            if (ch) {
+                                ch.alt_images = data.alt_images;
+                                container.parentElement.innerHTML = '<div class="reader-image-placeholder"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-secondary);margin-bottom:12px;"></i><span>جاري تحميل من المصدر البديل...</span></div>';
+                                loadSingleImage(container.parentElement, '/proxy-image?url=' + encodeURIComponent(data.alt_images[0]));
+                            }
+                        }
+                    } else {
+                        alert('لم نعثر على مصدر بديل لهذا الفصل.');
+                    }
+                }).catch(function() { alert('خطأ في الاتصال بالخادم'); });
+            }
+        };
+    }
     var retryBtn = container.querySelector('.retry-btn');
     if (retryBtn) {
         retryBtn.onclick = function(e) {
@@ -4133,7 +4647,26 @@ async function loadAdminConfig() {
         });
         if (response.ok) {
             state.adminConfig = await response.json();
-            renderApp();
+            const gId = document.getElementById('setting-google-id');
+            if (gId && state.adminConfig.google_client_id) gId.value = state.adminConfig.google_client_id;
+            
+            const fId = document.getElementById('setting-facebook-id');
+            if (fId && state.adminConfig.facebook_app_id) fId.value = state.adminConfig.facebook_app_id;
+            
+            const sHost = document.getElementById('setting-smtp-host');
+            if (sHost && state.adminConfig.smtp_host) sHost.value = state.adminConfig.smtp_host;
+            
+            const sPort = document.getElementById('setting-smtp-port');
+            if (sPort && state.adminConfig.smtp_port) sPort.value = state.adminConfig.smtp_port;
+            
+            const sUser = document.getElementById('setting-smtp-user');
+            if (sUser && state.adminConfig.smtp_user) sUser.value = state.adminConfig.smtp_user;
+            
+            const sPass = document.getElementById('setting-smtp-pass');
+            if (sPass && state.adminConfig.smtp_pass) sPass.value = state.adminConfig.smtp_pass;
+            
+            const sSender = document.getElementById('setting-smtp-sender');
+            if (sSender && state.adminConfig.smtp_sender) sSender.value = state.adminConfig.smtp_sender;
         }
     } catch (e) {
         console.error("Error loading admin config:", e);

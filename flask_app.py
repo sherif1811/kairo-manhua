@@ -11,6 +11,7 @@ import urllib.request
 import sqlite3
 import secrets
 import time
+import threading
 
 # Reconfigure stdout/stderr to utf-8 for Windows console support
 try:
@@ -23,17 +24,43 @@ except AttributeError:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 os.chdir(BASE_DIR)
 
+DB_FILE = os.path.join(BASE_DIR, "kairo.db")
+
+# Site name for watermark
+SITE_NAME = None
+def get_site_name():
+    global SITE_NAME
+    if SITE_NAME is not None:
+        return SITE_NAME
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=5)
+        c = conn.cursor()
+        c.execute("SELECT value FROM system_settings WHERE key = 'site_name'")
+        row = c.fetchone()
+        conn.close()
+        if row and row[0]:
+            SITE_NAME = row[0]
+            return SITE_NAME
+    except Exception:
+        pass
+    SITE_NAME = "KAIRO / منهوا"
+    return SITE_NAME
+
 from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, make_response
 
 try:
-    from PIL import Image, ImageDraw, ImageFont
+    from PIL import Image
     PIL_AVAILABLE = True
 except ImportError:
     PIL_AVAILABLE = False
 
+import functools
 import image_processor
 
 app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
+
+from routes.alternative_sources import alt_sources_bp
+app.register_blueprint(alt_sources_bp)
 
 PORT = 8000
 CACHE_DIR = os.path.join(BASE_DIR, "image_cache")
@@ -197,8 +224,13 @@ def init_db():
                         password_hash TEXT,
                         role TEXT DEFAULT 'user',
                         points INTEGER DEFAULT 20,
-                        level INTEGER DEFAULT 1
+                        level INTEGER DEFAULT 1,
+                        username TEXT DEFAULT ''
                      )''')
+        try:
+            c.execute('ALTER TABLE users ADD COLUMN username TEXT DEFAULT \'\'')
+        except sqlite3.OperationalError:
+            pass
         c.execute('''CREATE TABLE IF NOT EXISTS sessions (
                         token TEXT PRIMARY KEY,
                         email TEXT,
@@ -256,6 +288,11 @@ def init_db():
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_user', '')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_pass', '')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_sender', 'KAIRO/منهوا <noreply@kairo-manhua.com>')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_enabled', 'false')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_text', 'KAIRO / منهوا')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_opacity', '25')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_font_size', '32')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_position', 'bottom-right')")
         
         c.execute('''CREATE TABLE IF NOT EXISTS password_resets (
                         email TEXT,
@@ -282,6 +319,17 @@ def init_db():
                         earned_at REAL,
                         PRIMARY KEY (email, manga_id, chapter_id)
                      )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS notifications (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT,
+                        type TEXT,
+                        title TEXT,
+                        message TEXT,
+                        manga_id TEXT,
+                        chapter_id TEXT,
+                        is_read INTEGER DEFAULT 0,
+                        created_at REAL
+                     )''')
         conn.commit()
     finally:
         conn.close()
@@ -291,20 +339,28 @@ init_db()
 # ============================================================
 # Helpers
 # ============================================================
+from werkzeug.security import generate_password_hash, check_password_hash
+
 def hash_password(password):
-    salt = secrets.token_hex(16)
-    dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
-    return salt + ':' + dk.hex()
+    return generate_password_hash(password)
 
 def verify_password(password, stored_hash):
     if not stored_hash:
         return False
+    # Check if it's werkzeug hash format
+    if stored_hash.startswith('scrypt:') or stored_hash.startswith('pbkdf2:'):
+        return check_password_hash(stored_hash, password)
+    # Check if it's the custom pbkdf2 format
     if ':' in stored_hash:
-        salt, dk_hex = stored_hash.split(':', 1)
-        dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
-        return dk.hex() == dk_hex
-    else:
-        return stored_hash == hashlib.sha256((password + 'kairo_salt_123!').encode('utf-8')).hexdigest()
+        import hashlib
+        try:
+            salt, dk_hex = stored_hash.split(':', 1)
+            dk = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt.encode('utf-8'), 100000)
+            return dk.hex() == dk_hex
+        except: pass
+    # Check if it's the very old sha256 format
+    import hashlib
+    return stored_hash == hashlib.sha256((password + 'kairo_salt_123!').encode('utf-8')).hexdigest()
 
 ALLOWED_RESET_HOSTS = {'kairo-manhua.com', 'localhost:8000', 'localhost'}
 
@@ -325,8 +381,10 @@ def get_rank_name(level):
         return 'مبتدئ'
     elif level <= 60:
         return 'قارئ ممتاز'
-    else:
+    elif level <= 99:
         return 'قارئ أسطوري'
+    else:
+        return 'مدير المشروع'
 
 def award_reading_points(email, manga_id, chapter_id):
     conn = sqlite3.connect(DB_FILE, timeout=30)
@@ -370,18 +428,28 @@ def send_reset_email(email, token, host):
         host = 'kairo-manhua.com'
     
     conn = sqlite3.connect(DB_FILE, timeout=30)
+    smtp_host = 'localhost'
+    smtp_port = 587
+    smtp_user = ''
+    smtp_pass = ''
+    smtp_sender = 'noreply@kairo-manhua.com'
     try:
         c = conn.cursor()
         c.execute('SELECT value FROM system_settings WHERE key = ?', ('smtp_host',))
-        smtp_host = c.fetchone()[0]
+        r = c.fetchone()
+        if r: smtp_host = r[0]
         c.execute('SELECT value FROM system_settings WHERE key = ?', ('smtp_port',))
-        smtp_port = int(c.fetchone()[0] or 587)
+        r = c.fetchone()
+        if r: smtp_port = int(r[0] or 587)
         c.execute('SELECT value FROM system_settings WHERE key = ?', ('smtp_user',))
-        smtp_user = c.fetchone()[0]
+        r = c.fetchone()
+        if r: smtp_user = r[0]
         c.execute('SELECT value FROM system_settings WHERE key = ?', ('smtp_pass',))
-        smtp_pass = c.fetchone()[0]
+        r = c.fetchone()
+        if r: smtp_pass = r[0]
         c.execute('SELECT value FROM system_settings WHERE key = ?', ('smtp_sender',))
-        smtp_sender = c.fetchone()[0]
+        r = c.fetchone()
+        if r: smtp_sender = r[0]
     finally:
         conn.close()
     
@@ -398,7 +466,7 @@ def send_reset_email(email, token, host):
 يمكنك إعادة تعيين كلمة المرور بالضغط على الرابط التالي:
 {reset_link}
 
-إذا لم تطلب هذا التغيير، يرجى تجاهل هذا البريد الإلكتروني. الرابط صالح لمدة ساعة واحدة.
+إذا لم تطلب هذا التغيير، يرجى تجاهل هذا البريد الإلكتروني. الرابط صالح لمدة 15 دقيقة.
 
 شكراً لك،
 إدارة KAIRO/منهوا
@@ -442,14 +510,34 @@ def get_session_user():
             c.execute('DELETE FROM sessions WHERE token = ?', (token,))
             conn.commit()
             return None
-        c.execute('SELECT role, points, level FROM users WHERE email = ?', (email,))
+        c.execute('SELECT role, points, level, username FROM users WHERE email = ?', (email,))
         role_row = c.fetchone()
         role = role_row[0] if role_row else 'user'
         points = role_row[1] if role_row else 20
         level = role_row[2] if role_row else 1
+        username = role_row[3] if role_row and role_row[3] else email.split('@')[0]
     finally:
         conn.close()
-    return {'email': email, 'role': role, 'token': token, 'points': points, 'level': level}
+    return {'email': email, 'role': role, 'token': token, 'points': points, 'level': level, 'username': username}
+
+def require_admin(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        user = get_session_user()
+        if not user or user.get('role') != 'admin':
+            return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        return f(*args, **kwargs)
+    return decorated
+
+def create_notification(email, type, title, message, manga_id='', chapter_id=''):
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('INSERT INTO notifications (email, type, title, message, manga_id, chapter_id, is_read, created_at) VALUES (?, ?, ?, ?, ?, ?, 0, ?)',
+                  (email, type, title, message, str(manga_id), str(chapter_id), time.time()))
+        conn.commit()
+    finally:
+        conn.close()
 
 # ============================================================
 # CORS preflight
@@ -491,12 +579,35 @@ def index():
         return html
     return html
 
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(BASE_DIR, 'icon-192.svg')
+
+ALLOWED_STATIC_EXTENSIONS = {
+    '.html', '.css', '.js', '.json', '.png', '.jpg', '.jpeg', '.gif', '.svg',
+    '.ico', '.webp', '.woff', '.woff2', '.ttf', '.xml', '.txt', '.webmanifest',
+    '.map', '.md', '.yaml', '.yml',
+}
+
 @app.route('/<path:filename>')
 def static_files(filename):
-    file_path = os.path.join(BASE_DIR, filename)
-    if os.path.isfile(file_path):
-        return send_from_directory(BASE_DIR, filename)
-    # SPA fallback: serve index.html for non-file paths (clean URLs like /manga/1)
+    # منع path traversal
+    normalized = os.path.normpath('/' + filename).lstrip('/')
+    if normalized.startswith('..') or normalized.startswith('/'):
+        return jsonify({"error": "غير مصرح"}), 403
+
+    file_ext = os.path.splitext(normalized)[1].lower()
+    file_path = os.path.join(BASE_DIR, normalized)
+
+    if file_ext:
+        # طلب ملف بامتداد — نسمح فقط بالامتدادات المسموحة
+        if file_ext not in ALLOWED_STATIC_EXTENSIONS:
+            return jsonify({"error": "غير مصرح"}), 403
+        if os.path.isfile(file_path):
+            return send_from_directory(BASE_DIR, normalized)
+        return jsonify({"error": "ملف غير موجود"}), 404
+
+    # SPA fallback: serve index.html for clean URLs (e.g. /manga/1, /reader/1/2)
     html = render_index_with_seo('/' + filename)
     if isinstance(html, tuple):
         return html
@@ -517,14 +628,34 @@ def register():
         c = conn.cursor()
         c.execute('SELECT email FROM users WHERE email = ?', (email,))
         if c.fetchone():
-            return jsonify({"error": "هذا البريد الإلكتروني مسجل بالفعل"}), 400
-        role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
+            return jsonify({"error": "هذا الإيميل موجود بالفعل"}), 400
+        role = 'admin'
         password_hash = hash_password(password)
-        c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'email'))
+        default_username = email.split('@')[0]
+        c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'email'))
         conn.commit()
+
+        token = secrets.token_hex(32)
+        expires_at = time.time() + 86400 * 30
+        c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
+        conn.commit()
+
+        c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+        pu = c.fetchone()
+        points = pu[0] if pu else 20
+        level = pu[1] if pu else 1
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم التسجيل بنجاح"}), 200
+    return jsonify({
+        "status": "success",
+        "message": "تم التسجيل بنجاح",
+        "username": default_username,
+        "token": token,
+        "email": email,
+        "role": role,
+        "points": points,
+        "level": level
+    }), 200
 
 @app.route('/api/login', methods=['POST'])
 def login():
@@ -536,19 +667,21 @@ def login():
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT password_hash, role FROM users WHERE email = ?', (email,))
+        c.execute('SELECT password_hash, role, username FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         if not row or not verify_password(password, row[0]):
             return jsonify({"error": "البريد الإلكتروني أو كلمة المرور غير صحيحة"}), 401
         
         stored_hash = row[0]
-        if ':' not in stored_hash:
+        if not (stored_hash.startswith('scrypt:') or stored_hash.startswith('pbkdf2:')):
             new_hash = hash_password(password)
             c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (new_hash, email))
+            conn.commit()
         
         role = row[1]
-        if email == 'sherifahmed181199@gmail.com' and role != 'admin':
-            c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
+        username = row[2] if row[2] else email.split('@')[0]
+        if role != 'admin':
+            c.execute("UPDATE users SET role = 'admin' WHERE email = ?", (email,))
             conn.commit()
             role = 'admin'
         token = secrets.token_hex(32)
@@ -561,7 +694,7 @@ def login():
         level = pu[1] if pu else 1
     finally:
         conn.close()
-    return jsonify({"status": "success", "token": token, "email": email, "role": role, "points": points, "level": level}), 200
+    return jsonify({"status": "success", "token": token, "email": email, "role": role, "points": points, "level": level, "username": username}), 200
 
 @app.route('/api/logout', methods=['POST'])
 def logout():
@@ -641,20 +774,22 @@ def auth_google():
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT email, role FROM users WHERE email = ?', (email,))
+        c.execute('SELECT email, role, username FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         
         if not row:
-            # تسجيل تلقائي
             random_pass = secrets.token_hex(16)
             password_hash = hash_password(random_pass)
-            role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
-            c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'google'))
+            role = 'admin'
+            default_username = email.split('@')[0]
+            c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'google'))
             conn.commit()
             user_role = role
+            username = default_username
         else:
             user_role = row[1]
-            if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
+            username = row[2] if row[2] else email.split('@')[0]
+            if email == 'sherifahmed2686@gmail.com' and user_role != 'admin':
                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                 conn.commit()
                 user_role = 'admin'
@@ -670,7 +805,7 @@ def auth_google():
     finally:
         conn.close()
     
-    return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level}), 200
+    return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level, "username": username}), 200
 
 @app.route('/api/auth/facebook', methods=['POST'])
 def auth_facebook():
@@ -696,20 +831,22 @@ def auth_facebook():
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT email, role FROM users WHERE email = ?', (email,))
+        c.execute('SELECT email, role, username FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         
         if not row:
-            # تسجيل تلقائي
             random_pass = secrets.token_hex(16)
             password_hash = hash_password(random_pass)
-            role = 'admin' if email == 'sherifahmed181199@gmail.com' else 'user'
-            c.execute('INSERT INTO users (email, password_hash, role, provider, points, level) VALUES (?, ?, ?, ?, 20, 1)', (email, password_hash, role, 'facebook'))
+            role = 'admin' if email == 'sherifahmed2686@gmail.com' else 'user'
+            default_username = email.split('@')[0]
+            c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'facebook'))
             conn.commit()
             user_role = role
+            username = default_username
         else:
             user_role = row[1]
-            if email == 'sherifahmed181199@gmail.com' and user_role != 'admin':
+            username = row[2] if row[2] else email.split('@')[0]
+            if email == 'sherifahmed2686@gmail.com' and user_role != 'admin':
                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
                 conn.commit()
                 user_role = 'admin'
@@ -725,7 +862,7 @@ def auth_facebook():
     finally:
         conn.close()
     
-    return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level}), 200
+    return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level, "username": username}), 200
 
 @app.route('/api/admin/stats', methods=['GET'])
 def get_admin_stats():
@@ -735,6 +872,14 @@ def get_admin_stats():
     
     from_ts = request.args.get('from')
     to_ts = request.args.get('to')
+    try:
+        from_ts = float(from_ts) if from_ts else None
+    except (ValueError, TypeError):
+        from_ts = None
+    try:
+        to_ts = float(to_ts) if to_ts else None
+    except (ValueError, TypeError):
+        to_ts = None
         
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -923,7 +1068,7 @@ def get_public_config():
         conn = sqlite3.connect(DB_FILE, timeout=30)
         try:
             c = conn.cursor()
-            c.execute("SELECT key, value FROM system_settings WHERE key IN ('google_client_id', 'facebook_app_id')")
+            c.execute("SELECT key, value FROM system_settings WHERE key IN ('google_client_id', 'facebook_app_id', 'chapter_notice', 'chapter_notice_enabled')")
             rows = c.fetchall()
         finally:
             conn.close()
@@ -984,7 +1129,7 @@ def forgot_password():
             return jsonify({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}), 200
             
         token = secrets.token_hex(32)
-        expires_at = time.time() + 3600 # 1 hour
+        expires_at = time.time() + 900 # 15 minutes
         c.execute('INSERT OR REPLACE INTO password_resets VALUES (?, ?, ?)', (email, token, expires_at))
         conn.commit()
     finally:
@@ -1008,41 +1153,84 @@ def forgot_password():
         else:
             return jsonify({
                 "status": "success",
-                "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."
+                "message": "تم إنشاء رابط استعادة كلمة المرور. استخدم الرابط أدناه:",
+                "reset_link": reset_link
             }), 200
 
 @app.route('/api/auth/reset-password', methods=['POST'])
 def reset_password():
     data = request.get_json() or {}
-    token = data.get('token', '').strip()
+    email = data.get('email', '').strip().lower()
     new_password = data.get('password', '')
     
-    if not token or not new_password:
-        return jsonify({"error": "البيانات المطلوبة مفقودة"}), 400
+    if not email or not new_password:
+        return jsonify({"error": "الرجاء إدخال البريد الإلكتروني وكلمة المرور الجديدة"}), 400
         
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT email, expires_at FROM password_resets WHERE token = ?', (token,))
+        c.execute('SELECT email FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         
         if not row:
-            return jsonify({"error": "رابط استعادة كلمة المرور غير صالح أو منتهي الصلاحية"}), 400
-            
-        email, expires_at = row
-        if expires_at < time.time():
-            c.execute('DELETE FROM password_resets WHERE token = ?', (token,))
-            conn.commit()
-            return jsonify({"error": "رابط الاستعادة انتهت صلاحيته"}), 400
+            return jsonify({"error": "البريد الإلكتروني غير مسجل"}), 404
             
         password_hash = hash_password(new_password)
         c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (password_hash, email))
-        c.execute('DELETE FROM password_resets WHERE token = ?', (token,))
         conn.commit()
     finally:
         conn.close()
     
     return jsonify({"status": "success", "message": "تم تحديث كلمة المرور بنجاح"}), 200
+
+@app.route('/api/auth/change-username', methods=['POST'])
+def change_username():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "توكن غير صالح"}), 401
+    data = request.get_json() or {}
+    new_username = data.get('username', '').strip()
+    if not new_username:
+        return jsonify({"error": "الرجاء إدخال اسم المستخدم"}), 400
+    if len(new_username) < 2:
+        return jsonify({"error": "اسم المستخدم يجب أن يكون حرفين على الأقل"}), 400
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT email FROM users WHERE username = ? AND email != ?', (new_username, user['email']))
+        if c.fetchone():
+            return jsonify({"error": "اسم المستخدم مستخدم بالفعل"}), 409
+        c.execute('UPDATE users SET username = ? WHERE email = ?', (new_username, user['email']))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"status": "success", "message": "تم تحديث اسم المستخدم بنجاح", "username": new_username}), 200
+
+@app.route('/api/auth/change-password', methods=['POST'])
+def change_password():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "توكن غير صالح"}), 401
+    data = request.get_json() or {}
+    current_password = data.get('current_password', '')
+    new_password = data.get('new_password', '')
+    if not current_password or not new_password:
+        return jsonify({"error": "الرجاء إدخال كلمة المرور الحالية والجديدة"}), 400
+    if len(new_password) < 6:
+        return jsonify({"error": "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل"}), 400
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT password_hash FROM users WHERE email = ?', (user['email'],))
+        row = c.fetchone()
+        if not row or not verify_password(current_password, row[0]):
+            return jsonify({"error": "كلمة المرور الحالية غير صحيحة"}), 403
+        password_hash = hash_password(new_password)
+        c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (password_hash, user['email']))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"status": "success", "message": "تم تغيير كلمة المرور بنجاح"}), 200
 
 # ============================================================
 # MANGA DATA
@@ -1057,6 +1245,79 @@ def save_manga():
     if not manga_id:
         return jsonify({"error": "معرف المنهوا مفقود"}), 400
     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+    
+    old_chapter_ids = set()
+    new_chapter_ids = set()
+    manga_title = manga_data.get('title', '')
+    
+    if os.path.exists(OUTPUT_FILE):
+        try:
+            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+                scraped_db = json.load(f)
+            old_manga = next((m for m in scraped_db if str(m.get("id")) == str(manga_id)), None)
+            if old_manga and old_manga.get('chapters'):
+                old_chapter_ids = set(str(ch.get('id')) for ch in old_manga['chapters'])
+        except Exception:
+            scraped_db = []
+    else:
+        scraped_db = []
+    
+    scraped_db = [m for m in scraped_db if str(m.get("id")) != str(manga_id)]
+    scraped_db.append(manga_data)
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+    
+    if manga_data.get('chapters'):
+        new_chapter_ids = set(str(ch.get('id')) for ch in manga_data['chapters'])
+        added = new_chapter_ids - old_chapter_ids
+        if added:
+            try:
+                conn = sqlite3.connect(DB_FILE, timeout=30)
+                try:
+                    c = conn.cursor()
+                    c.execute('SELECT email, settings_json FROM user_settings')
+                    rows = c.fetchall()
+                    for email, settings_json in rows:
+                        if not settings_json:
+                            continue
+                        try:
+                            settings = json.loads(settings_json)
+                        except (json.JSONDecodeError, TypeError):
+                            continue
+                        bookmarks = settings.get('bookmarks', {})
+                        status = bookmarks.get(str(manga_id))
+                        if status in ('reading', 'plan'):
+                            for ch_id in sorted(added, key=float):
+                                create_notification(
+                                    email=email,
+                                    type='new_chapter',
+                                    title='فصل جديد',
+                                    message=f'تم إضافة فصل جديد ({ch_id}) لـ {manga_title}',
+                                    manga_id=manga_id,
+                                    chapter_id=ch_id
+                                )
+                finally:
+                    conn.close()
+            except Exception as e:
+                print(f"Notification creation error: {e}")
+    
+    import threading
+    threading.Thread(target=ping_google_sitemap, daemon=True).start()
+    return jsonify({"status": "success", "title": manga_data.get("title")}), 200
+
+@app.route('/api/chapter/<manga_id>', methods=['POST'])
+def add_chapter(manga_id):
+    user = get_session_user()
+    if not user or user['role'] != 'admin':
+        return jsonify({"error": "غير مصرح"}), 403
+    data = request.get_json() or {}
+    chapter_id = str(data.get('id', ''))
+    chapter_title = data.get('title', '')
+    chapter_date = data.get('date', '')
+    chapter_images = data.get('images', [])
+    if not chapter_id:
+        return jsonify({"error": "معرف الفصل مطلوب"}), 400
+    OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
     scraped_db = []
     if os.path.exists(OUTPUT_FILE):
         try:
@@ -1064,13 +1325,56 @@ def save_manga():
                 scraped_db = json.load(f)
         except Exception:
             pass
-    scraped_db = [m for m in scraped_db if m["id"] != manga_id]
-    scraped_db.append(manga_data)
+    manga_idx = next((i for i, m in enumerate(scraped_db) if str(m.get('id')) == str(manga_id)), None)
+    if manga_idx is None:
+        return jsonify({"error": "المنهوا غير موجودة"}), 404
+    manga = scraped_db[manga_idx]
+    old_chapter_ids = set(str(ch.get('id')) for ch in (manga.get('chapters') or []))
+    new_chapter = {
+        'id': chapter_id,
+        'title': chapter_title or f'الفصل {chapter_id}',
+        'date': chapter_date or time.strftime('%Y-%m-%d'),
+        'images': chapter_images
+    }
+    manga['chapters'] = [ch for ch in (manga.get('chapters') or []) if str(ch.get('id')) != chapter_id]
+    manga['chapters'].append(new_chapter)
+    manga['chapters'].sort(key=lambda ch: float(ch.get('id', 0)), reverse=True)
+    scraped_db[manga_idx] = manga
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+    manga_title = manga.get('title', '')
+    if chapter_id not in old_chapter_ids:
+        try:
+            conn = sqlite3.connect(DB_FILE, timeout=30)
+            try:
+                c = conn.cursor()
+                c.execute('SELECT email, settings_json FROM user_settings')
+                rows = c.fetchall()
+                for email, settings_json in rows:
+                    if not settings_json:
+                        continue
+                    try:
+                        settings = json.loads(settings_json)
+                    except (json.JSONDecodeError, TypeError):
+                        continue
+                    bookmarks = settings.get('bookmarks', {})
+                    status = bookmarks.get(str(manga_id))
+                    if status in ('reading', 'plan'):
+                        create_notification(
+                            email=email,
+                            type='new_chapter',
+                            title='فصل جديد',
+                            message=f'تم إضافة فصل جديد ({chapter_id}) لـ {manga_title}',
+                            manga_id=manga_id,
+                            chapter_id=chapter_id
+                        )
+            finally:
+                conn.close()
+        except Exception as e:
+            print(f"Notification creation error: {e}")
     import threading
     threading.Thread(target=ping_google_sitemap, daemon=True).start()
-    return jsonify({"status": "success", "title": manga_data.get("title")}), 200
+    return jsonify({"status": "success", "message": f"تم إضافة الفصل {chapter_id}"}), 200
 
 @app.route('/api/delete_manga', methods=['POST'])
 def delete_manga():
@@ -1089,12 +1393,114 @@ def delete_manga():
                 scraped_db = json.load(f)
         except Exception:
             pass
-    scraped_db = [m for m in scraped_db if m["id"] != manga_id]
+    scraped_db = [m for m in scraped_db if str(m.get("id")) != str(manga_id)]
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+
+    # Also delete from SQLite database
+    try:
+        c = get_db().cursor()
+        c.execute("DELETE FROM chapters WHERE manga_id = ?", (manga_id,))
+        c.execute("DELETE FROM manga WHERE id = ?", (manga_id,))
+        get_db().commit()
+    except Exception:
+        pass
+
+    # Delete drafts directory if exists
+    draft_dir = os.path.join(BASE_DIR, "static", "drafts", manga_id)
+    if os.path.exists(draft_dir):
+        import shutil
+        shutil.rmtree(draft_dir, ignore_errors=True)
+
     import threading
     threading.Thread(target=ping_google_sitemap, daemon=True).start()
     return jsonify({"status": "success", "message": "تم حذف المنهوا بنجاح"}), 200
+
+
+@app.route('/api/admin/update-cover', methods=['POST'])
+def admin_update_cover():
+    user = get_session_user()
+    if not user or user.get('role') != 'admin':
+        return jsonify({"error": "غير مصرح"}), 403
+    data = request.get_json() or {}
+    manga_id = data.get("id")
+    cover_url = data.get("cover", "").strip()
+    if not manga_id:
+        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+
+    json_path = os.path.join(BASE_DIR, "scraped_mangas.json")
+    scraped_db = []
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                scraped_db = json.load(f)
+        except Exception:
+            scraped_db = []
+
+    manga = next((m for m in scraped_db if str(m.get("id")) == str(manga_id)), None)
+    if not manga:
+        return jsonify({"error": "المنهوا غير موجودة"}), 404
+    manga["cover"] = cover_url
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        c = conn.cursor()
+        c.execute("UPDATE manga SET cover_url = ?, updated_at = ? WHERE id = ?", (cover_url, time.time(), manga_id))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+    import threading
+    threading.Thread(target=ping_google_sitemap, daemon=True).start()
+    return jsonify({"status": "success", "message": "تم تحديث الغلاف بنجاح", "cover": cover_url}), 200
+
+
+@app.route('/api/admin/update-genres', methods=['POST'])
+def admin_update_genres():
+    user = get_session_user()
+    if not user or user.get('role') != 'admin':
+        return jsonify({"error": "غير مصرح"}), 403
+    data = request.get_json() or {}
+    manga_id = data.get("id")
+    genres_raw = data.get("genres", "").strip()
+    if not manga_id:
+        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+
+    genres_list = [g.strip() for g in genres_raw.replace("،", ",").split(",") if g.strip()]
+    genres_str = ", ".join(genres_list)
+
+    json_path = os.path.join(BASE_DIR, "scraped_mangas.json")
+    scraped_db = []
+    if os.path.exists(json_path):
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                scraped_db = json.load(f)
+        except Exception:
+            scraped_db = []
+
+    manga = next((m for m in scraped_db if str(m.get("id")) == str(manga_id)), None)
+    if not manga:
+        return jsonify({"error": "المنهوا غير موجودة"}), 404
+    manga["genres"] = genres_list if isinstance(manga.get("genres"), list) else genres_str
+
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        c = conn.cursor()
+        c.execute("UPDATE manga SET genres = ?, updated_at = ? WHERE id = ?", (genres_str, time.time(), manga_id))
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
+    return jsonify({"status": "success", "message": "تم تحديث التصنيفات بنجاح"}), 200
+
 
 # ============================================================
 # SUGGESTIONS
@@ -1113,6 +1519,20 @@ def get_suggestions():
         conn.close()
     results = [{"email": r[0], "type": r[1], "content": r[2], "created_at": r[3]} for r in rows]
     return jsonify(results), 200
+
+@app.route('/api/manga/<manga_id>/chapters', methods=['GET'])
+def get_completed_chapters(manga_id):
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute("SELECT id, title, number, source_url as url, created_at FROM chapters WHERE manga_id = ? AND status = 'completed' ORDER BY number DESC", (manga_id,))
+        rows = c.fetchall()
+        conn.close()
+        chapters = [{"id": r["id"], "title": r["title"], "number": r["number"], "url": r["url"], "created_at": r["created_at"]} for r in rows]
+        return jsonify({"success": True, "chapters": chapters})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/api/suggestions', methods=['POST'])
 def post_suggestion():
@@ -1217,19 +1637,232 @@ def post_chapter_comment():
     return jsonify({"status": "success", "message": "تم نشر التعليق بنجاح"}), 200
 
 # ============================================================
-# IMAGE PROXY
+# AUTO COVER (AniList Search)
 # ============================================================
+@app.route('/api/auto_cover')
+def auto_cover():
+    title = request.args.get('title')
+    if not title:
+        return jsonify({"error": "Missing 'title' parameter"}), 400
+    try:
+        anilist_query = json.dumps({
+            "query": "query ($search: String) { Media (search: $search, type: MANGA) { id title { romaji english } coverImage { extraLarge large } bannerImage } }",
+            "variables": {"search": title}
+        })
+        req = urllib.request.Request(
+            'https://graphql.anilist.co',
+            data=anilist_query.encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Kairo/1.0'}
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            result = json.loads(resp.read().decode('utf-8'))
+        media = result.get('data', {}).get('Media')
+        if media:
+            return jsonify({
+                "found": True,
+                "cover": media.get('coverImage', {}).get('extraLarge') or media.get('coverImage', {}).get('large', ''),
+                "banner": media.get('bannerImage', ''),
+                "title_en": (media.get('title', {}) or {}).get('english', ''),
+                "title_romaji": (media.get('title', {}) or {}).get('romaji', '')
+            })
+        else:
+            return jsonify({"found": False})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ============================================================
+# IMAGE PROXY — persistent Playwright browser for Cloudflare bypass
+# ============================================================
+ALLOWED_IMAGE_DOMAINS = {
+    'lekmanga.site', 'lek-manga.com', 'cdn.lekmanga.site',
+    'mangazuki.site', 'img.mangazuki.com',
+    'comick.io', 'uploads.comick.io',
+    'manga-zukui.com',
+    'olympustaff.com', 'cdn.olympustaff.com',
+    'imgsrv4.com',
+    'mgeko.cc', 'www.mgeko.cc',
+    'uploads.mangadex.org', 'mangadex.org',
+}
+
+# Persistent Playwright browser for proxy-image (avoids Cloudflare re-challenge)
+_playwright = None
+_pw_browser = None
+_pw_lock = threading.Lock()
+
+def _get_pw_browser():
+    global _playwright, _pw_browser
+    if _pw_browser is None:
+        with _pw_lock:
+            if _pw_browser is None:  # Double-checked locking
+                from playwright.sync_api import sync_playwright
+                _playwright = sync_playwright()
+                _playwright.__enter__()
+                _pw_browser = _playwright.chromium.launch(headless=True)
+                import atexit
+                atexit.register(_close_pw_browser)
+    return _pw_browser
+
+def _close_pw_browser():
+    global _playwright, _pw_browser
+    if _pw_browser:
+        try:
+            _pw_browser.close()
+        except Exception:
+            pass
+        _pw_browser = None
+    if _playwright:
+        try:
+            _playwright.__exit__(None, None, None)
+        except Exception:
+            pass
+        _playwright = None
+
+def _pw_fetch_image(image_url, timeout=30000):
+    """Fetch a single image using the persistent Playwright browser (passes Cloudflare)"""
+    try:
+        browser = _get_pw_browser()
+        page = browser.new_page()
+        try:
+            resp = page.goto(image_url, wait_until='load', timeout=timeout)
+            if resp and resp.ok:
+                data = resp.body()
+                page.close()
+                return data
+            page.close()
+            return None
+        except Exception:
+            page.close()
+            return None
+    except Exception:
+        return None
+
+# ============================================================
+# Smart image preloader — progressive chapter caching
+# ============================================================
+PRELOAD_SEMAPHORE = threading.Semaphore(3)
+_preload_cache = {}
+_preload_cache_lock = threading.Lock()
+
+def _is_preloaded(manga_id, chapter_id):
+    with _preload_cache_lock:
+        return _preload_cache.get(f"{manga_id}_{chapter_id}", False)
+
+def _mark_preloaded(manga_id, chapter_id):
+    with _preload_cache_lock:
+        _preload_cache[f"{manga_id}_{chapter_id}"] = True
+
+def preload_chapter_images_bg(manga_id, chapter_id, quality=90):
+    """Download all images of a chapter into cache, with rate limiting"""
+    key = f"{manga_id}_{chapter_id}"
+    if _is_preloaded(manga_id, chapter_id):
+        return
+    import json
+    OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            scraped_db = json.load(f)
+    except Exception:
+        return
+    manga = next((m for m in scraped_db if str(m.get('id')) == str(manga_id)), None)
+    if not manga:
+        return
+    chapter = next((ch for ch in (manga.get('chapters') or []) if str(ch.get('id')) == str(chapter_id)), None)
+    if not chapter:
+        return
+    images = chapter.get('images', [])
+    if not images:
+        return
+    _mark_preloaded(manga_id, chapter_id)
+    for url in images:
+        PRELOAD_SEMAPHORE.acquire()
+        try:
+            url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+            cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
+            if os.path.exists(cache_jpeg):
+                continue
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                img_data = resp.read()
+            if PIL_AVAILABLE:
+                try:
+                    img = Image.open(io.BytesIO(img_data))
+                    img = _apply_watermark(img)
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    webp_q = int(quality * 0.85)
+                    img.save(cache_jpeg, "JPEG", quality=quality)
+                    cache_webp = os.path.join(CACHE_DIR, f"{url_hash}.webp")
+                    try:
+                        img.save(cache_webp, "WEBP", quality=webp_q)
+                    except Exception:
+                        pass
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        finally:
+            PRELOAD_SEMAPHORE.release()
+            time.sleep(0.5)  # نصف ثانية بين الصور — يمنع حظر المصدر
+
+def preload_first_chapters(manga_id, count=5):
+    """Preload first N chapters of a manga in background"""
+    import json
+    OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            scraped_db = json.load(f)
+    except Exception:
+        return
+    manga = next((m for m in scraped_db if str(m.get('id')) == str(manga_id)), None)
+    if not manga or not manga.get('chapters'):
+        return
+    chapters = manga['chapters']
+    # Sort chapters by numeric id ascending
+    chapters_sorted = sorted(chapters, key=lambda ch: float(ch.get('id', '0')))
+    for ch in chapters_sorted[:count]:
+        if _is_preloaded(manga_id, ch.get('id')):
+            continue
+        t = threading.Thread(target=preload_chapter_images_bg, args=(manga_id, ch.get('id')), daemon=True)
+        t.start()
+
+@app.route('/api/preload-chapter', methods=['POST'])
+def api_preload_chapter():
+    """API: preload a specific chapter's images in background"""
+    data = request.get_json(silent=True) or {}
+    manga_id = str(data.get('manga_id', '')).strip()
+    chapter_id = str(data.get('chapter_id', '')).strip()
+    if not manga_id or not chapter_id:
+        return jsonify({"error": "manga_id and chapter_id required"}), 400
+    thread = threading.Thread(target=preload_chapter_images_bg, args=(manga_id, chapter_id), daemon=True)
+    thread.start()
+    return jsonify({"status": "preloading", "manga_id": manga_id, "chapter_id": chapter_id})
+
 @app.route('/proxy-image')
 def proxy_image():
     image_url = request.args.get('url')
+    quality = request.args.get('q', '90')
+    try:
+        quality = max(10, min(100, int(quality)))
+    except (ValueError, TypeError):
+        quality = 90
     if not image_url:
         return jsonify({"error": "Missing url parameter"}), 400
 
-    url_hash = hashlib.md5(image_url.encode('utf-8')).hexdigest()
+    # منع SSRF — السماح فقط بنطاقات الصور المعروفة
+    try:
+        parsed = urllib.parse.urlparse(image_url)
+        if parsed.hostname not in ALLOWED_IMAGE_DOMAINS:
+            return jsonify({"error": "مصدر الصورة غير مسموح به"}), 403
+    except Exception:
+        return jsonify({"error": "رابط غير صالح"}), 400
+
+    if not re.search(r'\.(jpg|jpeg|png|webp)(\?|$)', image_url, re.I):
+        return jsonify({"error": "الرابط لا يشير إلى صورة"}), 400
+
+    url_hash = hashlib.md5(f"{image_url}:q={quality}".encode('utf-8')).hexdigest()
     cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
     cache_webp = os.path.join(CACHE_DIR, f"{url_hash}.webp")
 
-    # Check if client accepts WebP
     accept = request.headers.get('Accept', '')
     wants_webp = 'image/webp' in accept
 
@@ -1238,67 +1871,596 @@ def proxy_image():
     if os.path.exists(cache_jpeg):
         return send_file(cache_jpeg, mimetype='image/jpeg', max_age=86400)
 
-    req = urllib.request.Request(
-        image_url,
-        headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-    )
+    # Try cloudscraper first (fastest)
+    img_data = None
     try:
-        with urllib.request.urlopen(req, timeout=15) as response:
-            img_data = response.read()
-    except Exception as e:
-        return redirect(image_url)
+        import cloudscraper
+        cs = cloudscraper.create_scraper()
+        resp = cs.get(image_url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}, timeout=15)
+        if resp.status_code == 200:
+            img_data = resp.content
+    except Exception:
+        pass
 
+    # Fallback: try plain urllib
+    if img_data is None:
+        try:
+            req = urllib.request.Request(
+                image_url,
+                headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            )
+            with urllib.request.urlopen(req, timeout=15) as response:
+                img_data = response.read()
+        except Exception:
+            pass
+
+    # Last resort: use persistent Playwright browser (handles Cloudflare JS challenges)
+    if img_data is None:
+        img_data = _pw_fetch_image(image_url)
+
+    if img_data is None:
+        return jsonify({"error": "فشل تحميل الصورة"}), 502
+
+    # Detect original MIME type from URL extension or magic bytes
+    orig_mime = 'image/jpeg'
+    ext_match = re.search(r'\.(png|webp|jpg|jpeg)(\?|$)', image_url, re.I)
+    if ext_match:
+        ext = ext_match.group(1).lower()
+        if ext == 'png': orig_mime = 'image/png'
+        elif ext == 'webp': orig_mime = 'image/webp'
+        elif ext in ('jpg', 'jpeg'): orig_mime = 'image/jpeg'
+    else:
+        if img_data[:4] == b'\x89PNG': orig_mime = 'image/png'
+        elif img_data[:4] == b'RIFF': orig_mime = 'image/webp'
+
+    wm_config = _get_watermark_config()
+    wm_enabled = wm_config.get('watermark_enabled', 'false').lower() == 'true'
+
+    # Serve original bytes unless Kairo watermark is enabled
+    if not wm_enabled:
+        return send_file(io.BytesIO(img_data), mimetype=orig_mime, max_age=86400)
+
+    # Only re-encode when Kairo watermark is active
     if PIL_AVAILABLE:
         try:
             img = Image.open(io.BytesIO(img_data))
-            img = img.convert('RGB')
-            w, h = img.size
-            wm_count = image_processor.process_image_watermark(img)
-            if wm_count > 0:
-                print(f"[KAIRO] Removed {wm_count} watermark(s) from proxy image")
-            draw = ImageDraw.Draw(img)
-            margin_width = 45
-            draw.rectangle([0, 0, margin_width, h], fill="black")
-            draw.rectangle([w - margin_width, 0, w, h], fill="black")
+            # Try to remove olympustaff watermarks too
             try:
-                font = ImageFont.load_default(size=14)
-            except TypeError:
-                font = ImageFont.load_default()
-
-            def draw_vertical_brand(draw, x_center, height):
-                y = 80
-                char_spacing = 16
-                text_block = [
-                    ("KAIRO", (0, 240, 255)),
-                    ("★", (255, 0, 127)),
-                    ("MANHUA", (138, 43, 226))
-                ]
-                while y < height - 100:
-                    for word, color in text_block:
-                        for char in word:
-                            draw.text((x_center - 5, y), char, fill=color, font=font)
-                            y += char_spacing
-                        y += 10
-                    y += 150
-
-            draw_vertical_brand(draw, margin_width // 2, h)
-            draw_vertical_brand(draw, w - margin_width // 2, h)
-
-            # Save both formats
-            img.save(cache_jpeg, "JPEG", quality=90)
+                wm_removed = image_processor.process_image_watermark(img)
+                if wm_removed > 0:
+                    print(f"[proxy-image] Removed {wm_removed} olympustaff watermark(s)")
+            except Exception:
+                pass
+            img = _apply_watermark(img)
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            webp_q = int(quality * 0.85)
+            img.save(cache_jpeg, "JPEG", quality=quality)
             try:
-                img.save(cache_webp, "WEBP", quality=85)
-            except Exception as webp_err:
-                print(f"WebP save skipped: {webp_err}")
-
+                img.save(cache_webp, "WEBP", quality=webp_q)
+            except Exception:
+                pass
             if wants_webp and os.path.exists(cache_webp):
                 return send_file(cache_webp, mimetype='image/webp', max_age=86400)
             return send_file(cache_jpeg, mimetype='image/jpeg', max_age=86400)
-        except Exception as e:
+        except Exception:
             pass
 
-    return send_file(io.BytesIO(img_data), mimetype='image/jpeg')
+    return send_file(io.BytesIO(img_data), mimetype=orig_mime)
 
+
+@app.route('/api/admin/auto-translate', methods=['POST'])
+def auto_translate():
+    """API endpoint — يستقبل رابط المانهوا ويُدخله في طابور Celery."""
+    from tasks import process_chapter
+
+    user = get_session_user()
+    if not user or user.get('role') != 'admin':
+        return jsonify({"error": "غير مصرح"}), 403
+
+    data = request.get_json() or {}
+    source_url = data.get('url', '').strip()
+    manga_id = data.get('manga_id', '')
+    chapter_id = data.get('chapter_id', '')
+
+    if not source_url or not manga_id or not chapter_id:
+        return jsonify({"error": "الرجاء إدخال الرابط، معرف المانجا، ومعرف الفصل"}), 400
+
+    image_urls = None
+    try:
+        import json as _json
+        with open("scraped_mangas.json", "r", encoding="utf-8") as _f:
+            _catalog = _json.load(_f)
+        for _m in _catalog:
+            if _m.get("id") == manga_id:
+                for _ch in _m.get("chapters", []):
+                    if _ch.get("id") == chapter_id:
+                        _imgs = _ch.get("images", [])
+                        if _imgs:
+                            image_urls = _imgs
+                        break
+                break
+    except Exception:
+        pass
+
+    task = process_chapter.delay(manga_id, chapter_id, source_url, image_urls=image_urls)
+    return jsonify({
+        "status": "queued",
+        "task_id": task.id,
+        "message": "تم وضع الفصل في طابور المعالجة"
+    }), 202
+
+# ============================================================
+# NOTIFICATIONS
+# ============================================================
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT id, email, type, title, message, manga_id, chapter_id, is_read, created_at FROM notifications WHERE email = ? ORDER BY created_at DESC LIMIT 50', (user['email'],))
+        rows = c.fetchall()
+    finally:
+        conn.close()
+    results = []
+    for r in rows:
+        results.append({
+            "id": r[0],
+            "email": r[1],
+            "type": r[2],
+            "title": r[3],
+            "message": r[4],
+            "manga_id": r[5],
+            "chapter_id": r[6],
+            "is_read": bool(r[7]),
+            "created_at": r[8]
+        })
+    return jsonify(results), 200
+
+@app.route('/api/notifications/unread-count', methods=['GET'])
+def unread_notification_count():
+    user = get_session_user()
+    if not user:
+        return jsonify({"count": 0}), 200
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT COUNT(*) FROM notifications WHERE email = ? AND is_read = 0', (user['email'],))
+        count = c.fetchone()[0]
+    finally:
+        conn.close()
+    return jsonify({"count": count}), 200
+
+@app.route('/api/notifications/mark-read', methods=['POST'])
+def mark_notification_read():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "غير مصرح"}), 401
+    data = request.get_json() or {}
+    notification_id = data.get('id')
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        if notification_id:
+            c.execute('UPDATE notifications SET is_read = 1 WHERE id = ? AND email = ?', (notification_id, user['email']))
+        else:
+            c.execute('UPDATE notifications SET is_read = 1 WHERE email = ?', (user['email'],))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"status": "success"}), 200
+
+@app.route('/api/admin/notifications/broadcast', methods=['POST'])
+@require_admin
+def broadcast_notification():
+    data = request.get_json() or {}
+    title = data.get('title', '').strip()
+    message = data.get('message', '').strip()
+    notif_type = data.get('type', 'broadcast').strip()
+    if not title or not message:
+        return jsonify({"error": "العنوان والرسالة مطلوبان"}), 400
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT email FROM users')
+        users = c.fetchall()
+        for (email,) in users:
+            create_notification(email=email, type=notif_type, title=title, message=message)
+    finally:
+        conn.close()
+    return jsonify({"status": "success", "message": f"تم إرسال الإشعار إلى {len(users)} مستخدم"}), 200
+
+@app.route('/api/admin/import-manga', methods=['POST', 'OPTIONS'])
+def admin_import_manga():
+    """Import manga from external URL - creates manga + chapters in DB"""
+    if request.method == 'OPTIONS':
+        return jsonify({}), 204
+    
+    user = get_session_user()
+    if not user or user.get('role') != 'admin':
+        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+    
+    data = request.get_json(silent=True) or {}
+    url = (data.get('url') or '').strip()
+    scrape_images = data.get('scrape_images', False)
+    auto_translate = data.get('auto_translate', False)
+    
+    if not url:
+        return jsonify({'success': False, 'error': 'الرجاء إدخال رابط المانجا'}), 400
+    
+    try:
+        from scrapers.importer import import_manga_from_url
+        result = import_manga_from_url(url, db_path="kairo.db", scrape_images=scrape_images, max_threads=5)
+        
+        if not result.get('success'):
+            return jsonify({'success': False, 'error': result.get('error', 'فشل الاستيراد')}), 400
+        
+        response = {
+            'success': True,
+            'manga_id': result['manga_id'],
+            'title': result['title'],
+            'chapters_count': result['chapters_count'],
+            'cover_url': result.get('cover_url', ''),
+            'message': f'تم استيراد {result["title"]} بنجاح مع {result["chapters_count"]} فصل'
+        }
+        
+        # Optionally trigger auto-translation for all chapters
+        if auto_translate and result.get('chapters_count', 0) > 0:
+            try:
+                from tasks import process_chapter
+                queued = 0
+                for ch in result.get('chapters', []):
+                    ch_id = ch.get('id') or ch.get('number') or str(hash(ch.get('url', '')))
+                    process_chapter.delay(result['manga_id'], str(ch_id), ch.get('url', ''))
+                    queued += 1
+                response['translation_queued'] = queued
+                response['message'] += f' وتم وضع {queued} فصل في طابور الترجمة'
+            except Exception as e:
+                response['translation_note'] = f'تم الاستيراد لكن فشل بدء الترجمة: {str(e)}'
+        
+        return jsonify(response), 201
+        
+    except ImportError:
+        return jsonify({'success': False, 'error': 'مكتبة الاستيراد غير متوفرة (manga_importer.py)'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'حدث خطأ أثناء الاستيراد: {str(e)}'}), 500
+
+@app.route('/api/admin/import-manga/sources', methods=['GET'])
+def import_manga_sources():
+    """Return supported import sources"""
+    return jsonify({
+        'sources': [
+            {'name': 'lekmanga', 'label': 'LekManga', 'url_pattern': 'lekmanga.site'},
+            {'name': 'generic_madara', 'label': 'مواقع Madara', 'url_pattern': 'أي موقع ووردبريس مانجا'},
+        ],
+        'supported': True
+    })
+
+@app.route('/api/start-full-manga-download', methods=['POST'])
+@require_admin
+def start_full_manga_download():
+    data = request.get_json() or {}
+    source_url = data.get('source_url', '').strip()
+    
+    if not source_url:
+        return jsonify({"error": "يجب إرسال رابط المانهوا"}), 400
+        
+    try:
+        from scrapers.importer import import_manga_from_url
+        import_result = import_manga_from_url(source_url, scrape_images=False)
+        
+        if "error" in import_result:
+            return jsonify({"error": import_result["error"]}), 400
+            
+        from tasks import download_full_manga
+        task = download_full_manga.delay(source_url)
+        
+        return jsonify({
+            "success": True,
+            "message": "تم بدء الأتمتة! يتم سحب جميع الفصول آلياً بفاصل زمني.",
+            "task_id": task.id,
+            "manga_id": import_result.get("manga_id"),
+            "title": import_result.get("title"),
+            "chapters_count": import_result.get("chapters_count", 0)
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Failed to queue download_full_manga task: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": f"فشل بدء المهمة: {e}"}), 500
+
+# ============================================================
+# WATERMARK SYSTEM (wasmoo)
+# ============================================================
+def _get_watermark_config():
+    config = {
+        'watermark_enabled': 'false',
+        'watermark_text': 'KAIRO / منهوا',
+        'watermark_opacity': '25',
+        'watermark_font_size': '32',
+        'watermark_position': 'bottom-right',
+    }
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=5)
+        c = conn.cursor()
+        for key in config.keys():
+            c.execute('SELECT value FROM system_settings WHERE key = ?', (key,))
+            row = c.fetchone()
+            if row:
+                config[key] = row[0]
+        conn.close()
+    except Exception:
+        pass
+    return config
+
+def _apply_watermark(img):
+    config = _get_watermark_config()
+    if config.get('watermark_enabled', 'false').lower() != 'true':
+        return img
+    text = config.get('watermark_text', '').strip()
+    if not text:
+        return img
+    try:
+        opacity = max(5, min(80, int(config.get('watermark_opacity', '25'))))
+        font_size = max(14, min(72, int(config.get('watermark_font_size', '32'))))
+        position = config.get('watermark_position', 'bottom-right')
+    except (ValueError, TypeError):
+        opacity, font_size, position = 25, 32, 'bottom-right'
+    try:
+        from PIL import ImageDraw, ImageFont
+        if img.mode != 'RGBA':
+            bg = img.convert('RGBA')
+        else:
+            bg = img
+        overlay = Image.new('RGBA', bg.size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        font = None
+        for fp in ['C:\\Windows\\Fonts\\arial.ttf', 'C:\\Windows\\Fonts\\tahoma.ttf', 'C:\\Windows\\Fonts\\times.ttf']:
+            if os.path.exists(fp):
+                try:
+                    font = ImageFont.truetype(fp, font_size)
+                    break
+                except Exception:
+                    continue
+        if font is None:
+            font = ImageFont.load_default()
+        bbox = draw.textbbox((0, 0), text, font=font)
+        tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        margin = 20
+        pos_map = {
+            'center': ((bg.width - tw) // 2, (bg.height - th) // 2),
+            'top-left': (margin, margin),
+            'top-right': (bg.width - tw - margin, margin),
+            'bottom-left': (margin, bg.height - th - margin),
+        }
+        xy = pos_map.get(position, (bg.width - tw - margin, bg.height - th - margin))
+        alpha = int(255 * opacity / 100)
+        draw.text((xy[0]+1, xy[1]+1), text, font=font, fill=(0, 0, 0, alpha))
+        draw.text(xy, text, font=font, fill=(255, 255, 255, alpha))
+        result = Image.alpha_composite(bg, overlay)
+        return result.convert('RGB')
+    except Exception:
+        return img
+
+@app.route('/api/admin/watermark-settings', methods=['GET'])
+def get_watermark_settings():
+    return jsonify(_get_watermark_config()), 200
+
+@app.route('/api/admin/watermark-settings', methods=['POST'])
+@require_admin
+def save_watermark_settings():
+    data = request.get_json() or {}
+    keys = ['watermark_enabled', 'watermark_text', 'watermark_opacity', 'watermark_font_size', 'watermark_position']
+    try:
+        conn = sqlite3.connect(DB_FILE, timeout=30)
+        c = conn.cursor()
+        for key in keys:
+            if key in data:
+                c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', (key, str(data[key])))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success", "message": "تم حفظ إعدادات العلامة المائية"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ============================================================
+# READING HISTORY API
+# ============================================================
+@app.route('/api/user/reading-history', methods=['GET'])
+def get_reading_history():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "غير مصرح"}), 401
+    limit = request.args.get('limit', 20, type=int)
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    try:
+        c = conn.cursor()
+        c.execute('SELECT manga_id, chapter_id, page, updated_at FROM reading_progress WHERE email = ? ORDER BY updated_at DESC LIMIT ?', (user['email'], limit))
+        rows = c.fetchall()
+    finally:
+        conn.close()
+    history = [{"manga_id": r[0], "chapter_id": r[1], "page": r[2], "updated_at": r[3]} for r in rows]
+    return jsonify(history), 200
+
+# ============================================================
+# SEARCH API
+# ============================================================
+@app.route('/api/search')
+def search_mangas():
+    q = request.args.get('q', '').strip().lower()
+    if not q or len(q) < 2:
+        return jsonify([]), 200
+    mangas = load_scraped_mangas()
+    results = []
+    for m in mangas:
+        score = 0
+        title = (m.get('title') or '').lower()
+        alt = (m.get('alternative') or '').lower()
+        author = (m.get('author') or '').lower()
+        genres = (m.get('genres') or '')
+        if isinstance(genres, str):
+            genres = genres.lower()
+        elif isinstance(genres, list):
+            genres = ', '.join(genres).lower()
+        synopsis = (m.get('synopsis') or m.get('description') or '').lower()
+        if q in title:
+            score += 10
+        if title.startswith(q):
+            score += 5
+        if q in alt:
+            score += 3
+        if q in author:
+            score += 2
+        if q in genres:
+            score += 1
+        if q in synopsis:
+            score += 1
+        if score > 0:
+            results.append((score, {
+                "id": m.get("id"),
+                "title": m.get("title"),
+                "cover": m.get("cover"),
+                "author": m.get("author"),
+                "genres": m.get("genres"),
+                "type": m.get("type"),
+                "status": m.get("status"),
+            }))
+    results.sort(key=lambda x: -x[0])
+    return jsonify([r[1] for r in results[:20]]), 200
+
+def _cache_image_data(img_url, img_data):
+    """Save raw image data to local cache files (JPEG + WebP)"""
+    url_hash = hashlib.md5(img_url.encode('utf-8')).hexdigest()
+    cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
+    cache_webp = os.path.join(CACHE_DIR, f"{url_hash}.webp")
+    try:
+        from PIL import Image
+        import io
+        img = Image.open(io.BytesIO(img_data))
+        img = img.convert('RGB')
+        img.save(cache_jpeg, "JPEG", quality=90)
+        try:
+            img.save(cache_webp, "WEBP", quality=85)
+        except Exception:
+            pass
+    except Exception:
+        with open(cache_jpeg, 'wb') as f:
+            f.write(img_data)
+
+def _download_chapter_images_playwright(image_urls, chapter_url):
+    """Download all images via a single Playwright session using JS fetch (bypasses Cloudflare)"""
+    from playwright.sync_api import sync_playwright
+    results = {}
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page()
+        # Navigate to chapter page first to pass Cloudflare JS challenge + set cookies
+        try:
+            page.goto(chapter_url, wait_until='networkidle', timeout=60000)
+        except Exception:
+            pass
+        # Fetch ALL images via JS in same browser context (cookies inherited)
+        js_code = '''async (urls) => {
+            const results = [];
+            for (const url of urls) {
+                try {
+                    const resp = await fetch(url, {credentials: 'include'});
+                    const blob = await resp.blob();
+                    const buf = await blob.arrayBuffer();
+                    results.push({url, data: Array.from(new Uint8Array(buf))});
+                } catch(e) {
+                    results.push({url, error: e.message});
+                }
+            }
+            return results;
+        }'''
+        js_data = page.evaluate(js_code, image_urls)
+        browser.close()
+    for item in js_data:
+        if 'data' in item:
+            results[item['url']] = bytes(item['data'])
+    return results
+
+@app.route('/api/fetch-chapter-images', methods=['POST'])
+def fetch_chapter_images():
+    """On-demand: scrape + download chapter images in ONE Playwright session"""
+    data = request.get_json(silent=True) or {}
+    manga_id = str(data.get('manga_id', '')).strip()
+    chapter_id = str(data.get('chapter_id', '')).strip()
+
+    if not manga_id or not chapter_id:
+        return jsonify({"error": "manga_id and chapter_id required"}), 400
+
+    OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+    if not os.path.exists(OUTPUT_FILE):
+        return jsonify({"error": "No scraped manga data"}), 404
+
+    try:
+        with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+            scraped_db = json.load(f)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+    manga = next((m for m in scraped_db if str(m.get('id')) == manga_id), None)
+    if not manga:
+        return jsonify({"error": "Manga not found"}), 404
+
+    chapter = next((ch for ch in (manga.get('chapters') or []) if str(ch.get('id')) == chapter_id), None)
+    if not chapter:
+        return jsonify({"error": "Chapter not found"}), 404
+
+    if chapter.get('images') and len(chapter['images']) > 0:
+        return jsonify({"images": chapter['images'], "cached": True})
+
+    chapter_url = chapter.get('url', '')
+    if not chapter_url:
+        return jsonify({"error": "Chapter has no URL to scrape"}), 400
+
+    from playwright.sync_api import sync_playwright
+    from bs4 import BeautifulSoup
+    import urllib.parse
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        page = browser.new_page()
+
+        # Step 1: Navigate to chapter page (passes Cloudflare JS challenge)
+        try:
+            page.goto(chapter_url, wait_until='domcontentloaded', timeout=60000)
+        except Exception:
+            pass
+
+        # Step 2: Extract image URLs from rendered page (NO download — served on-demand via /proxy-image)
+        html = page.content()
+        soup = BeautifulSoup(html, 'html.parser')
+        images = []
+        for img in soup.find_all('img'):
+            src = img.get('src', '').strip().replace(' ', '%20')
+            if not src:
+                src = img.get('data-src', '').strip().replace(' ', '%20')
+            if 'uploads/manga_' in src or 'images/manga/' in src:
+                full = urllib.parse.urljoin(chapter_url, src)
+                if full not in images:
+                    images.append(full)
+        if not images:
+            browser.close()
+            return jsonify({"error": "No images found in chapter page"}), 404
+
+        browser.close()
+
+        # Save URLs to JSON; actual image downloads happen on-demand through /proxy-image
+        chapter['images'] = images
+        with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            json.dump(scraped_db, f, ensure_ascii=False, indent=2)
+
+        # Smart preload: first 5 chapters in background
+        threading.Thread(target=preload_first_chapters, args=(manga_id,), daemon=True).start()
+
+        return jsonify({"images": images, "cached": False})
 
 if __name__ == '__main__':
-    app.run(debug=False, port=8000)
+    from werkzeug.serving import run_simple
+    run_simple('0.0.0.0', 8000, app, threaded=True, use_reloader=False)

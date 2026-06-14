@@ -1,7 +1,12 @@
-import os
+﻿import os
+import shutil
+import logging
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from pathlib import Path
 from collections import Counter
+
+logger = logging.getLogger(__name__)
 
 NUMPY_AVAILABLE = True
 
@@ -127,35 +132,71 @@ def detect_and_remove_watermarks(img):
                     removed_count += 1
     return removed_regions, removed_count
 
-def add_kairo_branding(img, removed_regions):
-    draw = ImageDraw.Draw(img)
-    for y1, y2, bg_color in removed_regions:
-        rh = y2 - y1 + 1
-        font_size = max(12, min(rh - 6, 28))
-        try:
-            font = ImageFont.truetype("arial.ttf", font_size)
-        except Exception:
-            try:
-                font = ImageFont.load_default(size=font_size)
-            except TypeError:
-                font = ImageFont.load_default()
-        brand_text = "KAIRO / \u0645\u0646\u0647\u0648\u0627"
-        text_color = tuple(min(c + 60, 255) for c in bg_color[:3])
-        bbox = draw.textbbox((0, 0), brand_text, font=font)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-        x = (img.width - tw) // 2
-        y = y1 + (rh - th) // 2
-        draw.text((x, y), brand_text, fill=text_color, font=font)
-
 def process_image_watermark(img):
     if not NUMPY_AVAILABLE:
         return 0
     try:
         removed_regions, count = detect_and_remove_watermarks(img)
-        if count > 0:
-            add_kairo_branding(img, removed_regions)
         return count
     except Exception as e:
         print(f"Watermark processing skipped: {e}")
         return 0
+
+def detect_chapter_language(image_paths, sample_count=5):
+    """Detect whether chapter images contain Arabic or English text.
+    Returns 'ar' if Arabic detected, 'en' otherwise.
+    Falls back to 'en' if OCR libraries are not available."""
+    try:
+        import pytesseract
+    except ImportError:
+        try:
+            from paddleocr import PaddleOCR
+            ocr = PaddleOCR(use_angle_cls=True, lang='en', show_log=False)
+            sample_paths = [p for p in image_paths if os.path.isfile(p)][:sample_count]
+            for path in sample_paths:
+                result = ocr.ocr(path, cls=False)
+                if result and result[0]:
+                    for line in result[0]:
+                        text = line[1][0]
+                        arabic_count = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
+                        if arabic_count > 3:
+                            return 'ar'
+        except Exception:
+            pass
+        return 'en'
+
+    sample_paths = [p for p in image_paths if os.path.isfile(p)][:sample_count]
+    ar_scores = 0
+    en_scores = 0
+
+    for path in sample_paths:
+        try:
+            img = Image.open(path)
+            text = pytesseract.image_to_string(img, lang='ara+eng')
+            ar_chars = sum(1 for c in text if '\u0600' <= c <= '\u06FF')
+            en_chars = sum(1 for c in text if c.isascii() and c.isalpha())
+            if ar_chars > en_chars:
+                ar_scores += 1
+            else:
+                en_scores += 1
+        except Exception:
+            continue
+
+    return 'ar' if ar_scores > en_scores else 'en'
+
+
+def batch_clean_images(input_dir: str, output_dir: str) -> list[str]:
+    input_path = Path(input_dir) if not isinstance(input_dir, Path) else input_dir
+    output_path = Path(output_dir) if not isinstance(output_dir, Path) else output_dir
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    results = []
+    for img_file in sorted(input_path.iterdir()):
+        if img_file.suffix.lower() not in {".jpg", ".jpeg", ".png", ".webp"}:
+            continue
+        out_file = output_path / img_file.name
+        shutil.copy(str(img_file), str(out_file))
+        results.append(str(out_file))
+        logger.info(f"Copied: {img_file.name}")
+
+    return results

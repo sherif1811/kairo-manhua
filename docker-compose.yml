@@ -1,0 +1,158 @@
+
+services:
+  # ─── PostgreSQL Database ───────────────────────────────────────
+  db:
+    image: postgres:15-alpine
+    container_name: kairo-db
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: kairo
+      POSTGRES_USER: kairo
+      POSTGRES_PASSWORD: kairo_secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kairo -d kairo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ─────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: kairo-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Flower (Celery monitoring) ────────────────────────────────
+  flower:
+    image: mher/flower
+    container_name: kairo-flower
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      FLOWER_PORT: 5555
+
+  # ─── Flask Web App ─────────────────────────────────────────────
+  web:
+    build: .
+    container_name: kairo-web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - image_cache_data:/app/image_cache
+      - uploads_data:/app/uploads
+      - ./kairo.db:/app/kairo.db
+      - ./scraped_mangas.json:/app/scraped_mangas.json
+    environment:
+      # Flask
+      FLASK_ENV: production
+      # Database
+      DATABASE_URL: postgresql://kairo:kairo_secret@db:5432/kairo
+      # Redis / Celery
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      # App secrets (override in production)
+      AI_API_KEY: "${AI_API_KEY:-}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-kairo-admin-secret-dev}"
+    command: >
+      sh -c "python scripts/wait_for_db.py &&
+             python scripts/migrate_to_postgresql.py &&
+             gunicorn --bind 0.0.0.0:8000 --workers 2 --timeout 120 flask_app:app"
+
+  # ─── Celery Worker ─────────────────────────────────────────────
+  celery-worker:
+    image: kairo-manhua_web
+    build: .
+    container_name: kairo-celery-worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - image_cache_data:/app/image_cache
+      - uploads_data:/app/uploads
+      - ./kairo.db:/app/kairo.db
+      - ./scraped_mangas.json:/app/scraped_mangas.json
+    environment:
+      DATABASE_URL: postgresql://kairo:kairo_secret@db:5432/kairo
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      AI_API_KEY: "${AI_API_KEY:-}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-kairo-admin-secret-dev}"
+    command: celery -A celery_app worker --loglevel=info
+
+  # ─── Celery Beat (periodic scheduler) ─────────────────────────
+  celery-beat:
+    image: kairo-manhua_web
+    build: .
+    container_name: kairo-celery-beat
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - image_cache_data:/app/image_cache
+      - uploads_data:/app/uploads
+      - ./kairo.db:/app/kairo.db
+      - ./scraped_mangas.json:/app/scraped_mangas.json
+    environment:
+      DATABASE_URL: postgresql://kairo:kairo_secret@db:5432/kairo
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      AI_API_KEY: "${AI_API_KEY:-}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-kairo-admin-secret-dev}"
+    command: celery -A celery_app beat --loglevel=info
+
+  # ─── Translation Server ────────────────────────────────────────
+  translation-server:
+    image: kairo-manhua_web
+    build: .
+    container_name: kairo-translation
+    restart: unless-stopped
+    ports:
+      - "8001:8001"
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - image_cache_data:/app/image_cache
+      - uploads_data:/app/uploads
+      - ./kairo.db:/app/kairo.db
+      - ./scraped_mangas.json:/app/scraped_mangas.json
+    environment:
+      DATABASE_URL: postgresql://kairo:kairo_secret@db:5432/kairo
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/0
+      AI_API_KEY: "${AI_API_KEY:-}"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-kairo-admin-secret-dev}"
+    command: python translation_server.py
+
+volumes:
+  postgres_data:
+    name: kairo-postgres-data
+  image_cache_data:
+    name: kairo-image-cache
+  uploads_data:
+    name: kairo-uploads
