@@ -1,14 +1,16 @@
-﻿import os
+import os
 import shutil
 import logging
-import numpy as np
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
 from PIL import Image, ImageDraw, ImageFont
 from pathlib import Path
 from collections import Counter
 
 logger = logging.getLogger(__name__)
-
-NUMPY_AVAILABLE = True
 
 def get_solid_rows(img, threshold=20, solid_ratio=0.98):
     w, h = img.size
