@@ -46,7 +46,7 @@ class BaseScraper:
         logger.info(f"Playwright fetching {url}...")
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=True)
+                browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'])
                 context = browser.new_context(user_agent=user_agent)
                 page = context.new_page()
                 
@@ -100,8 +100,8 @@ class BaseScraper:
                     import re
                     temp_html = page.content()
                     
+                    post_id = None
                     if "wp-manga-chapter" not in temp_html and "chapter-item" not in temp_html:
-                        post_id = None
                         m1 = re.search(r'data-id="(\d+)"', temp_html)
                         m2 = re.search(r'"manga_id":"(\d+)"', temp_html)
                         m3 = re.search(r'postid-(\d+)', temp_html)
