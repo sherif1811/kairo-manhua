@@ -1,3 +1,4 @@
+import subprocess
 import os
 import io
 import sys
@@ -43,10 +44,10 @@ def get_site_name():
             return SITE_NAME
     except Exception:
         pass
-    SITE_NAME = "KAIRO / منهوا"
+    SITE_NAME = "KAIRO / Ù…Ù†Ù‡ÙˆØ§"
     return SITE_NAME
 
-from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, make_response
+from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, make_response, Response, stream_with_context
 
 try:
     from PIL import Image
@@ -97,8 +98,8 @@ def _escape_html(s):
     return str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#39;')
 
 def inject_seo_meta(html, title, description, image_url=''):
-    title = title or 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى'
-    desc = description or 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.'
+    title = title or 'KAIRO / Ù…Ù†Ù‡ÙˆØ§ - Ù…Ù†ØµØ© Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ø£ÙˆÙ„Ù‰'
+    desc = description or 'Ù…Ù†ØµØ© KAIRO/Ù…Ù†Ù‡ÙˆØ§ - Ø§Ù‚Ø±Ø£ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù„Ø¯ÙŠÙƒ Ø¨Ø¬ÙˆØ¯Ø© Ø¹Ø§Ù„ÙŠØ© ÙˆØ¨Ø¯ÙˆÙ† Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ù…Ø²Ø¹Ø¬Ø©.'
     
     html = re.sub(r'<title>[^<]*</title>', '<title>' + _escape_html(title) + '</title>', html)
     html = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="' + _escape_html(desc) + '">', html)
@@ -134,20 +135,20 @@ def get_seo_for_path(path):
         manga = find_manga_for_seo(manga_id)
         if manga:
             chapters = manga.get('chapters', [])
-            chapter_title = 'فصل ' + chapter_id
+            chapter_title = 'ÙØµÙ„ ' + chapter_id
             for ch in chapters:
                 if str(ch.get('id')) == str(chapter_id):
                     chapter_title = ch.get('title', chapter_title)
                     break
-            title = manga.get('title', '') + ' - ' + chapter_title + ' | KAIRO / منهوا'
-            desc = 'اقرأ ' + manga.get('title', '') + ' ' + chapter_title + ' على KAIRO/منهوا'
+            title = manga.get('title', '') + ' - ' + chapter_title + ' | KAIRO / Ù…Ù†Ù‡ÙˆØ§'
+            desc = 'Ø§Ù‚Ø±Ø£ ' + manga.get('title', '') + ' ' + chapter_title + ' Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§'
             cover = manga.get('cover', '')
             return title, desc, cover
     elif manga_match:
         manga_id = manga_match.group(1)
         manga = find_manga_for_seo(manga_id)
         if manga:
-            title = manga.get('title', '') + ' | KAIRO / منهوا'
+            title = manga.get('title', '') + ' | KAIRO / Ù…Ù†Ù‡ÙˆØ§'
             desc = (manga.get('synopsis', '') or '')[:200]
             cover = manga.get('cover', '')
             return title, desc, cover
@@ -270,8 +271,15 @@ def init_db():
                         chapter_id TEXT,
                         email TEXT,
                         comment_text TEXT,
-                        created_at REAL
+                        created_at REAL,
+                        badge TEXT DEFAULT ''
                      )''')
+        try:
+            c.execute("ALTER TABLE chapter_comments ADD COLUMN badge TEXT DEFAULT ''")
+        except:
+            pass
+        # Fix existing users that were wrongly set to admin
+        c.execute("UPDATE users SET role = 'user' WHERE role = 'admin' AND email != 'sherifahmed2686@gmail.com'")
         c.execute('''CREATE TABLE IF NOT EXISTS site_stats (
                         key TEXT PRIMARY KEY,
                         value INTEGER DEFAULT 0
@@ -287,9 +295,9 @@ def init_db():
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_port', '587')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_user', '')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_pass', '')")
-        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_sender', 'KAIRO/منهوا <noreply@kairo-manhua.com>')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_sender', 'KAIRO/Ù…Ù†Ù‡ÙˆØ§ <noreply@kairo-manhua.com>')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_enabled', 'false')")
-        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_text', 'KAIRO / منهوا')")
+        c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_text', 'KAIRO / Ù…Ù†Ù‡ÙˆØ§')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_opacity', '25')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_font_size', '32')")
         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_position', 'bottom-right')")
@@ -327,9 +335,56 @@ def init_db():
                         message TEXT,
                         manga_id TEXT,
                         chapter_id TEXT,
+                        actor_email TEXT DEFAULT '',
                         is_read INTEGER DEFAULT 0,
                         created_at REAL
                      )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS follows (
+                        follower_email TEXT,
+                        following_email TEXT,
+                        created_at REAL,
+                        PRIMARY KEY (follower_email, following_email)
+                     )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS user_lists (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        email TEXT,
+                        name TEXT,
+                        description TEXT DEFAULT '',
+                        is_public INTEGER DEFAULT 1,
+                        created_at REAL
+                     )''')
+        c.execute('''CREATE TABLE IF NOT EXISTS user_list_items (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        list_id INTEGER,
+                        manga_id TEXT,
+                        manga_title TEXT,
+                        manga_cover TEXT,
+                        added_at REAL
+                     )''')
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN streak_days INTEGER DEFAULT 0")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN last_read_date TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("ALTER TABLE notifications ADD COLUMN actor_email TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
+        try:
+            c.execute("ALTER TABLE users ADD COLUMN last_claim_date TEXT DEFAULT ''")
+        except sqlite3.OperationalError:
+            pass
         conn.commit()
     finally:
         conn.close()
@@ -377,14 +432,26 @@ def calculate_level(points):
     return max(1, n)
 
 def get_rank_name(level):
-    if level <= 30:
-        return 'مبتدئ'
-    elif level <= 60:
-        return 'قارئ ممتاز'
+    if level <= 5:
+        return 'Ù…Ø¨ØªØ¯Ø¦'
+    elif level <= 15:
+        return 'Ù‚Ø§Ø±Ø¦ Ù†Ù‡Ù…'
+    elif level <= 30:
+        return 'Ù‚Ø§Ø±Ø¦ Ù…Ù…ØªØ§Ø²'
+    elif level <= 50:
+        return 'Ù†Ø§Ù‚Ø¯ Ø£Ø¯Ø¨ÙŠ'
+    elif level <= 70:
+        return 'Ø®Ø¨ÙŠØ± Ù…Ù†Ù‡ÙˆØ§'
     elif level <= 99:
-        return 'قارئ أسطوري'
+        return 'Ù‚Ø§Ø±Ø¦ Ø£Ø³Ø·ÙˆØ±ÙŠ'
+    elif level <= 149:
+        return 'Ù…Ù„Ùƒ Ø§Ù„ØªØ±ÙÙŠÙ‡'
+    elif level <= 199:
+        return 'Ø¹Ù…Ù„Ø§Ù‚ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©'
+    elif level <= 299:
+        return 'Ø£Ø³Ø·ÙˆØ±Ø© Ø­ÙŠØ©'
     else:
-        return 'مدير المشروع'
+        return 'Ù…Ø¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹'
 
 def award_reading_points(email, manga_id, chapter_id):
     conn = sqlite3.connect(DB_FILE, timeout=30)
@@ -457,23 +524,23 @@ def send_reset_email(email, token, host):
     
     # Check if SMTP details are configured
     if not smtp_user or not smtp_pass:
-        raise ValueError("إعدادات خادم SMTP غير مكتملة. يرجى تهيئة SMTP في لوحة التحكم.")
+        raise ValueError("Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø®Ø§Ø¯Ù… SMTP ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø©. ÙŠØ±Ø¬Ù‰ ØªÙ‡ÙŠØ¦Ø© SMTP ÙÙŠ Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ….")
 
-    msg_body = f"""أهلاً بك،
+    msg_body = f"""Ø£Ù‡Ù„Ø§Ù‹ Ø¨ÙƒØŒ
 
-لقد تلقينا طلباً لإعادة تعيين كلمة المرور لحسابك في منصة KAIRO/منهوا.
+Ù„Ù‚Ø¯ ØªÙ„Ù‚ÙŠÙ†Ø§ Ø·Ù„Ø¨Ø§Ù‹ Ù„Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø­Ø³Ø§Ø¨Ùƒ ÙÙŠ Ù…Ù†ØµØ© KAIRO/Ù…Ù†Ù‡ÙˆØ§.
 
-يمكنك إعادة تعيين كلمة المرور بالضغط على الرابط التالي:
+ÙŠÙ…ÙƒÙ†Ùƒ Ø¥Ø¹Ø§Ø¯Ø© ØªØ¹ÙŠÙŠÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø±Ø§Ø¨Ø· Ø§Ù„ØªØ§Ù„ÙŠ:
 {reset_link}
 
-إذا لم تطلب هذا التغيير، يرجى تجاهل هذا البريد الإلكتروني. الرابط صالح لمدة 15 دقيقة.
+Ø¥Ø°Ø§ Ù„Ù… ØªØ·Ù„Ø¨ Ù‡Ø°Ø§ Ø§Ù„ØªØºÙŠÙŠØ±ØŒ ÙŠØ±Ø¬Ù‰ ØªØ¬Ø§Ù‡Ù„ Ù‡Ø°Ø§ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ. Ø§Ù„Ø±Ø§Ø¨Ø· ØµØ§Ù„Ø­ Ù„Ù…Ø¯Ø© 15 Ø¯Ù‚ÙŠÙ‚Ø©.
 
-شكراً لك،
-إدارة KAIRO/منهوا
+Ø´ÙƒØ±Ø§Ù‹ Ù„ÙƒØŒ
+Ø¥Ø¯Ø§Ø±Ø© KAIRO/Ù…Ù†Ù‡ÙˆØ§
 """
     
     mime_msg = MIMEText(msg_body, 'plain', 'utf-8')
-    mime_msg['Subject'] = 'استعادة كلمة المرور - KAIRO/منهوا'
+    mime_msg['Subject'] = 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± - KAIRO/Ù…Ù†Ù‡ÙˆØ§'
     mime_msg['From'] = smtp_sender
     mime_msg['To'] = email
 
@@ -525,7 +592,7 @@ def require_admin(f):
     def decorated(*args, **kwargs):
         user = get_session_user()
         if not user or user.get('role') != 'admin':
-            return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+            return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·"}), 403
         return f(*args, **kwargs)
     return decorated
 
@@ -591,21 +658,21 @@ ALLOWED_STATIC_EXTENSIONS = {
 
 @app.route('/<path:filename>')
 def static_files(filename):
-    # منع path traversal
+    # Ù…Ù†Ø¹ path traversal
     normalized = os.path.normpath('/' + filename).lstrip('/')
     if normalized.startswith('..') or normalized.startswith('/'):
-        return jsonify({"error": "غير مصرح"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
 
     file_ext = os.path.splitext(normalized)[1].lower()
     file_path = os.path.join(BASE_DIR, normalized)
 
     if file_ext:
-        # طلب ملف بامتداد — نسمح فقط بالامتدادات المسموحة
+        # Ø·Ù„Ø¨ Ù…Ù„Ù Ø¨Ø§Ù…ØªØ¯Ø§Ø¯ â€” Ù†Ø³Ù…Ø­ ÙÙ‚Ø· Ø¨Ø§Ù„Ø§Ù…ØªØ¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³Ù…ÙˆØ­Ø©
         if file_ext not in ALLOWED_STATIC_EXTENSIONS:
-            return jsonify({"error": "غير مصرح"}), 403
+            return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
         if os.path.isfile(file_path):
             return send_from_directory(BASE_DIR, normalized)
-        return jsonify({"error": "ملف غير موجود"}), 404
+        return jsonify({"error": "Ù…Ù„Ù ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯"}), 404
 
     # SPA fallback: serve index.html for clean URLs (e.g. /manga/1, /reader/1/2)
     html = render_index_with_seo('/' + filename)
@@ -622,14 +689,14 @@ def register():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
     if not email or not password:
-        return jsonify({"error": "الرجاء إدخال البريد وكلمة المرور"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
         c.execute('SELECT email FROM users WHERE email = ?', (email,))
         if c.fetchone():
-            return jsonify({"error": "هذا الإيميل موجود بالفعل"}), 400
-        role = 'admin'
+            return jsonify({"error": "Ù‡Ø°Ø§ Ø§Ù„Ø¥ÙŠÙ…ÙŠÙ„ Ù…ÙˆØ¬ÙˆØ¯ Ø¨Ø§Ù„ÙØ¹Ù„"}), 400
+        role = 'user'
         password_hash = hash_password(password)
         default_username = email.split('@')[0]
         c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'email'))
@@ -648,7 +715,7 @@ def register():
         conn.close()
     return jsonify({
         "status": "success",
-        "message": "تم التسجيل بنجاح",
+        "message": "ØªÙ… Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ù†Ø¬Ø§Ø­",
         "username": default_username,
         "token": token,
         "email": email,
@@ -663,14 +730,14 @@ def login():
     email = data.get('email', '').strip().lower()
     password = data.get('password', '')
     if not email or not password:
-        return jsonify({"error": "الرجاء إدخال البريد وكلمة المرور"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
         c.execute('SELECT password_hash, role, username FROM users WHERE email = ?', (email,))
         row = c.fetchone()
         if not row or not verify_password(password, row[0]):
-            return jsonify({"error": "البريد الإلكتروني أو كلمة المرور غير صحيحة"}), 401
+            return jsonify({"error": "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø£Ùˆ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± ØµØ­ÙŠØ­Ø©"}), 401
         
         stored_hash = row[0]
         if not (stored_hash.startswith('scrypt:') or stored_hash.startswith('pbkdf2:')):
@@ -680,10 +747,6 @@ def login():
         
         role = row[1]
         username = row[2] if row[2] else email.split('@')[0]
-        if role != 'admin':
-            c.execute("UPDATE users SET role = 'admin' WHERE email = ?", (email,))
-            conn.commit()
-            role = 'admin'
         token = secrets.token_hex(32)
         expires_at = time.time() + 86400 * 30
         c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
@@ -761,15 +824,15 @@ def auth_google():
     access_token = data.get('access_token')
     
     if not credential and not access_token:
-        return jsonify({"error": "بيانات التوثيق مفقودة"}), 400
+        return jsonify({"error": "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙˆØ«ÙŠÙ‚ Ù…ÙÙ‚ÙˆØ¯Ø©"}), 400
         
     user_info = verify_google_token(credential=credential, access_token=access_token)
     if not user_info:
-        return jsonify({"error": "فشل التحقق من حساب Google"}), 401
+        return jsonify({"error": "ÙØ´Ù„ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø³Ø§Ø¨ Google"}), 401
         
     email = (user_info.get('email') or '').strip().lower()
     if not email:
-        return jsonify({"error": "فشل استخراج البريد الإلكتروني من حساب Google"}), 400
+        return jsonify({"error": "ÙØ´Ù„ Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ù† Ø­Ø³Ø§Ø¨ Google"}), 400
         
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -780,7 +843,7 @@ def auth_google():
         if not row:
             random_pass = secrets.token_hex(16)
             password_hash = hash_password(random_pass)
-            role = 'admin'
+            role = 'admin' if email == 'sherifahmed2686@gmail.com' else 'user'
             default_username = email.split('@')[0]
             c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'google'))
             conn.commit()
@@ -813,20 +876,20 @@ def auth_facebook():
     access_token = data.get('access_token')
     
     if not access_token:
-        return jsonify({"error": "توكن الفيسبوك مفقود"}), 400
+        return jsonify({"error": "ØªÙˆÙƒÙ† Ø§Ù„ÙÙŠØ³Ø¨ÙˆÙƒ Ù…ÙÙ‚ÙˆØ¯"}), 400
         
     user_info = verify_facebook_token(access_token)
     if not user_info:
-        return jsonify({"error": "فشل التحقق من حساب Facebook"}), 401
+        return jsonify({"error": "ÙØ´Ù„ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø³Ø§Ø¨ Facebook"}), 401
         
     email = (user_info.get('email') or '').strip().lower()
-    # إذا لم يكن الحساب يحتوي على بريد إلكتروني مفعل (نادر الحدوث)، نستخدم معرف الفيسبوك لتوليد بريد وهمي فريد
+    # Ø¥Ø°Ø§ Ù„Ù… ÙŠÙƒÙ† Ø§Ù„Ø­Ø³Ø§Ø¨ ÙŠØ­ØªÙˆÙŠ Ø¹Ù„Ù‰ Ø¨Ø±ÙŠØ¯ Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…ÙØ¹Ù„ (Ù†Ø§Ø¯Ø± Ø§Ù„Ø­Ø¯ÙˆØ«)ØŒ Ù†Ø³ØªØ®Ø¯Ù… Ù…Ø¹Ø±Ù Ø§Ù„ÙÙŠØ³Ø¨ÙˆÙƒ Ù„ØªÙˆÙ„ÙŠØ¯ Ø¨Ø±ÙŠØ¯ ÙˆÙ‡Ù…ÙŠ ÙØ±ÙŠØ¯
     if not email:
         fb_id = user_info.get('id')
         if fb_id:
             email = f"fb_{fb_id}@kairo-facebook.com"
         else:
-            return jsonify({"error": "فشل استخراج بيانات الحساب من Facebook"}), 400
+            return jsonify({"error": "ÙØ´Ù„ Ø§Ø³ØªØ®Ø±Ø§Ø¬ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨ Ù…Ù† Facebook"}), 400
             
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -868,7 +931,7 @@ def auth_facebook():
 def get_admin_stats():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·"}), 403
     
     from_ts = request.args.get('from')
     to_ts = request.args.get('to')
@@ -926,7 +989,7 @@ def get_admin_stats():
 def get_admin_stats_export():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·"}), 403
     
     fmt = request.args.get('format', 'json')
     export_data = {}
@@ -971,14 +1034,15 @@ def get_admin_stats_export():
 def user_profile():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT points, level FROM users WHERE email = ?', (user['email'],))
+        c.execute('SELECT points, level, username FROM users WHERE email = ?', (user['email'],))
         row = c.fetchone()
         points = row[0] if row else 20
         level = row[1] if row else 1
+        username = row[2] if row else ''
     finally:
         conn.close()
     rank_name = get_rank_name(level)
@@ -988,6 +1052,7 @@ def user_profile():
     return jsonify({
         "points": points,
         "level": level,
+        "username": username,
         "rank_name": rank_name,
         "progress": round(progress, 1),
         "points_to_next": points_next - points
@@ -1000,7 +1065,7 @@ def user_profile():
 def get_settings():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -1015,7 +1080,7 @@ def get_settings():
 def sync_settings():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     data = request.get_json() or {}
     settings = data.get('settings', {})
     conn = sqlite3.connect(DB_FILE, timeout=30)
@@ -1031,14 +1096,14 @@ def sync_settings():
 def reading_progress():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     data = request.get_json() or {}
     manga_id = (data.get('manga_id') or '').strip()
     chapter_id = (data.get('chapter_id') or '').strip()
     page = data.get('page', 1)
     
     if not manga_id or not chapter_id:
-        return jsonify({"error": "بيانات القراءة غير مكتملة"}), 400
+        return jsonify({"error": "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø©"}), 400
     
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -1081,7 +1146,7 @@ def get_public_config():
 def get_admin_config():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، للمسؤولين فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø³Ø¤ÙˆÙ„ÙŠÙ† ÙÙ‚Ø·"}), 403
     try:
         conn = sqlite3.connect(DB_FILE, timeout=30)
         try:
@@ -1099,7 +1164,7 @@ def get_admin_config():
 def save_admin_config():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، للمسؤولين فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø³Ø¤ÙˆÙ„ÙŠÙ† ÙÙ‚Ø·"}), 403
     data = request.get_json() or {}
     try:
         conn = sqlite3.connect(DB_FILE, timeout=30)
@@ -1110,7 +1175,7 @@ def save_admin_config():
             conn.commit()
         finally:
             conn.close()
-        return jsonify({"status": "success", "message": "تم تحديث إعدادات النظام بنجاح"}), 200
+        return jsonify({"status": "success", "message": "ØªÙ… ØªØ­Ø¯ÙŠØ« Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù… Ø¨Ù†Ø¬Ø§Ø­"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1119,14 +1184,14 @@ def forgot_password():
     data = request.get_json() or {}
     email = data.get('email', '').strip().lower()
     if not email:
-        return jsonify({"error": "الرجاء إدخال البريد الإلكتروني"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ"}), 400
     
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
         c.execute('SELECT email FROM users WHERE email = ?', (email,))
         if not c.fetchone():
-            return jsonify({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}), 200
+            return jsonify({"status": "success", "message": "Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ø³Ø¬Ù„Ø§Ù‹ØŒ Ø³ÙŠØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±."}), 200
             
         token = secrets.token_hex(32)
         expires_at = time.time() + 900 # 15 minutes
@@ -1141,19 +1206,19 @@ def forgot_password():
     
     try:
         send_reset_email(email, token, host)
-        return jsonify({"status": "success", "message": "إذا كان البريد الإلكتروني مسجلاً، سيتم إرسال رابط استعادة كلمة المرور."}), 200
+        return jsonify({"status": "success", "message": "Ø¥Ø°Ø§ ÙƒØ§Ù† Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ù…Ø³Ø¬Ù„Ø§Ù‹ØŒ Ø³ÙŠØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±."}), 200
     except Exception as ex:
         print(f"SMTP sending failed: {ex}")
         reset_link = f"http://{host}/#/reset-password?token={token}"
         print(f"[BACKUP reset link] For {email}: {reset_link}")
         
         err_str = str(ex)
-        if "إعدادات خادم SMTP" in err_str:
+        if "Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø®Ø§Ø¯Ù… SMTP" in err_str:
             return jsonify({"error": err_str}), 400
         else:
             return jsonify({
                 "status": "success",
-                "message": "تم إنشاء رابط استعادة كلمة المرور. استخدم الرابط أدناه:",
+                "message": "ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø±Ø§Ø¨Ø· Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±. Ø§Ø³ØªØ®Ø¯Ù… Ø§Ù„Ø±Ø§Ø¨Ø· Ø£Ø¯Ù†Ø§Ù‡:",
                 "reset_link": reset_link
             }), 200
 
@@ -1164,7 +1229,7 @@ def reset_password():
     new_password = data.get('password', '')
     
     if not email or not new_password:
-        return jsonify({"error": "الرجاء إدخال البريد الإلكتروني وكلمة المرور الجديدة"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ÙˆÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©"}), 400
         
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -1173,7 +1238,7 @@ def reset_password():
         row = c.fetchone()
         
         if not row:
-            return jsonify({"error": "البريد الإلكتروني غير مسجل"}), 404
+            return jsonify({"error": "Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ ØºÙŠØ± Ù…Ø³Ø¬Ù„"}), 404
             
         password_hash = hash_password(new_password)
         c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (password_hash, email))
@@ -1181,56 +1246,610 @@ def reset_password():
     finally:
         conn.close()
     
-    return jsonify({"status": "success", "message": "تم تحديث كلمة المرور بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… ØªØ­Ø¯ÙŠØ« ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ù†Ø¬Ø§Ø­"}), 200
 
 @app.route('/api/auth/change-username', methods=['POST'])
 def change_username():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "توكن غير صالح"}), 401
+        return jsonify({"error": "ØªÙˆÙƒÙ† ØºÙŠØ± ØµØ§Ù„Ø­"}), 401
     data = request.get_json() or {}
     new_username = data.get('username', '').strip()
     if not new_username:
-        return jsonify({"error": "الرجاء إدخال اسم المستخدم"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…"}), 400
     if len(new_username) < 2:
-        return jsonify({"error": "اسم المستخدم يجب أن يكون حرفين على الأقل"}), 400
+        return jsonify({"error": "Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
         c.execute('SELECT email FROM users WHERE username = ? AND email != ?', (new_username, user['email']))
         if c.fetchone():
-            return jsonify({"error": "اسم المستخدم مستخدم بالفعل"}), 409
+            return jsonify({"error": "Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ø§Ù„ÙØ¹Ù„"}), 409
         c.execute('UPDATE users SET username = ? WHERE email = ?', (new_username, user['email']))
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم تحديث اسم المستخدم بنجاح", "username": new_username}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­", "username": new_username}), 200
 
 @app.route('/api/auth/change-password', methods=['POST'])
 def change_password():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "توكن غير صالح"}), 401
+        return jsonify({"error": "ØªÙˆÙƒÙ† ØºÙŠØ± ØµØ§Ù„Ø­"}), 401
     data = request.get_json() or {}
     current_password = data.get('current_password', '')
     new_password = data.get('new_password', '')
     if not current_password or not new_password:
-        return jsonify({"error": "الرجاء إدخال كلمة المرور الحالية والجديدة"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ© ÙˆØ§Ù„Ø¬Ø¯ÙŠØ¯Ø©"}), 400
     if len(new_password) < 6:
-        return jsonify({"error": "كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل"}), 400
+        return jsonify({"error": "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
         c.execute('SELECT password_hash FROM users WHERE email = ?', (user['email'],))
         row = c.fetchone()
         if not row or not verify_password(current_password, row[0]):
-            return jsonify({"error": "كلمة المرور الحالية غير صحيحة"}), 403
+            return jsonify({"error": "ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ© ØºÙŠØ± ØµØ­ÙŠØ­Ø©"}), 403
         password_hash = hash_password(new_password)
         c.execute('UPDATE users SET password_hash = ? WHERE email = ?', (password_hash, user['email']))
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم تغيير كلمة المرور بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ù†Ø¬Ø§Ø­"}), 200
+
+# ============================================================
+# SOCIAL / COMMUNITY FEATURES
+# ============================================================
+
+@app.route('/api/user/search', methods=['GET'])
+def user_search():
+    q = request.args.get('q', '').strip()
+    if len(q) < 1:
+        return jsonify([]), 200
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT username, email, points, level FROM users WHERE username LIKE ? AND role != 'admin' LIMIT 8", (f'%{q}%',))
+        rows = c.fetchall()
+        results = []
+        for username, email, points, level in rows:
+            results.append({
+                "username": username,
+                "email": email,
+                "points": points,
+                "level": level,
+                "rank": get_rank_name(level),
+                "avatar": "",
+            })
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/profile/<username>', methods=['GET'])
+def public_profile(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email, username, points, level, avatar_url, bio FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify({"error": "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯"}), 404
+        email, uname, points, level, avatar_url, bio = row
+        current_user = get_session_user()
+        is_owner = current_user and current_user['email'] == email
+        
+        c.execute("SELECT COUNT(*) FROM follows WHERE following_email = ?", (email,))
+        followers_count = c.fetchone()[0]
+        c.execute("SELECT COUNT(*) FROM follows WHERE follower_email = ?", (email,))
+        following_count = c.fetchone()[0]
+        
+        is_following = False
+        if current_user:
+            c.execute("SELECT 1 FROM follows WHERE follower_email = ? AND following_email = ?", (current_user['email'], email))
+            is_following = c.fetchone() is not None
+        
+        # Get reading stats
+        c.execute("SELECT COUNT(DISTINCT manga_id) FROM reader_points_log WHERE email = ?", (email,))
+        chapters_read = c.fetchone()[0]
+        
+        # Get streak
+        c.execute("SELECT streak_days, last_read_date FROM users WHERE email = ?", (email,))
+        streak_row = c.fetchone()
+        streak_days = streak_row[0] if streak_row else 0
+    finally:
+        conn.close()
+    
+    return jsonify({
+        "username": uname,
+        "email": email,
+        "points": points,
+        "level": level,
+        "rank": get_rank_name(level),
+        "avatar": avatar_url or "",
+        "bio": bio or "",
+        "followers": followers_count,
+        "following": following_count,
+        "is_following": is_following,
+        "is_owner": is_owner,
+        "chapters_read": chapters_read,
+        "streak_days": streak_days,
+        "xp_for_current": points_needed_for_level(level - 1) if level > 1 else 0,
+        "xp_for_next": points_needed_for_level(level),
+    }), 200
+
+@app.route('/api/profile/<username>/activity', methods=['GET'])
+def profile_activity(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        c.execute("""SELECT r.manga_id, r.chapter_id, r.earned_at, m.title, m.cover_url AS cover
+                     FROM reader_points_log r
+                     LEFT JOIN manga m ON r.manga_id = m.id
+                     WHERE r.email = ? ORDER BY r.earned_at DESC LIMIT 20""", (email,))
+        rows = c.fetchall()
+        activities = []
+        for manga_id, chapter_id, earned_at, title, cover in rows:
+            activities.append({
+                "manga_id": manga_id,
+                "chapter_id": chapter_id,
+                "title": title or manga_id,
+                "cover": cover or "",
+                "time": earned_at,
+            })
+    finally:
+        conn.close()
+    return jsonify(activities), 200
+
+@app.route('/api/profile/<username>/library', methods=['GET'])
+def profile_library(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        c.execute("SELECT settings_json FROM user_settings WHERE email = ?", (email,))
+        row = c.fetchone()
+        settings = {}
+        if row and row[0]:
+            try: settings = json.loads(row[0])
+            except: pass
+        manga_ids = set()
+        for key in ['bookmarks', 'history']:
+            items = settings.get(key, [])
+            if isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        mid = item.get('id') or item.get('manga_id')
+                        if mid: manga_ids.add(mid)
+                    elif isinstance(item, str):
+                        manga_ids.add(item)
+        results = []
+        for mid in manga_ids:
+            c.execute("SELECT title, cover_url AS cover FROM manga WHERE id = ?", (mid,))
+            mr = c.fetchone()
+            if mr:
+                results.append({"manga_id": mid, "title": mr[0], "cover": mr[1]})
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/profile/<username>/reviews', methods=['GET'])
+def profile_reviews(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        c.execute("""SELECT r.manga_id, r.rating, r.review_text, r.created_at, m.title, m.cover_url AS cover
+                     FROM manga_reviews r LEFT JOIN manga m ON r.manga_id = m.id
+                     WHERE r.email = ? ORDER BY r.created_at DESC LIMIT 20""", (email,))
+        rows = c.fetchall()
+        results = []
+        for manga_id, rating, review_text, created_at, title, cover in rows:
+            results.append({"manga_id": manga_id, "title": title or manga_id, "cover": cover or "", "rating": rating, "review": review_text or "", "time": created_at})
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/profile/<username>/lists', methods=['GET'])
+def profile_lists(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        current_user = get_session_user()
+        if current_user and current_user['email'] == email:
+            c.execute("SELECT id, name, description, created_at FROM user_lists WHERE email = ? ORDER BY created_at DESC", (email,))
+        else:
+            c.execute("SELECT id, name, description, created_at FROM user_lists WHERE email = ? AND is_public = 1 ORDER BY created_at DESC", (email,))
+        rows = c.fetchall()
+        results = []
+        for lid, name, desc, created_at in rows:
+            c.execute("SELECT COUNT(*) FROM user_list_items WHERE list_id = ?", (lid,))
+            count = c.fetchone()[0]
+            results.append({"id": lid, "name": name, "description": desc or "", "count": count, "created_at": created_at})
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/user/lists', methods=['POST'])
+def create_list():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    if not name:
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ø³Ù… Ø§Ù„Ù‚Ø§Ø¦Ù…Ø©"}), 400
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("INSERT INTO user_lists (email, name, description, is_public, created_at) VALUES (?, ?, ?, ?, ?)",
+                  (user['email'], name, data.get('description', ''), 1 if data.get('is_public', True) else 0, time.time()))
+        conn.commit()
+        list_id = c.lastrowid
+    finally:
+        conn.close()
+    return jsonify({"success": True, "list_id": list_id, "name": name}), 201
+
+@app.route('/api/user/lists/<int:list_id>/items', methods=['POST'])
+def add_list_item(list_id):
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    data = request.get_json() or {}
+    manga_id = data.get('manga_id', '')
+    manga_title = data.get('manga_title', '')
+    manga_cover = data.get('manga_cover', '')
+    if not manga_id:
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø±Ø³Ø§Ù„ Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ø§Ù†Ø¬Ø§"}), 400
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM user_lists WHERE id = ?", (list_id,))
+        row = c.fetchone()
+        if not row or row[0] != user['email']:
+            return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
+        c.execute("INSERT OR IGNORE INTO user_list_items (list_id, manga_id, manga_title, manga_cover, added_at) VALUES (?, ?, ?, ?, ?)",
+                  (list_id, manga_id, manga_title, manga_cover, time.time()))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"success": True}), 201
+
+@app.route('/api/user/lists/<int:list_id>', methods=['GET'])
+def get_list(list_id):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email, name, description, is_public FROM user_lists WHERE id = ?", (list_id,))
+        row = c.fetchone()
+        if not row:
+            return jsonify({"error": "Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©"}), 404
+        email, name, desc, is_public = row
+        c.execute("SELECT manga_id, manga_title, manga_cover, added_at FROM user_list_items WHERE list_id = ? ORDER BY added_at DESC", (list_id,))
+        items = [{"manga_id": i[0], "title": i[1], "cover": i[2], "added_at": i[3]} for i in c.fetchall()]
+    finally:
+        conn.close()
+    return jsonify({"name": name, "description": desc or "", "items": items}), 200
+
+@app.route('/api/user/lists/<int:list_id>', methods=['DELETE'])
+def delete_list(list_id):
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM user_lists WHERE id = ?", (list_id,))
+        row = c.fetchone()
+        if not row or row[0] != user['email']:
+            return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
+        c.execute("DELETE FROM user_list_items WHERE list_id = ?", (list_id,))
+        c.execute("DELETE FROM user_lists WHERE id = ?", (list_id,))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"success": True}), 200
+
+@app.route('/api/user/lists/<int:list_id>/items/<path:manga_id>', methods=['DELETE'])
+def remove_list_item(list_id, manga_id):
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM user_lists WHERE id = ?", (list_id,))
+        row = c.fetchone()
+        if not row or row[0] != user['email']:
+            return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
+        c.execute("DELETE FROM user_list_items WHERE list_id = ? AND manga_id = ?", (list_id, manga_id))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"success": True}), 200
+
+@app.route('/api/follow/<username>', methods=['POST'])
+def toggle_follow(username):
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify({"error": "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯"}), 404
+        target_email = row[0]
+        if target_email == user['email']:
+            return jsonify({"error": "Ù„Ø§ ÙŠÙ…ÙƒÙ†Ùƒ Ù…ØªØ§Ø¨Ø¹Ø© Ù†ÙØ³Ùƒ"}), 400
+        c.execute("SELECT 1 FROM follows WHERE follower_email = ? AND following_email = ?", (user['email'], target_email))
+        if c.fetchone():
+            c.execute("DELETE FROM follows WHERE follower_email = ? AND following_email = ?", (user['email'], target_email))
+            conn.commit()
+            return jsonify({"following": False, "message": "ØªÙ… Ø¥Ù„ØºØ§Ø¡ Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©"}), 200
+        else:
+            c.execute("INSERT INTO follows (follower_email, following_email, created_at) VALUES (?, ?, ?)", (user['email'], target_email, time.time()))
+            c.execute("INSERT INTO notifications (email, type, title, message, actor_email, created_at) VALUES (?, 'follow', ?, ?, ?, ?)",
+                      (target_email, 'Ù…ØªØ§Ø¨Ø¹Ø© Ø¬Ø¯ÙŠØ¯Ø©', f'{user.get("username", "Ø´Ø®Øµ")} Ø¨Ø¯Ø£ Ù…ØªØ§Ø¨Ø¹ØªÙƒ', user['email'], time.time()))
+            conn.commit()
+            return jsonify({"following": True, "message": "ØªÙ…Øª Ø§Ù„Ù…ØªØ§Ø¨Ø¹Ø©"}), 200
+    finally:
+        conn.close()
+
+@app.route('/api/follow/<username>/status', methods=['GET'])
+def follow_status(username):
+    user = get_session_user()
+    if not user:
+        return jsonify({"is_following": False}), 200
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify({"is_following": False}), 200
+        c.execute("SELECT 1 FROM follows WHERE follower_email = ? AND following_email = ?", (user['email'], row[0]))
+        is_following = c.fetchone() is not None
+    finally:
+        conn.close()
+    return jsonify({"is_following": is_following}), 200
+
+@app.route('/api/follow/<username>/followers', methods=['GET'])
+def get_followers(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        c.execute("""SELECT u.username, u.points, u.level FROM follows f
+                     JOIN users u ON f.follower_email = u.email
+                     WHERE f.following_email = ? ORDER BY f.created_at DESC LIMIT 50""", (email,))
+        results = [{"username": r[0], "points": r[1], "level": r[2], "rank": get_rank_name(r[2])} for r in c.fetchall()]
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/follow/<username>/following', methods=['GET'])
+def get_following(username):
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT email FROM users WHERE username = ?", (username,))
+        row = c.fetchone()
+        if not row:
+            return jsonify([]), 200
+        email = row[0]
+        c.execute("""SELECT u.username, u.points, u.level FROM follows f
+                     JOIN users u ON f.following_email = u.email
+                     WHERE f.follower_email = ? ORDER BY f.created_at DESC LIMIT 50""", (email,))
+        results = [{"username": r[0], "points": r[1], "level": r[2], "rank": get_rank_name(r[2])} for r in c.fetchall()]
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/leaderboard', methods=['GET'])
+def leaderboard():
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("""
+            SELECT username, points, level,
+                   (SELECT COUNT(DISTINCT manga_id) FROM reader_points_log WHERE email = u.email) as chapters_read,
+                   (SELECT COUNT(*) FROM follows WHERE following_email = u.email) as followers
+            FROM users u WHERE role != 'admin' ORDER BY points DESC LIMIT 100
+        """)
+        rows = c.fetchall()
+        results = []
+        for i, (username, points, level, chapters_read, followers) in enumerate(rows, 1):
+            results.append({"rank": i, "username": username, "points": points, "level": level, "rank_name": get_rank_name(level), "chapters_read": chapters_read, "followers": followers})
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/notifications', methods=['GET'])
+def get_notifications():
+    user = get_session_user()
+    if not user:
+        return jsonify([]), 200
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("""
+            SELECT n.id, n.type, n.title, n.message, n.manga_id, n.chapter_id, n.is_read, n.created_at, n.actor_email,
+                   (SELECT username FROM users WHERE email = n.actor_email) as actor_username
+            FROM notifications n WHERE n.email = ? ORDER BY n.created_at DESC LIMIT 50
+        """, (user['email'],))
+        rows = c.fetchall()
+        results = []
+        for rid, ntype, title, message, manga_id, chapter_id, is_read, created_at, actor_email, actor_username in rows:
+            results.append({
+                "id": rid, "type": ntype, "title": title, "message": message,
+                "manga_id": manga_id, "chapter_id": chapter_id, "is_read": bool(is_read),
+                "time": created_at, "actor_username": actor_username or ""
+            })
+    finally:
+        conn.close()
+    return jsonify(results), 200
+
+@app.route('/api/notifications/unread-count', methods=['GET'])
+def unread_notifications_count():
+    user = get_session_user()
+    if not user:
+        return jsonify({"count": 0}), 200
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM notifications WHERE email = ? AND is_read = 0", (user['email'],))
+        count = c.fetchone()[0]
+    finally:
+        conn.close()
+    return jsonify({"count": count}), 200
+
+@app.route('/api/notifications/mark-read', methods=['POST'])
+def mark_notification_read():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    data = request.get_json() or {}
+    notification_id = data.get('id')
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        if notification_id:
+            c.execute("UPDATE notifications SET is_read = 1 WHERE id = ? AND email = ?", (notification_id, user['email']))
+        else:
+            c.execute("UPDATE notifications SET is_read = 1 WHERE email = ?", (user['email'],))
+        conn.commit()
+    finally:
+        conn.close()
+    return jsonify({"success": True}), 200
+
+# ============================================================
+# DAILY REWARDS / STREAK SYSTEM
+# ============================================================
+
+REWARD_TABLE = {1: 5, 2: 10, 3: 15, 4: 20, 5: 25, 6: 30, 7: 40}
+
+def get_today_str():
+    return time.strftime("%Y-%m-%d")
+
+def get_yesterday_str():
+    return time.strftime("%Y-%m-%d", time.gmtime(time.time() - 86400))
+
+@app.route('/api/rewards/status', methods=['GET'])
+def rewards_status():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT streak_days, last_claim_date FROM users WHERE email = ?", (user['email'],))
+        row = c.fetchone()
+        streak = row[0] if row else 0
+        last_claim = row[1] if row else ""
+        today = get_today_str()
+        
+        can_claim = False
+        current_day = 1
+        if last_claim == today:
+            can_claim = False
+            current_day = streak % 7
+            if current_day == 0: current_day = 7
+        else:
+            can_claim = True
+            yesterday = get_yesterday_str()
+            if last_claim == yesterday:
+                new_streak = min(streak + 1, 7)
+                current_day = new_streak
+            else:
+                current_day = 1
+                streak = 0
+        
+        rewards_list = []
+        for day, pts in REWARD_TABLE.items():
+            rewards_list.append({"day": day, "points": pts, "is_week_bonus": day == 7})
+    finally:
+        conn.close()
+    
+    return jsonify({
+        "can_claim": can_claim,
+        "current_streak": streak,
+        "current_day": current_day,
+        "last_claim_date": last_claim,
+        "today": today,
+        "rewards": rewards_list
+    }), 200
+
+@app.route('/api/rewards/claim_daily', methods=['POST'])
+def claim_daily():
+    user = get_session_user()
+    if not user:
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
+    conn = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c = conn.cursor()
+        c.execute("SELECT streak_days, last_claim_date, points, level FROM users WHERE email = ?", (user['email'],))
+        row = c.fetchone()
+        if not row:
+            return jsonify({"error": "Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯"}), 404
+        streak, last_claim, current_points, current_level = row
+        today = get_today_str()
+        yesterday = get_yesterday_str()
+        
+        if last_claim == today:
+            return jsonify({"error": "Ù„Ù‚Ø¯ Ø­ØµÙ„Øª Ø¹Ù„Ù‰ Ù…ÙƒØ§ÙØ£Ø© Ø§Ù„ÙŠÙˆÙ… Ø¨Ø§Ù„ÙØ¹Ù„"}), 400
+        
+        new_streak = min(streak + 1, 7) if last_claim == yesterday else 1
+        reward_points = REWARD_TABLE[new_streak]
+        new_points = current_points + reward_points
+        new_level = calculate_level(new_points)
+        
+        c.execute("UPDATE users SET streak_days = ?, last_claim_date = ?, points = ?, level = ? WHERE email = ?",
+                  (new_streak, today, new_points, new_level, user['email']))
+        conn.commit()
+    finally:
+        conn.close()
+    
+    conn2 = sqlite3.connect(DB_FILE, timeout=10)
+    try:
+        c2 = conn2.cursor()
+        c2.execute("INSERT INTO reader_points_log (manga_id, chapter_id, email, earned_at, xp_change) VALUES (?, ?, ?, ?, ?)",
+                   ("daily_reward", f"day_{new_streak}", user['email'], time.time(), reward_points))
+        conn2.commit()
+    finally:
+        conn2.close()
+    
+    return jsonify({
+        "success": True,
+        "streak": new_streak,
+        "day": new_streak,
+        "reward_points": reward_points,
+        "total_points": new_points,
+        "level": new_level,
+        "message": f"Ù…Ø¨Ø±ÙˆÙƒ! Ø­ØµÙ„Øª Ø¹Ù„Ù‰ {reward_points} Ù†Ù‚Ø·Ø©!"
+    }), 200
 
 # ============================================================
 # MANGA DATA
@@ -1239,11 +1858,11 @@ def change_password():
 def save_manga():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، يجب أن تكون المدير للقيام بهذا العمل"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø§Ù„Ù…Ø¯ÙŠØ± Ù„Ù„Ù‚ÙŠØ§Ù… Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„"}), 403
     manga_data = request.get_json() or {}
     manga_id = manga_data.get("id")
     if not manga_id:
-        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…ÙÙ‚ÙˆØ¯"}), 400
     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
     
     old_chapter_ids = set()
@@ -1291,8 +1910,8 @@ def save_manga():
                                 create_notification(
                                     email=email,
                                     type='new_chapter',
-                                    title='فصل جديد',
-                                    message=f'تم إضافة فصل جديد ({ch_id}) لـ {manga_title}',
+                                    title='ÙØµÙ„ Ø¬Ø¯ÙŠØ¯',
+                                    message=f'ØªÙ… Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ Ø¬Ø¯ÙŠØ¯ ({ch_id}) Ù„Ù€ {manga_title}',
                                     manga_id=manga_id,
                                     chapter_id=ch_id
                                 )
@@ -1309,14 +1928,14 @@ def save_manga():
 def add_chapter(manga_id):
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
     data = request.get_json() or {}
     chapter_id = str(data.get('id', ''))
     chapter_title = data.get('title', '')
     chapter_date = data.get('date', '')
     chapter_images = data.get('images', [])
     if not chapter_id:
-        return jsonify({"error": "معرف الفصل مطلوب"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„ÙØµÙ„ Ù…Ø·Ù„ÙˆØ¨"}), 400
     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
     scraped_db = []
     if os.path.exists(OUTPUT_FILE):
@@ -1327,12 +1946,12 @@ def add_chapter(manga_id):
             pass
     manga_idx = next((i for i, m in enumerate(scraped_db) if str(m.get('id')) == str(manga_id)), None)
     if manga_idx is None:
-        return jsonify({"error": "المنهوا غير موجودة"}), 404
+        return jsonify({"error": "Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©"}), 404
     manga = scraped_db[manga_idx]
     old_chapter_ids = set(str(ch.get('id')) for ch in (manga.get('chapters') or []))
     new_chapter = {
         'id': chapter_id,
-        'title': chapter_title or f'الفصل {chapter_id}',
+        'title': chapter_title or f'Ø§Ù„ÙØµÙ„ {chapter_id}',
         'date': chapter_date or time.strftime('%Y-%m-%d'),
         'images': chapter_images
     }
@@ -1363,8 +1982,8 @@ def add_chapter(manga_id):
                         create_notification(
                             email=email,
                             type='new_chapter',
-                            title='فصل جديد',
-                            message=f'تم إضافة فصل جديد ({chapter_id}) لـ {manga_title}',
+                            title='ÙØµÙ„ Ø¬Ø¯ÙŠØ¯',
+                            message=f'ØªÙ… Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ Ø¬Ø¯ÙŠØ¯ ({chapter_id}) Ù„Ù€ {manga_title}',
                             manga_id=manga_id,
                             chapter_id=chapter_id
                         )
@@ -1374,17 +1993,17 @@ def add_chapter(manga_id):
             print(f"Notification creation error: {e}")
     import threading
     threading.Thread(target=ping_google_sitemap, daemon=True).start()
-    return jsonify({"status": "success", "message": f"تم إضافة الفصل {chapter_id}"}), 200
+    return jsonify({"status": "success", "message": f"ØªÙ… Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„ {chapter_id}"}), 200
 
 @app.route('/api/delete_manga', methods=['POST'])
 def delete_manga():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، يجب أن تكون المدير للقيام بهذا العمل"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† Ø§Ù„Ù…Ø¯ÙŠØ± Ù„Ù„Ù‚ÙŠØ§Ù… Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„"}), 403
     data = request.get_json() or {}
     manga_id = data.get("id")
     if not manga_id:
-        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…ÙÙ‚ÙˆØ¯"}), 400
     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
     scraped_db = []
     if os.path.exists(OUTPUT_FILE):
@@ -1414,19 +2033,19 @@ def delete_manga():
 
     import threading
     threading.Thread(target=ping_google_sitemap, daemon=True).start()
-    return jsonify({"status": "success", "message": "تم حذف المنهوا بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… Ø­Ø°Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø¨Ù†Ø¬Ø§Ø­"}), 200
 
 
 @app.route('/api/admin/update-cover', methods=['POST'])
 def admin_update_cover():
     user = get_session_user()
     if not user or user.get('role') != 'admin':
-        return jsonify({"error": "غير مصرح"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
     data = request.get_json() or {}
     manga_id = data.get("id")
     cover_url = data.get("cover", "").strip()
     if not manga_id:
-        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…ÙÙ‚ÙˆØ¯"}), 400
 
     json_path = os.path.join(BASE_DIR, "scraped_mangas.json")
     scraped_db = []
@@ -1439,7 +2058,7 @@ def admin_update_cover():
 
     manga = next((m for m in scraped_db if str(m.get("id")) == str(manga_id)), None)
     if not manga:
-        return jsonify({"error": "المنهوا غير موجودة"}), 404
+        return jsonify({"error": "Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©"}), 404
     manga["cover"] = cover_url
 
     with open(json_path, "w", encoding="utf-8") as f:
@@ -1456,21 +2075,21 @@ def admin_update_cover():
 
     import threading
     threading.Thread(target=ping_google_sitemap, daemon=True).start()
-    return jsonify({"status": "success", "message": "تم تحديث الغلاف بنجاح", "cover": cover_url}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„ØºÙ„Ø§Ù  Ø¨Ù†Ø¬Ø§Ø­", "cover": cover_url}), 200
 
 
 @app.route('/api/admin/update-genres', methods=['POST'])
 def admin_update_genres():
     user = get_session_user()
     if not user or user.get('role') != 'admin':
-        return jsonify({"error": "غير مصرح"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
     data = request.get_json() or {}
     manga_id = data.get("id")
     genres_raw = data.get("genres", "").strip()
     if not manga_id:
-        return jsonify({"error": "معرف المنهوا مفقود"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù  Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…Ù Ù‚ÙˆØ¯"}), 400
 
-    genres_list = [g.strip() for g in genres_raw.replace("،", ",").split(",") if g.strip()]
+    genres_list = [g.strip() for g in genres_raw.replace("ØŒ", ",").split(",") if g.strip()]
     genres_str = ", ".join(genres_list)
 
     json_path = os.path.join(BASE_DIR, "scraped_mangas.json")
@@ -1484,7 +2103,7 @@ def admin_update_genres():
 
     manga = next((m for m in scraped_db if str(m.get("id")) == str(manga_id)), None)
     if not manga:
-        return jsonify({"error": "المنهوا غير موجودة"}), 404
+        return jsonify({"error": "Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©"}), 404
     manga["genres"] = genres_list if isinstance(manga.get("genres"), list) else genres_str
 
     with open(json_path, "w", encoding="utf-8") as f:
@@ -1499,7 +2118,7 @@ def admin_update_genres():
     except Exception:
         pass
 
-    return jsonify({"status": "success", "message": "تم تحديث التصنيفات بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª Ø¨Ù†Ø¬Ø§Ø­"}), 200
 
 
 # ============================================================
@@ -1509,7 +2128,7 @@ def admin_update_genres():
 def get_suggestions():
     user = get_session_user()
     if not user or user['role'] != 'admin':
-        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·"}), 403
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -1538,12 +2157,12 @@ def get_completed_chapters(manga_id):
 def post_suggestion():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     data = request.get_json() or {}
     sug_type = data.get('type', 'suggestion').strip()
     content = data.get('content', '').strip()
     if not content:
-        return jsonify({"error": "الرجاء كتابة نص الرسالة"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ ÙƒØªØ§Ø¨Ø© Ù†Øµ Ø§Ù„Ø±Ø³Ø§Ù„Ø©"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -1552,7 +2171,7 @@ def post_suggestion():
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم إرسال رسالتك بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„ØªÙƒ Ø¨Ù†Ø¬Ø§Ø­"}), 200
 
 # ============================================================
 # REVIEWS
@@ -1561,7 +2180,7 @@ def post_suggestion():
 def get_manga_reviews():
     manga_id = request.args.get('manga_id')
     if not manga_id:
-        return jsonify({"error": "معرف المنهوا مطلوب"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…Ø·Ù„ÙˆØ¨"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -1576,16 +2195,16 @@ def get_manga_reviews():
 def post_manga_review():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     data = request.get_json() or {}
     manga_id = data.get('manga_id', '').strip()
     try:
-        rating = int(data.get('rating', 5))
+        rating = int(data.get('rating', 10))
     except (ValueError, TypeError):
-        rating = 5
+        rating = 10
     review_text = data.get('review_text', '').strip()
-    if not manga_id or rating < 1 or rating > 5:
-        return jsonify({"error": "بيانات التقييم غير صالحة"}), 400
+    if not manga_id or rating < 1 or rating > 10:
+        return jsonify({"error": "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªÙ‚ÙŠÙŠÙ… ØºÙŠØ± ØµØ§Ù„Ø­Ø©"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -1594,7 +2213,7 @@ def post_manga_review():
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم حفظ تقييمك ومراجعتك بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… Ø­ÙØ¸ ØªÙ‚ÙŠÙŠÙ…Ùƒ ÙˆÙ…Ø±Ø§Ø¬Ø¹ØªÙƒ Ø¨Ù†Ø¬Ø§Ø­"}), 200
 
 # ============================================================
 # COMMENTS
@@ -1604,37 +2223,42 @@ def get_chapter_comments():
     manga_id = request.args.get('manga_id')
     chapter_id = request.args.get('chapter_id')
     if not manga_id or not chapter_id:
-        return jsonify({"error": "معرف المنهوا والفصل مطلوبان"}), 400
+        return jsonify({"error": "Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ÙˆØ§Ù„ÙØµÙ„ Ù…Ø·Ù„ÙˆØ¨Ø§Ù†"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('SELECT email, comment_text, created_at FROM chapter_comments WHERE manga_id = ? AND chapter_id = ? ORDER BY created_at DESC', (manga_id, chapter_id))
+        c.execute('SELECT email, comment_text, created_at, badge FROM chapter_comments WHERE manga_id = ? AND chapter_id = ? ORDER BY created_at ASC', (manga_id, chapter_id))
         rows = c.fetchall()
     finally:
         conn.close()
-    results = [{"email": r[0], "comment_text": r[1], "created_at": r[2]} for r in rows]
+    results = [{"email": r[0], "comment_text": r[1], "created_at": r[2], "badge": r[3] or ''} for r in rows]
     return jsonify(results), 200
 
 @app.route('/api/chapter_comments', methods=['POST'])
 def post_chapter_comment():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„"}), 401
     data = request.get_json() or {}
     manga_id = data.get('manga_id', '').strip()
     chapter_id = data.get('chapter_id', '').strip()
     comment_text = data.get('comment_text', '').strip()
     if not manga_id or not chapter_id or not comment_text:
-        return jsonify({"error": "بيانات التعليق غير مكتملة"}), 400
+        return jsonify({"error": "Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„ØªØ¹Ù„ÙŠÙ‚ ØºÙŠØ± Ù…ÙƒØªÙ…Ù„Ø©"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
-        c.execute('INSERT INTO chapter_comments (manga_id, chapter_id, email, comment_text, created_at) VALUES (?, ?, ?, ?, ?)',
-                  (manga_id, chapter_id, user['email'], comment_text, time.time()))
+        c.execute('SELECT COUNT(*) FROM chapter_comments WHERE manga_id = ? AND chapter_id = ?',
+                  (manga_id, chapter_id))
+        count = c.fetchone()[0]
+        badges = {0: 'gold', 1: 'bronze', 2: 'silver'}
+        badge = badges.get(count, '')
+        c.execute('INSERT INTO chapter_comments (manga_id, chapter_id, email, comment_text, created_at, badge) VALUES (?, ?, ?, ?, ?, ?)',
+                  (manga_id, chapter_id, user['email'], comment_text, time.time(), badge))
         conn.commit()
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": "تم نشر التعليق بنجاح"}), 200
+    return jsonify({"status": "success", "message": "ØªÙ… Ù†Ø´Ø± Ø§Ù„ØªØ¹Ù„ÙŠÙ‚ Ø¨Ù†Ø¬Ø§Ø­", "badge": badge}), 200
 
 # ============================================================
 # AUTO COVER (AniList Search)
@@ -1671,7 +2295,7 @@ def auto_cover():
         return jsonify({"error": str(e)}), 500
 
 # ============================================================
-# IMAGE PROXY — persistent Playwright browser for Cloudflare bypass
+# IMAGE PROXY â€” persistent Playwright browser for Cloudflare bypass
 # ============================================================
 ALLOWED_IMAGE_DOMAINS = {
     'lekmanga.site', 'lek-manga.com', 'cdn.lekmanga.site',
@@ -1682,6 +2306,8 @@ ALLOWED_IMAGE_DOMAINS = {
     'imgsrv4.com',
     'mgeko.cc', 'www.mgeko.cc',
     'uploads.mangadex.org', 'mangadex.org',
+    'mangatime.org', 'www.mangatime.org',
+    'hijala.com',
 }
 
 # Persistent Playwright browser for proxy-image (avoids Cloudflare re-challenge)
@@ -1737,7 +2363,7 @@ def _pw_fetch_image(image_url, timeout=30000):
         return None
 
 # ============================================================
-# Smart image preloader — progressive chapter caching
+# Smart image preloader â€” progressive chapter caching
 # ============================================================
 PRELOAD_SEMAPHORE = threading.Semaphore(3)
 _preload_cache = {}
@@ -1802,7 +2428,7 @@ def preload_chapter_images_bg(manga_id, chapter_id, quality=90):
             pass
         finally:
             PRELOAD_SEMAPHORE.release()
-            time.sleep(0.5)  # نصف ثانية بين الصور — يمنع حظر المصدر
+            time.sleep(0.5)  # Ù†ØµÙ Ø«Ø§Ù†ÙŠØ© Ø¨ÙŠÙ† Ø§Ù„ØµÙˆØ± â€” ÙŠÙ…Ù†Ø¹ Ø­Ø¸Ø± Ø§Ù„Ù…ØµØ¯Ø±
 
 def preload_first_chapters(manga_id, count=5):
     """Preload first N chapters of a manga in background"""
@@ -1848,16 +2474,16 @@ def proxy_image():
     if not image_url:
         return jsonify({"error": "Missing url parameter"}), 400
 
-    # منع SSRF — السماح فقط بنطاقات الصور المعروفة
+    # Ù…Ù†Ø¹ SSRF â€” Ø§Ù„Ø³Ù…Ø§Ø­ ÙÙ‚Ø· Ø¨Ù†Ø·Ø§Ù‚Ø§Øª Ø§Ù„ØµÙˆØ± Ø§Ù„Ù…Ø¹Ø±ÙˆÙØ©
     try:
         parsed = urllib.parse.urlparse(image_url)
         if parsed.hostname not in ALLOWED_IMAGE_DOMAINS:
-            return jsonify({"error": "مصدر الصورة غير مسموح به"}), 403
+            return jsonify({"error": "Ù…ØµØ¯Ø± Ø§Ù„ØµÙˆØ±Ø© ØºÙŠØ± Ù…Ø³Ù…ÙˆØ­ Ø¨Ù‡"}), 403
     except Exception:
-        return jsonify({"error": "رابط غير صالح"}), 400
+        return jsonify({"error": "Ø±Ø§Ø¨Ø· ØºÙŠØ± ØµØ§Ù„Ø­"}), 400
 
     if not re.search(r'\.(jpg|jpeg|png|webp)(\?|$)', image_url, re.I):
-        return jsonify({"error": "الرابط لا يشير إلى صورة"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø§Ø¨Ø· Ù„Ø§ ÙŠØ´ÙŠØ± Ø¥Ù„Ù‰ ØµÙˆØ±Ø©"}), 400
 
     url_hash = hashlib.md5(f"{image_url}:q={quality}".encode('utf-8')).hexdigest()
     cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
@@ -1899,7 +2525,7 @@ def proxy_image():
         img_data = _pw_fetch_image(image_url)
 
     if img_data is None:
-        return jsonify({"error": "فشل تحميل الصورة"}), 502
+        return jsonify({"error": "ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙˆØ±Ø©"}), 502
 
     # Detect original MIME type from URL extension or magic bytes
     orig_mime = 'image/jpeg'
@@ -1951,12 +2577,12 @@ def proxy_image():
 
 @app.route('/api/admin/auto-translate', methods=['POST'])
 def auto_translate():
-    """API endpoint — يستقبل رابط المانهوا ويُدخله في طابور Celery."""
+    """API endpoint â€” ÙŠØ³ØªÙ‚Ø¨Ù„ Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§ ÙˆÙŠÙØ¯Ø®Ù„Ù‡ ÙÙŠ Ø·Ø§Ø¨ÙˆØ± Celery."""
     from tasks import process_chapter
 
     user = get_session_user()
     if not user or user.get('role') != 'admin':
-        return jsonify({"error": "غير مصرح"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 403
 
     data = request.get_json() or {}
     source_url = data.get('url', '').strip()
@@ -1964,7 +2590,7 @@ def auto_translate():
     chapter_id = data.get('chapter_id', '')
 
     if not source_url or not manga_id or not chapter_id:
-        return jsonify({"error": "الرجاء إدخال الرابط، معرف المانجا، ومعرف الفصل"}), 400
+        return jsonify({"error": "Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø±Ø§Ø¨Ø·ØŒ Ù…Ø¹Ø±Ù Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ØŒ ÙˆÙ…Ø¹Ø±Ù Ø§Ù„ÙØµÙ„"}), 400
 
     image_urls = None
     try:
@@ -1987,71 +2613,8 @@ def auto_translate():
     return jsonify({
         "status": "queued",
         "task_id": task.id,
-        "message": "تم وضع الفصل في طابور المعالجة"
+        "message": "ØªÙ… ÙˆØ¶Ø¹ Ø§Ù„ÙØµÙ„ ÙÙŠ Ø·Ø§Ø¨ÙˆØ± Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©"
     }), 202
-
-# ============================================================
-# NOTIFICATIONS
-# ============================================================
-@app.route('/api/notifications', methods=['GET'])
-def get_notifications():
-    user = get_session_user()
-    if not user:
-        return jsonify({"error": "غير مصرح، الرجاء تسجيل الدخول"}), 401
-    conn = sqlite3.connect(DB_FILE, timeout=30)
-    try:
-        c = conn.cursor()
-        c.execute('SELECT id, email, type, title, message, manga_id, chapter_id, is_read, created_at FROM notifications WHERE email = ? ORDER BY created_at DESC LIMIT 50', (user['email'],))
-        rows = c.fetchall()
-    finally:
-        conn.close()
-    results = []
-    for r in rows:
-        results.append({
-            "id": r[0],
-            "email": r[1],
-            "type": r[2],
-            "title": r[3],
-            "message": r[4],
-            "manga_id": r[5],
-            "chapter_id": r[6],
-            "is_read": bool(r[7]),
-            "created_at": r[8]
-        })
-    return jsonify(results), 200
-
-@app.route('/api/notifications/unread-count', methods=['GET'])
-def unread_notification_count():
-    user = get_session_user()
-    if not user:
-        return jsonify({"count": 0}), 200
-    conn = sqlite3.connect(DB_FILE, timeout=30)
-    try:
-        c = conn.cursor()
-        c.execute('SELECT COUNT(*) FROM notifications WHERE email = ? AND is_read = 0', (user['email'],))
-        count = c.fetchone()[0]
-    finally:
-        conn.close()
-    return jsonify({"count": count}), 200
-
-@app.route('/api/notifications/mark-read', methods=['POST'])
-def mark_notification_read():
-    user = get_session_user()
-    if not user:
-        return jsonify({"error": "غير مصرح"}), 401
-    data = request.get_json() or {}
-    notification_id = data.get('id')
-    conn = sqlite3.connect(DB_FILE, timeout=30)
-    try:
-        c = conn.cursor()
-        if notification_id:
-            c.execute('UPDATE notifications SET is_read = 1 WHERE id = ? AND email = ?', (notification_id, user['email']))
-        else:
-            c.execute('UPDATE notifications SET is_read = 1 WHERE email = ?', (user['email'],))
-        conn.commit()
-    finally:
-        conn.close()
-    return jsonify({"status": "success"}), 200
 
 @app.route('/api/admin/notifications/broadcast', methods=['POST'])
 @require_admin
@@ -2061,7 +2624,7 @@ def broadcast_notification():
     message = data.get('message', '').strip()
     notif_type = data.get('type', 'broadcast').strip()
     if not title or not message:
-        return jsonify({"error": "العنوان والرسالة مطلوبان"}), 400
+        return jsonify({"error": "Ø§Ù„Ø¹Ù†ÙˆØ§Ù† ÙˆØ§Ù„Ø±Ø³Ø§Ù„Ø© Ù…Ø·Ù„ÙˆØ¨Ø§Ù†"}), 400
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
         c = conn.cursor()
@@ -2071,7 +2634,7 @@ def broadcast_notification():
             create_notification(email=email, type=notif_type, title=title, message=message)
     finally:
         conn.close()
-    return jsonify({"status": "success", "message": f"تم إرسال الإشعار إلى {len(users)} مستخدم"}), 200
+    return jsonify({"status": "success", "message": f"ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø± Ø¥Ù„Ù‰ {len(users)} Ù…Ø³ØªØ®Ø¯Ù…"}), 200
 
 @app.route('/api/admin/import-manga', methods=['POST', 'OPTIONS'])
 def admin_import_manga():
@@ -2081,7 +2644,7 @@ def admin_import_manga():
     
     user = get_session_user()
     if not user or user.get('role') != 'admin':
-        return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­ØŒ Ù„Ù„Ù…Ø¯ÙŠØ± ÙÙ‚Ø·"}), 403
     
     data = request.get_json(silent=True) or {}
     url = (data.get('url') or '').strip()
@@ -2089,14 +2652,14 @@ def admin_import_manga():
     auto_translate = data.get('auto_translate', False)
     
     if not url:
-        return jsonify({'success': False, 'error': 'الرجاء إدخال رابط المانجا'}), 400
+        return jsonify({'success': False, 'error': 'Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ø§Ù†Ø¬Ø§'}), 400
     
     try:
         from scrapers.importer import import_manga_from_url
         result = import_manga_from_url(url, db_path="kairo.db", scrape_images=scrape_images, max_threads=5)
         
         if not result.get('success'):
-            return jsonify({'success': False, 'error': result.get('error', 'فشل الاستيراد')}), 400
+            return jsonify({'success': False, 'error': result.get('error', 'ÙØ´Ù„ Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯')}), 400
         
         response = {
             'success': True,
@@ -2104,7 +2667,7 @@ def admin_import_manga():
             'title': result['title'],
             'chapters_count': result['chapters_count'],
             'cover_url': result.get('cover_url', ''),
-            'message': f'تم استيراد {result["title"]} بنجاح مع {result["chapters_count"]} فصل'
+            'message': f'ØªÙ… Ø§Ø³ØªÙŠØ±Ø§Ø¯ {result["title"]} Ø¨Ù†Ø¬Ø§Ø­ Ù…Ø¹ {result["chapters_count"]} ÙØµÙ„'
         }
         
         # Optionally trigger auto-translation for all chapters
@@ -2117,16 +2680,16 @@ def admin_import_manga():
                     process_chapter.delay(result['manga_id'], str(ch_id), ch.get('url', ''))
                     queued += 1
                 response['translation_queued'] = queued
-                response['message'] += f' وتم وضع {queued} فصل في طابور الترجمة'
+                response['message'] += f' ÙˆØªÙ… ÙˆØ¶Ø¹ {queued} ÙØµÙ„ ÙÙŠ Ø·Ø§Ø¨ÙˆØ± Ø§Ù„ØªØ±Ø¬Ù…Ø©'
             except Exception as e:
-                response['translation_note'] = f'تم الاستيراد لكن فشل بدء الترجمة: {str(e)}'
+                response['translation_note'] = f'ØªÙ… Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ Ù„ÙƒÙ† ÙØ´Ù„ Ø¨Ø¯Ø¡ Ø§Ù„ØªØ±Ø¬Ù…Ø©: {str(e)}'
         
         return jsonify(response), 201
         
     except ImportError:
-        return jsonify({'success': False, 'error': 'مكتبة الاستيراد غير متوفرة (manga_importer.py)'}), 500
+        return jsonify({'success': False, 'error': 'Ù…ÙƒØªØ¨Ø© Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯ ØºÙŠØ± Ù…ØªÙˆÙØ±Ø© (manga_importer.py)'}), 500
     except Exception as e:
-        return jsonify({'success': False, 'error': f'حدث خطأ أثناء الاستيراد: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø§Ø³ØªÙŠØ±Ø§Ø¯: {str(e)}'}), 500
 
 @app.route('/api/admin/import-manga/sources', methods=['GET'])
 def import_manga_sources():
@@ -2134,7 +2697,7 @@ def import_manga_sources():
     return jsonify({
         'sources': [
             {'name': 'lekmanga', 'label': 'LekManga', 'url_pattern': 'lekmanga.site'},
-            {'name': 'generic_madara', 'label': 'مواقع Madara', 'url_pattern': 'أي موقع ووردبريس مانجا'},
+            {'name': 'generic_madara', 'label': 'Ù…ÙˆØ§Ù‚Ø¹ Madara', 'url_pattern': 'Ø£ÙŠ Ù…ÙˆÙ‚Ø¹ ÙˆÙˆØ±Ø¯Ø¨Ø±ÙŠØ³ Ù…Ø§Ù†Ø¬Ø§'},
         ],
         'supported': True
     })
@@ -2146,7 +2709,7 @@ def start_full_manga_download():
     source_url = data.get('source_url', '').strip()
     
     if not source_url:
-        return jsonify({"error": "يجب إرسال رابط المانهوا"}), 400
+        return jsonify({"error": "ÙŠØ¬Ø¨ Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§"}), 400
         
     try:
         from scrapers.importer import import_manga_from_url
@@ -2160,7 +2723,7 @@ def start_full_manga_download():
         
         return jsonify({
             "success": True,
-            "message": "تم بدء الأتمتة! يتم سحب جميع الفصول آلياً بفاصل زمني.",
+            "message": "ØªÙ… Ø¨Ø¯Ø¡ Ø§Ù„Ø£ØªÙ…ØªØ©! ÙŠØªÙ… Ø³Ø­Ø¨ Ø¬Ù…ÙŠØ¹ Ø§Ù„ÙØµÙˆÙ„ Ø¢Ù„ÙŠØ§Ù‹ Ø¨ÙØ§ØµÙ„ Ø²Ù…Ù†ÙŠ.",
             "task_id": task.id,
             "manga_id": import_result.get("manga_id"),
             "title": import_result.get("title"),
@@ -2170,7 +2733,7 @@ def start_full_manga_download():
         app.logger.error(f"Failed to queue download_full_manga task: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({"error": f"فشل بدء المهمة: {e}"}), 500
+        return jsonify({"error": f"ÙØ´Ù„ Ø¨Ø¯Ø¡ Ø§Ù„Ù…Ù‡Ù…Ø©: {e}"}), 500
 
 # ============================================================
 # WATERMARK SYSTEM (wasmoo)
@@ -2178,7 +2741,7 @@ def start_full_manga_download():
 def _get_watermark_config():
     config = {
         'watermark_enabled': 'false',
-        'watermark_text': 'KAIRO / منهوا',
+        'watermark_text': 'KAIRO / Ù…Ù†Ù‡ÙˆØ§',
         'watermark_opacity': '25',
         'watermark_font_size': '32',
         'watermark_position': 'bottom-right',
@@ -2262,7 +2825,7 @@ def save_watermark_settings():
                 c.execute('INSERT OR REPLACE INTO system_settings (key, value) VALUES (?, ?)', (key, str(data[key])))
         conn.commit()
         conn.close()
-        return jsonify({"status": "success", "message": "تم حفظ إعدادات العلامة المائية"}), 200
+        return jsonify({"status": "success", "message": "ØªÙ… Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ø§Ù„Ù…Ø§Ø¦ÙŠØ©"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -2273,7 +2836,7 @@ def save_watermark_settings():
 def get_reading_history():
     user = get_session_user()
     if not user:
-        return jsonify({"error": "غير مصرح"}), 401
+        return jsonify({"error": "ØºÙŠØ± Ù…ØµØ±Ø­"}), 401
     limit = request.args.get('limit', 20, type=int)
     conn = sqlite3.connect(DB_FILE, timeout=30)
     try:
@@ -2433,7 +2996,7 @@ def fetch_chapter_images():
         except Exception:
             pass
 
-        # Step 2: Extract image URLs from rendered page (NO download — served on-demand via /proxy-image)
+        # Step 2: Extract image URLs from rendered page (NO download â€” served on-demand via /proxy-image)
         html = page.content()
         soup = BeautifulSoup(html, 'html.parser')
         images = []
@@ -2460,6 +3023,99 @@ def fetch_chapter_images():
         threading.Thread(target=preload_first_chapters, args=(manga_id,), daemon=True).start()
 
         return jsonify({"images": images, "cached": False})
+
+
+# ============================================================
+# LIVE SCRAPING SSE
+# ============================================================
+@app.route('/api/admin/scrape_stream', methods=['GET'])
+def scrape_stream():
+    token = request.args.get('token')
+    user = None
+    if token:
+        try:
+            import sqlite3
+            conn = sqlite3.connect(DB_FILE, timeout=30)
+            c = conn.cursor()
+            c.execute('SELECT email FROM sessions WHERE token = ?', (token,))
+            srow = c.fetchone()
+            if srow:
+                c.execute('SELECT username, email, role FROM users WHERE email=?', (srow[0],))
+            row = c.fetchone()
+            if row:
+                user = {"username": row[0], "email": row[1], "role": row[2]}
+        except:
+            pass
+    if not user:
+        user = get_session_user()
+
+    if not user or user['role'] != 'admin':
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"error": "URL is required"}), 400
+
+    def generate():
+        import os
+        env = os.environ.copy()
+        env["PYTHONUNBUFFERED"] = "1"
+        
+        process = subprocess.Popen(
+            ['python', 'add_manga.py', url],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            env=env,
+            encoding='utf-8',
+            errors='replace'
+        )
+        
+        yield "data: Starting scrape process...\n\n"
+        
+        for line in iter(process.stdout.readline, ''):
+            if line:
+                # Remove newlines and format for SSE
+                clean_line = line.strip().replace('\n', ' ')
+                yield f"data: {clean_line}\n\n"
+        
+        process.stdout.close()
+        process.wait()
+        yield "data: [DONE]\n\n"
+        
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
+
+# ============================================================
+# AUTO UPDATER TOGGLE
+# ============================================================
+UPDATER_CONFIG_FILE = os.path.join(BASE_DIR, 'mangas_data', 'auto_updater_config.json')
+
+def get_updater_status():
+    if not os.path.exists(UPDATER_CONFIG_FILE):
+        return {"enabled": False}
+    with open(UPDATER_CONFIG_FILE, 'r') as f:
+        return json.load(f)
+
+@app.route('/api/admin/updater_status', methods=['GET'])
+def updater_status():
+    return jsonify(get_updater_status())
+
+@app.route('/api/admin/updater_toggle', methods=['POST'])
+def updater_toggle():
+    user = get_session_user()
+    if not user or user['role'] != 'admin':
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.get_json() or {}
+    new_state = data.get('enabled', False)
+    
+    with open(UPDATER_CONFIG_FILE, 'w') as f:
+        json.dump({"enabled": new_state}, f)
+        
+    return jsonify({"enabled": new_state})
 
 if __name__ == '__main__':
     from werkzeug.serving import run_simple

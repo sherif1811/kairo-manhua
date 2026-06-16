@@ -2471,13 +2471,15 @@ async function DetailViewComponent() {
     // جلب التقييمات والمراجعات من السيرفر
     let reviewsListHtml = '';
     let userReview = null;
-    let avgRating = 5.0;
+    let avgRating = 0;
+    let hasReviews = false;
     
     try {
         const response = await fetch(`/api/manga_reviews?manga_id=${manga.id}`);
         if (response.ok) {
             const reviews = await response.json();
             if (reviews.length > 0) {
+                hasReviews = true;
                 let sum = 0;
                 reviews.forEach(r => {
                     sum += r.rating;
@@ -2485,8 +2487,7 @@ async function DetailViewComponent() {
                         userReview = r;
                     }
                     
-                    const stars = '<i class="fa-solid fa-star" style="color: #ffb703;"></i>'.repeat(r.rating) +
-                                  '<i class="fa-regular fa-star" style="color: var(--text-dark);"></i>'.repeat(5 - r.rating);
+                    const stars = `<i class="fa-solid fa-star" style="color: #ffb703;"></i> <span style="font-weight:800; font-size:1rem; color:var(--text-main);">${r.rating} / 10</span>`;
                     const userDisplay = r.email.split('@')[0];
                     const dateStr = new Date(r.created_at * 1000).toLocaleDateString('ar-EG');
                     
@@ -2511,18 +2512,19 @@ async function DetailViewComponent() {
         reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">فشل تحميل مراجعات هذا العمل.</p>';
     }
 
-    manga.rating = parseFloat(avgRating);
+    manga.rating = hasReviews ? parseFloat(avgRating) : 0;
+    const displayRating = hasReviews ? `${manga.rating} / 10` : 'لم تُقيم بعد';
 
     // نموذج إضافة مراجعة
     let reviewFormHtml = '';
     if (state.sessionToken) {
-        const userRating = userReview ? userReview.rating : 5;
+        const userRating = userReview ? userReview.rating : 10;
         const userText = userReview ? userReview.review_text : '';
         
         let starsPickerHtml = '';
-        for (let i = 1; i <= 5; i++) {
+        for (let i = 1; i <= 10; i++) {
             const starClass = i <= userRating ? 'fa-solid' : 'fa-regular';
-            starsPickerHtml += `<i class="${starClass} fa-star star-opt" data-rating="${i}" style="font-size: 1.5rem; color: #ffb703; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.2)'" onmouseout="this.style.transform='scale(1)'"></i>`;
+            starsPickerHtml += `<i class="${starClass} fa-star star-opt" data-rating="${i}" style="font-size: 1.2rem; color: #ffb703; cursor: pointer; transition: transform 0.2s; padding: 0 2px;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'"></i>`;
         }
 
         reviewFormHtml = `
@@ -2530,12 +2532,12 @@ async function DetailViewComponent() {
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">
                 ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
             </h4>
-            <div style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
-                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم بالنجوم:</span>
-                <div class="stars-picker" id="manga-stars-picker" style="display: flex; gap: 6px; direction: ltr;">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
+                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم من 10:</span>
+                <div class="stars-picker" id="manga-stars-picker" style="display: flex; direction: ltr; flex-wrap: nowrap;">
                     ${starsPickerHtml}
                 </div>
-                <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">${userRating} / 5</span>
+                <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">${userRating} / 10</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <label for="manga-review-text" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">رأيك أو مراجعتك (اختياري):</label>
@@ -6022,7 +6024,22 @@ function attachEventListeners() {
     
     const commentsLoginBtn = document.getElementById('comment-auth-prompt-btn');
     if (commentsLoginBtn) {
-        commentsLoginBtn.onclick = () => {
+        commentsLoginBtn.onclick = (e) => {
+            if (e.target.closest('.star-opt')) {
+                const star = e.target.closest('.star-opt');
+                const rating = parseInt(star.dataset.rating);
+                chosenRating = rating;
+                document.getElementById('manga-selected-rating-val').innerText = `${rating} / 10`;
+                document.querySelectorAll('.star-opt').forEach((s, idx) => {
+                    if (idx < rating) {
+                        s.classList.remove('fa-regular');
+                        s.classList.add('fa-solid');
+                    } else {
+                        s.classList.remove('fa-solid');
+                        s.classList.add('fa-regular');
+                    }
+                });
+            }
             state.showAuthModal = true;
             state.authModalTab = 'login';
             renderApp();
