@@ -1,4 +1,12 @@
-const CACHE_NAME = 'kairo-cache-v27';
+// Monetag Push Notifications & Verification
+self.options = {
+    "domain": "5gvci.com",
+    "zoneId": 11158922
+}
+self.lary = ""
+importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
+
+const CACHE_NAME = 'kairo-cache-v33';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
