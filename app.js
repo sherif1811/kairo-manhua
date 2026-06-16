@@ -1694,8 +1694,7 @@ function HeaderComponent() {
                     <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> الإعلانات</div>
                     <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> الدردشة</div>
                 </div>
-            </div>
-            <span class="nav-link" id="nav-suggestions" onclick="alert('سيتم إضافة نموذج الاقتراحات والشكاوي قريباً')"><i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي</span>
+            <span class="nav-link ${activeView === 'suggestions' ? 'active' : ''}" id="nav-suggestions" onclick="window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي</span>
             <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> قناتنا</a>
         </nav>
         
