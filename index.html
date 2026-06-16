@@ -7,8 +7,10 @@
     <!-- خط Cairo المميز من Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" as="style">
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome للأيقونات الاحترافية -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ملفات التنسيق المخصصة -->
     <link rel="stylesheet" href="style.css?v=3.4">
@@ -74,5 +76,16 @@
     </script>
     <!-- المنطق البرمجي الرئيسي للموقع -->
     <script src="app.js?v=3.4"></script>
+    
+    <!-- Fix iOS Double Tap Hover Issue -->
+    <script>
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        document.addEventListener('click', function(e) {
+            const a = e.target.closest('a');
+            if (a && a.getAttribute('href') === '#') {
+                e.preventDefault();
+            }
+        });
+    </script>
 </body>
 </html>

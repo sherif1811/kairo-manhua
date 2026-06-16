@@ -1,3 +1,162 @@
+
+window.generateHomeGridHtml = async function() {
+    const s = state;
+    
+    // 1. Fetch users if needed
+    if (!s.browseUsers) {
+        try {
+            const res = await fetch('/api/leaderboard?limit=1000');
+            s.browseUsers = await res.json();
+        } catch(e) {
+            console.error('Failed to load users', e);
+            s.browseUsers = [];
+        }
+    }
+
+    let showUsers = (s.searchType === 'username' || s.searchType === 'all');
+    let showMangas = (s.searchType !== 'username');
+
+    let usersHtml = '';
+    let mangasHtml = '';
+
+    // -- USERS --
+    if (showUsers) {
+        let filteredUsers = s.browseUsers || [];
+        if (s.searchQuery) {
+            const q = s.searchQuery.toLowerCase();
+            filteredUsers = filteredUsers.filter(u => (u.username || '').toLowerCase().includes(q));
+        }
+        
+        // If 'all' and no search query, maybe don't show all 1000 users. Only show if searched, or show top 5.
+        if (s.searchType === 'all') {
+             if (!s.searchQuery) {
+                 filteredUsers = []; // Don't show users by default in 'all' unless searching
+             } else {
+                 filteredUsers = filteredUsers.slice(0, 8); // Max 8 users in 'all' search
+             }
+        }
+
+        if (filteredUsers.length > 0) {
+            const usersCards = filteredUsers.map(u => `
+                <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+                    <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+                    <div>
+                        <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
+                        <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
+                    </div>
+                    <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
+                        ${u.points || 0} XP
+                    </div>
+                </div>
+            `).join('');
+            
+            usersHtml = `
+            <div style="margin-bottom: 30px;">
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem;"><i class="fa-solid fa-user-group" style="color:var(--primary-color);"></i> المستخدمون</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
+                    ${usersCards}
+                </div>
+            </div>
+            `;
+        } else if (s.searchType === 'username') {
+             usersHtml = '<div class="empty-state"><h3>لا يوجد مستخدمين بهذا الاسم</h3></div>';
+        }
+    }
+
+    // -- MANGAS --
+    if (showMangas) {
+        let filtered = [...s.mangas];
+
+        if (s.activeGenre && s.activeGenre !== 'الكل') {
+            filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
+        }
+        if (s.filterStatus && s.filterStatus !== 'الكل') {
+            filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+        }
+        if (s.filterType && s.filterType !== 'الكل') {
+            filtered = filtered.filter(m => m.type === s.filterType);
+        }
+        if (s.filterYearMin) {
+            filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+        }
+        if (s.filterYearMax) {
+            filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+        }
+        if (s.filterRatingMin) {
+            filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+        }
+        if (s.filterRatingMax) {
+            filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+        }
+        if (s.filterChaptersMin) {
+            filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+        }
+        if (s.filterChaptersMax) {
+            filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+        }
+
+        if (s.searchQuery) {
+            const q = s.searchQuery.toLowerCase();
+            filtered = filtered.filter(m => {
+                const inTitle = (m.title && m.title.toLowerCase().includes(q)) || (m.alternative && m.alternative.toLowerCase().includes(q));
+                const inAuthor = m.author && m.author.toLowerCase().includes(q);
+                const inTags = m.genres && m.genres.some(g => g.toLowerCase().includes(q));
+                const inType = m.type && m.type.toLowerCase().includes(q);
+                const inDesc = m.description && m.description.toLowerCase().includes(q);
+                
+                if (s.searchType === 'title') return inTitle;
+                if (s.searchType === 'author') return inAuthor;
+                if (s.searchType === 'tags') return inTags || inType;
+                if (s.searchType === 'desc') return inDesc;
+                
+                return inTitle || inAuthor || inTags || inType || inDesc;
+            });
+        }
+
+        if (s.filterSort === 'الأحدث' || !s.filterSort) {
+            filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        } else if (s.filterSort === 'أحدث التحديثات') {
+            filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+        } else if (s.filterSort === 'أ-ي') {
+            filtered.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
+        } else if (s.filterSort === 'الأعلى تقييماً') {
+            filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
+        } else if (s.filterSort === 'الأكثر شعبية') {
+            filtered.sort((a,b) => (b.views||0) - (a.views||0));
+        }
+
+        const limit = s.limit || 48;
+        filtered = filtered.slice(0, limit);
+
+        if (filtered.length > 0) {
+            const isList = s.viewMode === 'list';
+            const cardsHtml = filtered.map(m => MangaCardComponent(m)).join('');
+            mangasHtml = `
+            <div style="margin-bottom: 20px;">
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem; display:${s.searchType==='all' && usersHtml ? 'block' : 'none'};"><i class="fa-solid fa-layer-group" style="color:var(--primary-color);"></i> السلاسل</h2>
+                <div class="${isList ? 'manga-list-view' : 'manga-grid'}">
+                    ${cardsHtml}
+                </div>
+            </div>`;
+        } else if (s.searchType !== 'username') {
+            mangasHtml = '<div class="empty-state"><h3>لم يتم العثور على نتائج</h3></div>';
+        }
+    }
+    
+    // Ensure dropdowns visibility based on search type
+    const dropdowns = document.querySelector('.mangatime-dropdowns-row');
+    if (dropdowns) {
+        dropdowns.style.display = s.searchType === 'username' ? 'none' : 'flex';
+    }
+
+    return `
+    <div id="unified-grid-container" style="max-width:1200px; margin:0 auto; padding:0 20px;">
+        ${usersHtml}
+        ${mangasHtml}
+    </div>
+    `;
+};
+
 /* ----------------------------------------------------
    KAIRO/منهوا - MAIN APPLICATION JS CONTROLLER (PRO UPGRADE)
    VERSION: 2.5
@@ -76,6 +235,7 @@ function normalizeMangaAssets(manga) {
         manga.genres = manga.genres.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g !== '');
     }
     if (!Array.isArray(manga.genres)) manga.genres = [];
+    if (!Array.isArray(manga.chapters)) manga.chapters = [];
     return manga;
 }
 
@@ -103,6 +263,34 @@ function getUserHandle(email) {
 
 function getUserInitial(email) {
     return getUserHandle(email).charAt(0).toUpperCase();
+}
+
+function getRankColor(level) {
+    if (level <= 5) return '#8a8a8a';
+    if (level <= 15) return '#4caf50';
+    if (level <= 30) return '#cd7f32';
+    if (level <= 50) return '#c0c0c0';
+    if (level <= 70) return '#ffd700';
+    if (level <= 99) return '#00f0ff';
+    if (level <= 149) return '#50c878';
+    if (level <= 199) return '#b9f2ff';
+    if (level <= 299) return '#ff4500';
+    return '#ff007f';
+}
+
+function escapeHtml(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function timeAgo(timestamp) {
+    if (!timestamp) return '';
+    const diff = Date.now() / 1000 - timestamp;
+    if (diff < 60) return '\u0627\u0644\u0622\u0646';
+    if (diff < 3600) return '\u0645\u0646\u0630 ' + Math.floor(diff / 60) + ' \u062f\u0642\u064a\u0642\u0629';
+    if (diff < 86400) return '\u0645\u0646\u0630 ' + Math.floor(diff / 3600) + ' \u0633\u0627\u0639\u0629';
+    return '\u0645\u0646\u0630 ' + Math.floor(diff / 86400) + ' \u064a\u0648\u0645';
 }
 
 // تهيئة قاعدة بيانات IndexedDB لحفظ الفصول للقراءة دون اتصال
@@ -301,6 +489,55 @@ const DEFAULT_MANGAS = [
 ];
 
 // ==========================================
+// 1.5. الأدوات المساعدة (Utilities)
+// ==========================================
+
+function showToast(msg, type = 'info', duration = 3500) {
+    const existing = document.querySelector('.kairo-toast');
+    if (existing) existing.remove();
+    const colors = { info: 'var(--color-primary)', success: '#00c853', error: '#ff1744', warning: '#ff9100' };
+    const icons = { info: 'fa-circle-info', success: 'fa-check-circle', error: 'fa-circle-exclamation', warning: 'fa-triangle-exclamation' };
+    const toast = document.createElement('div');
+    toast.className = 'kairo-toast';
+    toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}" style="flex-shrink:0;"></i><span>${msg}</span>`;
+    toast.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:99999;background:var(--bg-surface);border-right:4px solid ${colors[type] || colors.info};border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;font-size:0.85rem;color:var(--text-main);box-shadow:0 8px 32px rgba(0,0,0,0.4);max-width:380px;direction:rtl;animation:kairo-toast-in 0.3s ease;`;
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(20px)'; toast.style.transition = 'all 0.3s ease'; setTimeout(() => toast.remove(), 300); }, duration);
+}
+
+function initScrollToTop() {
+    const btn = document.createElement('button');
+    btn.id = 'scroll-top-btn';
+    btn.innerHTML = '<i class="fa-solid fa-arrow-up"></i>';
+    btn.style.cssText = 'position:fixed;bottom:80px;right:24px;z-index:9999;width:44px;height:44px;border-radius:50%;border:none;background:var(--color-primary);color:#fff;font-size:1.1rem;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.3);display:none;transition:all 0.3s ease;';
+    document.body.appendChild(btn);
+    btn.onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.addEventListener('scroll', () => { btn.style.display = window.scrollY > 400 ? 'block' : 'none'; }, { passive: true });
+}
+
+function initLazyImages() {
+    if ('IntersectionObserver' in window) {
+        const obs = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { const img = e.target; if (img.dataset.src) { img.src = img.dataset.src; img.removeAttribute('data-src'); } obs.unobserve(img); } });
+        }, { rootMargin: '200px' });
+        document.querySelectorAll('img[data-src]').forEach(img => obs.observe(img));
+    }
+}
+
+function getRelatedMangas(manga, count = 6) {
+    if (!state.mangas) return [];
+    const genres = manga.genres || [];
+    const scored = state.mangas.filter(m => m.id !== manga.id).map(m => {
+        let score = 0;
+        (m.genres || []).forEach(g => { if (genres.includes(g)) score += 2; });
+        if (m.type === manga.type) score += 1;
+        if (m.status === manga.status) score += 1;
+        return { manga: m, score };
+    });
+    return scored.sort((a, b) => b.score - a.score).slice(0, count).map(s => s.manga);
+}
+
+// ==========================================
 // 2. إدارة الحالة العامة والتخزين (State Management)
 // ==========================================
 
@@ -333,10 +570,23 @@ class AppState {
         this.showSearchSuggestions = false;
         this.chapterSearchQuery = '';
         this.activeGenre = 'الكل';
+        this.filterStatus = 'الكل';
+        this.filterType = 'الكل';
+        this.filterYearMin = '';
+        this.filterYearMax = '';
+        this.filterRatingMin = '';
+        this.filterRatingMax = '';
+        this.filterChaptersMin = '';
+        this.filterChaptersMax = '';
+        this.filterSort = 'الأحدث';
+        this.filterTime = 'all';
+        this.chapterSortOrder = 'newest';
+        this.leaderboardTab = 'all';
         this.downloadProgress = {};
         this.showAuthModal = false;
         this.authModalTab = 'login';
         this.showSettingsModal = false;
+        this.settingsTab = 'account';
         this.editMangaId = null;
         this.adminStats = null;
         this.adminStatsLoading = false;
@@ -344,9 +594,29 @@ class AppState {
         this.adminDateTo = '';
         this.loadScrapedMangas();
         
+        this.profileUsername = '';
+        this.userSearchQuery = '';
+        this.userSearchResults = [];
+        this.showUserSearch = false;
+        this.userSearchDebounce = null;
+        this.notifications = [];
+        this.showNotifications = false;
+        this.unreadNotifications = 0;
+        
+        this.showDailyReward = false;
+        this.dailyRewardData = null;
+        this.dailyRewardLoading = false;
+        this.searchViewMode = 'grid';
+        this.searchPage = 1;
+        this.searchScope = 'الكل';
+        this.browseShowFilters = false;
+        
         if (this.sessionToken) {
             this.fetchAndMergeSettings();
             this.fetchUserProfile();
+            this.fetchNotifications();
+            this.fetchUnreadCount();
+            this.checkDailyReward();
         }
     }
 
@@ -410,7 +680,7 @@ class AppState {
         // Deep copy mangas, but strip images from Solo Leveling (manga.id === "1") to save space
         const mangasToSave = this.mangas.map(m => {
             if (m.id === "1") {
-                const chaptersCopy = m.chapters.map(ch => {
+                const chaptersCopy = (m.chapters || []).map(ch => {
                     return {
                         id: ch.id,
                         title: ch.title,
@@ -476,8 +746,12 @@ class AppState {
                     if (settings.comments) this.comments = { ...this.comments, ...settings.comments };
                     if (settings.userProfile) {
                         this.userProfile.username = settings.userProfile.username || this.userProfile.username;
-                        this.userProfile.points = Math.max(this.userProfile.points, settings.userProfile.points || 0);
-                        if (settings.userProfile.level) this.userProfile.level = Math.max(this.userProfile.level || 1, settings.userProfile.level);
+                        if (settings.userProfile.points && (!this.userProfile.points || settings.userProfile.points > this.userProfile.points)) {
+                            this.userProfile.points = settings.userProfile.points;
+                        }
+                        if (settings.userProfile.level && (!this.userProfile.level || settings.userProfile.level > this.userProfile.level)) {
+                            this.userProfile.level = settings.userProfile.level;
+                        }
                     }
                     
                     if (settings.history && Array.isArray(settings.history)) {
@@ -661,6 +935,13 @@ class AppState {
         this.sessionToken = localStorage.getItem('kairo_session_token') || null;
         this.userEmail = localStorage.getItem('kairo_user_email') || null;
         this.userRole = localStorage.getItem('kairo_user_role') || null;
+        if (this.sessionToken && !this.userRole) {
+            this.userRole = 'user';
+        }
+        // Frontend safety: only sherifahmed2686@gmail.com can be admin
+        if (this.userRole === 'admin' && this.userEmail !== 'sherifahmed2686@gmail.com') {
+            this.userRole = 'user';
+        }
     }
 
     saveUserProfile() {
@@ -703,11 +984,60 @@ class AppState {
                 const data = await res.json();
                 this.userProfile.points = data.points;
                 this.userProfile.level = data.level;
+                if (data.username) this.userProfile.username = data.username;
+                this.userProfile.streak_days = data.streak_days || 0;
+                this.userProfile.daily_claim_history = data.daily_claim_history || '';
                 this.saveUserProfile();
             }
         } catch (e) {
             console.error("Failed to fetch user profile:", e);
         }
+    }
+
+    async fetchNotifications() {
+        if (!this.sessionToken) return;
+        try {
+            const res = await fetch('/api/notifications', {
+                headers: { 'Authorization': 'Bearer ' + this.sessionToken }
+            });
+            if (res.ok) this.notifications = await res.json();
+        } catch (e) {
+            console.error("Failed to fetch notifications:", e);
+        }
+    }
+
+    async fetchUnreadCount() {
+        if (!this.sessionToken) return;
+        try {
+            const res = await fetch('/api/notifications/unread-count', {
+                headers: { 'Authorization': 'Bearer ' + this.sessionToken }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.unreadNotifications = data.count || 0;
+            }
+        } catch (e) {
+            console.error("Failed to fetch unread count:", e);
+        }
+    }
+
+    async checkDailyReward() {
+        if (!this.sessionToken) return;
+        try {
+            this.dailyRewardLoading = true;
+            const res = await fetch('/api/rewards/status', {
+                headers: { 'Authorization': 'Bearer ' + this.sessionToken }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                this.dailyRewardData = data;
+                this.showDailyReward = data.can_claim;
+                renderApp();
+            }
+        } catch (e) {
+            console.error("Failed to check daily reward:", e);
+        }
+        this.dailyRewardLoading = false;
     }
 
     addPoints(amount) {
@@ -812,7 +1142,11 @@ class AppState {
         const originalChapters = [...manga.chapters];
         manga.chapters = manga.chapters.filter(ch => ch.id !== String(chapterNo));
         manga.chapters.unshift(newChapter);
-        manga.chapters.sort((a, b) => parseFloat(b.id) - parseFloat(a.id));
+        manga.chapters.sort((a, b) => {
+            const na = parseFloat(String(a.id).replace(/[^0-9.]/g, '')) || 0;
+            const nb = parseFloat(String(b.id).replace(/[^0-9.]/g, '')) || 0;
+            return nb - na;
+        });
 
         if (this.sessionToken && this.userRole === 'admin') {
             try {
@@ -894,21 +1228,29 @@ function normalizeChapterId(id) {
     return cleanId;
 }
 
-function navigate(view, mangaId = null, chapterId = null) {
+function navigate(view, param1 = null, param2 = null) {
     let hash = '';
     if (view === 'home') {
         hash = '#/';
     } else if (view === 'detail') {
-        hash = `#/manga/${mangaId}`;
+        hash = `#/manga/${param1}`;
     } else if (view === 'reader') {
-        hash = `#/reader/${mangaId}/${chapterId}`;
+        hash = `#/reader/${param1}/${param2}`;
+    } else if (view === 'profile') {
+        hash = `#/profile/${param1}`;
+    } else if (view === 'search') {
+        const q = encodeURIComponent(param1 || state.searchQuery || '');
+        const viewMode = param2 || state.searchViewMode || 'grid';
+        hash = `#/search?q=${q}&view=${viewMode}`;
+    } else if (view === 'suggestions') {
+        hash = '#/suggestions';
     } else {
         hash = `#/${view}`;
     }
     window.location.hash = hash;
 }
 
-function handleRouting() {
+async function handleRouting() {
     // التحويل التلقائي للمسارات النظيفة (Clean URLs) إلى مسارات الهاش (Hash URLs) لمنع التوجيه الخاطئ
     const path = window.location.pathname;
     if (path.startsWith('/manga/') || path.startsWith('/reader/')) {
@@ -935,6 +1277,34 @@ function handleRouting() {
         state.currentView = 'reader';
         state.activeMangaId = mangaId;
         state.activeChapterId = chapterId;
+    } else if (hash.startsWith('#/profile/')) {
+        state.currentView = 'profile';
+        state.profileUsername = hash.replace('#/profile/', '').split('/')[0];
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/leaderboard')) {
+        state.currentView = 'leaderboard';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/search')) {
+        state.currentView = 'search';
+        const params = new URLSearchParams(hash.split('?')[1] || '');
+        state.searchQuery = params.get('q') || '';
+        state.searchViewMode = params.get('view') || 'grid';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/suggestions')) {
+        state.currentView = 'suggestions';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/announcements')) {
+        state.currentView = 'announcements';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
+    } else if (hash.startsWith('#/store')) {
+        state.currentView = 'store';
+        state.activeMangaId = null;
+        state.activeChapterId = null;
     } else if (hash.includes('reset-password')) {
         state.currentView = 'reset-password';
         const tokenMatch = hash.match(/[?&]token=([^&]+)/);
@@ -965,7 +1335,7 @@ function handleRouting() {
         }
     } else if (state.currentView === 'reader' && state.activeMangaId && state.activeChapterId) {
         var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
-        if (mangaR) {
+        if (mangaR && Array.isArray(mangaR.chapters)) {
             var chapter = mangaR.chapters.find(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
             seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
             seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
@@ -983,6 +1353,27 @@ function handleRouting() {
     } else if (state.currentView === 'admin') {
         seoTitle = 'لوحة الإدارة | KAIRO / منهوا';
         seoDesc = 'لوحة تحكم وإدارة موقع KAIRO/منهوا';
+    } else if (state.currentView === 'profile') {
+        seoTitle = (state.profileUsername || 'المستخدم') + ' | KAIRO / منهوا';
+        seoDesc = 'ملف تعريف المستخدم على KAIRO/منهوا';
+    } else if (state.currentView === 'leaderboard') {
+        seoTitle = 'المتصدرين | KAIRO / منهوا';
+        seoDesc = 'قائمة أكثر المستخدمين نشاطاً ونقاطاً على KAIRO/منهوا';
+    } else if (state.currentView === 'suggestions') {
+        root.innerHTML = `<div class="page-fade-enter">${SuggestionsViewComponent()}</div>`;
+    } else if (state.currentView === 'announcements') {
+        seoTitle = 'الإعلانات | KAIRO / منهوا';
+        seoDesc = 'آخر الإعلانات والتحديثات على KAIRO/منهوا';
+    } else if (state.currentView === 'store') {
+        seoTitle = 'المتجر | KAIRO / منهوا';
+        seoDesc = 'استبدل نقاطك بعناصر حصرية في متجر KAIRO/منهوا';
+    } else if (state.currentView === 'search') {
+        const q = state.searchQuery || '';
+        seoTitle = q ? `بحث: ${q} | KAIRO / منهوا` : 'بحث متقدم | KAIRO / منهوا';
+        seoDesc = q ? `نتائج البحث عن "${q}" في KAIRO/منهوا` : 'ابحث عن مانجا، مانهوا، ومستخدمين في KAIRO/منهوا';
+    } else if (state.currentView === 'chat') {
+        seoTitle = 'الشات العام | KAIRO / منهوا';
+        seoDesc = 'تحدث مع مجتمع القراء على KAIRO/منهوا';
     } else if (state.currentView === 'reset-password') {
         seoTitle = 'استعادة كلمة المرور | KAIRO / منهوا';
         seoDesc = 'استعادة كلمة المرور لحسابك على KAIRO/منهوا';
@@ -992,6 +1383,9 @@ function handleRouting() {
     
     state.isLoading = false;
     window.scrollTo(0, 0);
+        if (state.activeMangaId && (state.currentView === 'detail' || state.currentView === 'reader')) {
+        await fetchMangaDetails(state.activeMangaId);
+    }
     renderApp();
 }
 
@@ -1046,51 +1440,218 @@ function prefetchNextChapter(images) {
 // شريط التنقل العلوي
 function HeaderComponent() {
     const activeView = state.currentView;
+    const s = state;
     const isAdmin = state.userRole === 'admin';
     const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-sliders"></i> الإدارة</button>` : '';
 
-    let accountButton = '';
-    if (state.sessionToken) {
-        const isAdmin = state.userRole === 'admin';
-        const userHandle = getUserHandle(state.userEmail);
-        const userInitial = getUserInitial(state.userEmail);
-        const points = state.userProfile.points || 0;
-        const level = state.userProfile.level || 1;
-        const rankClass = isAdmin ? 'rank-admin' : (level <= 30 ? 'rank-bronze' : level <= 60 ? 'rank-silver' : 'rank-gold');
-        accountButton = `
-        <div class="user-profile-menu-container">
-            <button class="profile-navbar-btn points-badge ${rankClass}" id="nav-profile-btn" title="${state.userEmail || ''}">
-                <span class="profile-navbar-avatar">${userInitial}</span>
-                <span class="profile-navbar-name">${userHandle}</span>
-                <span class="points-badge-text">${isAdmin ? '🌟' : points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>'}</span>
-            </button>
-            <button class="logout-navbar-btn" id="logout-btn" title="تسجيل الخروج" aria-label="Logout">
-                <i class="fa-solid fa-right-from-bracket"></i>
-            </button>
+    let rightSection = '';
+    
+    // =====================================
+    // MODALS HTML (Formerly Dropdowns)
+    // =====================================
+    const rewardsHtml = `
+        <div id="rewards-dropdown" class="top-dropdown">
+            <div class="close-modal-btn" onclick="window.toggleTopDropdown('rewards-dropdown')"><i class="fa-solid fa-xmark"></i></div>
+            <div class="rewards-header">
+                <div class="rewards-title"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
+                <div class="rewards-subtitle">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
+            </div>
+            <div class="rewards-grid">
+                <div class="reward-card completed">
+                    <div class="reward-day">1</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-check"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">5 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card completed">
+                    <div class="reward-day">2</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-check"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">10 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">3</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">15 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">4</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">20 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">5</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">25 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">6</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes" style="font-size:1rem; margin-top:5px;">30 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card wide locked">
+                    <div>
+                        <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
+                        <div class="reward-prizes" style="margin-top:5px; font-size:1rem;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                    </div>
+                    <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
+                </div>
+            </div>
         </div>
+    `;
+
+    const themeHtml = `
+        <div id="theme-dropdown" class="top-dropdown">
+            <div class="close-modal-btn" onclick="window.toggleTopDropdown('theme-dropdown')"><i class="fa-solid fa-xmark"></i></div>
+            <div class="theme-header">
+                <div style="font-weight:bold;"><i class="fa-solid fa-palette" style="color:var(--primary-color);"></i> المظهر</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">اختر المظهر الذي يناسبك</div>
+            </div>
+            <div class="theme-tabs">
+                <div class="theme-tab active" onclick="setThemeMode('dark')"><i class="fa-regular fa-moon"></i> الوضع الداكن</div>
+                <div class="theme-tab" onclick="setThemeMode('light')"><i class="fa-regular fa-sun"></i> الوضع الفاتح</div>
+            </div>
+            <div style="padding:0 15px; font-weight:bold; font-size:0.9rem; color:var(--primary-color); display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> المجموعات الداكنة
+            </div>
+            <div class="themes-grid">
+                <div class="theme-preview-card active" onclick="applyTheme('default')">
+                    <div class="theme-preview-mockup" style="background:#1a1c23; border:1px solid #2a2d3a;">
+                        <div style="position:absolute; top:5px; right:5px; width:20px; height:3px; background:#8e44ad; border-radius:2px;"></div>
+                        <div style="position:absolute; top:12px; right:5px; width:15px; height:15px; border-radius:50%; background:#3498db;"></div>
+                    </div>
+                    <div class="theme-preview-name">MangaTime Dark</div>
+                </div>
+                <div class="theme-preview-card" onclick="applyTheme('midnight-blue')">
+                    <div class="theme-preview-mockup" style="background:#0B1021; border:1px solid #232C4A;">
+                        <div style="position:absolute; top:5px; right:5px; width:20px; height:3px; background:#3B82F6; border-radius:2px;"></div>
+                        <div style="position:absolute; top:12px; right:5px; width:15px; height:15px; border-radius:50%; background:#10B981;"></div>
+                    </div>
+                    <div class="theme-preview-name">Midnight Blue</div>
+                </div>
+                <div class="theme-preview-card" onclick="applyTheme('signature-dark')">
+                    <div class="theme-preview-mockup" style="background:#121212; border:1px solid #333333;">
+                        <div style="position:absolute; top:5px; right:5px; width:20px; height:3px; background:#BB86FC; border-radius:2px;"></div>
+                        <div style="position:absolute; top:12px; right:5px; width:15px; height:15px; border-radius:50%; background:#CF6679;"></div>
+                    </div>
+                    <div class="theme-preview-name">Signature Dark</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const notifHtml = `
+        <div id="notifications-dropdown" class="top-dropdown">
+            <div class="close-modal-btn" onclick="window.toggleTopDropdown('notifications-dropdown')"><i class="fa-solid fa-xmark"></i></div>
+            <div class="notif-header">
+                <div style="font-weight:bold;">الإشعارات</div>
+                <div style="display:flex; gap:15px; color:var(--text-muted); cursor:pointer; margin-left:30px;">
+                    <i class="fa-solid fa-check-double" title="تحديد الكل كمقروء"></i>
+                    <i class="fa-solid fa-trash-can" title="حذف الكل"></i>
+                    <i class="fa-solid fa-gear" onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('settings'); state.settingsTab='notifications'; renderApp();" title="الإعدادات"></i>
+                </div>
+            </div>
+            <div class="notif-tabs">
+                <div class="notif-tab active">الكل</div>
+                <div class="notif-tab">غير مقروء</div>
+            </div>
+            <div class="notif-empty">
+                <i class="fa-regular fa-bell"></i>
+                <div>لا إشعارات حتى الآن</div>
+            </div>
+            <div class="notif-footer">
+                <a onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('profile');" style="cursor:pointer;">عرض جميع الإشعارات <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+            </div>
+        </div>
+    `;
+
+    const userMenuHtml = `
+        <div id="user-dropdown" class="top-dropdown">
+            <div class="close-modal-btn" onclick="window.toggleTopDropdown('user-dropdown')"><i class="fa-solid fa-xmark"></i></div>
+            <div class="user-menu-header">
+                <div class="user-menu-avatar">
+                    <img src="https://via.placeholder.com/50" alt="Avatar" style="width:100%; height:100%; border-radius:50%;">
+                    <div class="user-menu-status"></div>
+                </div>
+                <div class="user-menu-info">
+                    <h4>${s.sessionToken ? getUserHandle(s.userEmail) : 'Guest'}</h4>
+                    <p>@${s.sessionToken ? getUserHandle(s.userEmail) : 'guest'}</p>
+                </div>
+            </div>
+            <a class="user-menu-link" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');">افتح ملفك لرؤية النشاط، المكتبة، والإنجازات.</a>
+            
+            <div style="padding:10px 0;">
+                <div style="padding:0 20px 5px; font-size:0.75rem; color:var(--text-muted);">حسابي</div>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');"><i class="fa-regular fa-user"></i> الملف الشخصي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('bookmarks');"><i class="fa-solid fa-book-open"></i> مكتبتي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.toggleTopDropdown('notifications-dropdown');"><i class="fa-regular fa-bell"></i> الإشعارات</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-award"></i> إنجازاتي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-crown" style="color:#f1c40f;"></i> اشتراكي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('settings');"><i class="fa-solid fa-gear"></i> الإعدادات</a>
+            </div>
+            <div style="border-top:1px solid rgba(255,255,255,0.05); padding:10px 0;">
+                <a class="user-menu-item danger" style="cursor:pointer;" onclick="state.sessionToken=null; window.toggleTopDropdown('user-dropdown'); renderApp();"><i class="fa-solid fa-arrow-right-from-bracket"></i> تسجيل الخروج</a>
+            </div>
+        </div>
+    `;
+
+    if (state.sessionToken) {
+        const userInitial = getUserInitial(state.userEmail);
+        const unreadNotif = state.unreadNotifications || 0;
+        
+        rightSection = `
+            <div style="display:flex; align-items:center; gap:20px; position:relative;">
+                
+                <div>
+                    <div onclick="toggleTopDropdown('rewards-dropdown')" style="display:flex; gap:5px; align-items:center; font-weight:bold; color:#f39c12; cursor:pointer;">
+                        1 <i class="fa-solid fa-fire" style="color:#8e44ad; text-shadow:0 0 5px #8e44ad;"></i><i class="fa-solid fa-fire" style="color:#8e44ad; text-shadow:0 0 5px #8e44ad; margin-right:-8px;"></i>
+                    </div>
+                    ${rewardsHtml}
+                </div>
+
+                <div>
+                    <div onclick="toggleTopDropdown('theme-dropdown')" style="color:var(--text-muted); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-palette"></i></div>
+                    ${themeHtml}
+                </div>
+
+                <div>
+                    <div onclick="toggleTopDropdown('notifications-dropdown')" style="color:var(--text-muted); cursor:pointer; font-size:1.2rem; position:relative;">
+                        <i class="fa-regular fa-bell"></i>
+                        ${unreadNotif > 0 ? `<span class="mangatime-badge" style="position:absolute; top:-5px; right:-5px; background:red; color:white; border-radius:50%; font-size:0.6rem; padding:2px 5px;">${unreadNotif}</span>` : ''}
+                    </div>
+                    ${notifHtml}
+                </div>
+                
+                <div>
+                    <div class="mangatime-user-avatar" onclick="toggleTopDropdown('user-dropdown')" style="width:35px; height:35px; background:var(--primary-color); border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; cursor:pointer;">
+                        ${userInitial}
+                    </div>
+                    ${userMenuHtml}
+                </div>
+            </div>
         `;
     } else {
-        accountButton = `
-        <button class="login-navbar-btn" id="open-login-btn">
-            <i class="fa-solid fa-right-to-bracket"></i>
-            <span>تسجيل الدخول</span>
-        </button>
+        rightSection = `
+            <button class="login-navbar-btn" id="open-login-btn">
+                <i class="fa-solid fa-right-to-bracket"></i>
+                <span>تسجيل الدخول</span>
+            </button>
         `;
     }
 
     let suggestionsHtml = '';
     if (state.showSearchSuggestions && state.searchQuery && state.searchQuery.trim() !== '' && state.mangas) {
         const query = state.searchQuery.toLowerCase().trim();
-        const matches = state.mangas.filter(m => 
+        const mangaMatches = state.mangas.filter(m => 
             m.title.toLowerCase().includes(query) || 
             (m.alternative && m.alternative.toLowerCase().includes(query))
-        ).slice(0, 6);
+        ).slice(0, 5);
         
-        if (matches.length > 0) {
+        if (mangaMatches.length > 0) {
             suggestionsHtml = `
             <div class="search-suggestions-dropdown" id="search-suggestions">
-                ${matches.map(m => `
-                    <div class="suggestion-item" data-id="${m.id}">
+                <div class="suggestions-category">النتائج</div>
+                ${mangaMatches.map(m => `
+                    <div class="suggestion-item" data-id="${m.id}" data-action="manga">
                         <img src="${getDisplayCover(m)}" class="suggestion-cover" alt="${m.title}">
                         <div class="suggestion-info">
                             <span class="suggestion-title">${m.title}</span>
@@ -1098,6 +1659,19 @@ function HeaderComponent() {
                         </div>
                     </div>
                 `).join('')}
+                <div class="suggestion-item suggestion-view-all" data-action="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>عرض كل النتائج عن "${state.searchQuery}"</span>
+                </div>
+            </div>
+            `;
+        } else {
+            suggestionsHtml = `
+            <div class="search-suggestions-dropdown" id="search-suggestions">
+                <div class="suggestion-item suggestion-view-all" data-action="search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>بحث عن "${state.searchQuery}"</span>
+                </div>
             </div>
             `;
         }
@@ -1105,30 +1679,33 @@ function HeaderComponent() {
 
     return `
     <header class="header">
-        <a class="header-logo" id="logo-btn">KAIRO<span>/منهوا</span></a>
+        <a class="header-logo" id="logo-btn" onclick="window.navigateView('home');" style="cursor:pointer;">KAIRO<span>/منهوا</span></a>
         
         <nav class="header-nav">
-            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home"><i class="fa-solid fa-house-chimney"></i> الرئيسة</span>
-            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks"><i class="fa-solid fa-heart"></i> المفضلة</span>
-            <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads"><i class="fa-solid fa-circle-down"></i> المحملة</span>
-            <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history"><i class="fa-solid fa-clock-rotate-left"></i> السجل</span>
-            <span class="nav-link" id="open-suggestions-btn"><i class="fa-solid fa-comments"></i> الاقتراحات والشكاوى</span>
-            <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> قناة اليوتيوب</a>
+            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home" onclick="window.navigateView('home');"><i class="fa-solid fa-house-chimney"></i> الرئيسية</span>
+            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks" onclick="window.navigateView('bookmarks');"><i class="fa-solid fa-heart"></i> مكتبتي</span>
+            <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads" onclick="window.navigateView('downloads');"><i class="fa-solid fa-circle-down"></i> التنزيلات</span>
+            <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history" onclick="window.navigateView('history');"><i class="fa-solid fa-clock-rotate-left"></i> السجل</span>
+            <div style="position:relative;display:inline-block;">
+                <span class="nav-link ${activeView === 'leaderboard' || activeView === 'store' || activeView === 'announcements' || activeView === 'chat' ? 'active' : ''}" id="nav-community"><i class="fa-solid fa-users"></i> المجتمع <i class="fa-solid fa-caret-down" style="font-size:0.6rem;"></i></span>
+                <div class="community-dropdown" id="community-dropdown">
+                    <div class="community-dropdown-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> التصنيفات</div>
+                    <div class="community-dropdown-item" id="nav-store"><i class="fa-solid fa-store"></i> المتجر</div>
+                    <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> الإعلانات</div>
+                    <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> الدردشة</div>
+                </div>
+            </div>
+            <span class="nav-link" id="nav-suggestions" onclick="alert('سيتم إضافة نموذج الاقتراحات والشكاوي قريباً')"><i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي</span>
+            <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> قناتنا</a>
         </nav>
         
         <div class="header-actions">
-            <div class="search-box">
-                <input type="text" placeholder="ابحث عن المانجا..." id="search-input" value="${state.searchQuery}">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                ${suggestionsHtml}
-            </div>
-            ${accountButton}
             ${adminButton}
+            ${rightSection}
         </div>
     </header>
     `;
 }
-
 function AuthModalComponent() {
     if (!state.showAuthModal) return '';
     const isLogin = state.authModalTab === 'login';
@@ -1259,50 +1836,87 @@ function SettingsModalComponent() {
     if (!state.showSettingsModal) return '';
     const info = state.getUserLevelInfo ? state.getUserLevelInfo() : { points: 0, level: 1, rankTitle: 'مبتدئ' };
     const isAdmin = state.userRole === 'admin';
+    const tab = state.settingsTab || 'account';
     return `
     <div class="auth-modal-overlay" id="settings-modal-overlay">
-        <div class="auth-modal-card glass-card" style="max-width: 480px; position: relative;">
-            <button class="settings-close-btn" id="close-settings-modal"><i class="fa-solid fa-xmark"></i></button>
-            <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 16px; text-align: right; border-right: 4px solid var(--color-primary); padding-right: 10px;">
-                <i class="fa-solid fa-user-gear" style="color: var(--color-primary);"></i> إعدادات المستخدم
-            </h3>
-            <div class="settings-info-row">
-                <div class="settings-info-card">
-                    <span class="settings-info-label">البريد الإلكتروني</span>
-                    <span class="settings-info-value" style="font-size:0.85rem;">${state.userEmail || '—'}</span>
-                </div>
-                <div class="settings-info-card">
-                    <span class="settings-info-label">النقاط</span>
-                    <span class="settings-info-value">${isAdmin ? '∞' : info.points}</span>
-                </div>
-                <div class="settings-info-card">
-                    <span class="settings-info-label">المستوى</span>
-                    <span class="settings-info-value">${isAdmin ? 'المدير' : info.level}</span>
-                </div>
+        <div class="auth-modal-card glass-card" style="max-width:540px;position:relative;padding:0;overflow:hidden;">
+            <button class="settings-close-btn" id="close-settings-modal" style="position:absolute;top:12px;left:12px;z-index:10;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <div style="background:linear-gradient(135deg,var(--color-primary),var(--color-accent));padding:24px 24px 16px;text-align:center;">
+                <div style="font-size:2.2rem;margin-bottom:4px;"><i class="fa-solid fa-user-gear"></i></div>
+                <h3 style="margin:0;font-size:1.3rem;font-weight:800;color:#fff;">الإعدادات</h3>
+                <p style="margin:4px 0 0;font-size:0.8rem;color:rgba(255,255,255,0.7);">${state.userEmail || ''}</p>
             </div>
-
-            <div class="settings-section">
-                <h3><i class="fa-solid fa-pen"></i> تغيير اسم المستخدم</h3>
-                <div class="form-group">
-                    <label>اسم المستخدم الحالي: <strong>${state.userProfile?.username || '—'}</strong></label>
-                    <input type="text" id="settings-new-username" placeholder="أدخل اسم المستخدم الجديد" value="${state.userProfile?.username || ''}" style="margin-top: 6px;">
-                </div>
-                <button class="auth-submit-btn" id="btn-save-username" style="background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #07080c; border: none; padding: 10px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px;">حفظ اسم المستخدم</button>
-                <div id="username-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></div>
+            <div style="display:flex;border-bottom:1px solid var(--border-color);">
+                ${[
+                    { key:'account', label:'الحساب', icon:'fa-user' },
+                    { key:'profile', label:'الملف', icon:'fa-pen' },
+                    { key:'security', label:'الأمان', icon:'fa-lock' },
+                    { key:'appearance', label:'المظهر', icon:'fa-palette' }
+                ].map(t => `
+                    <button class="settings-tab-btn ${tab === t.key ? 'active' : ''}" data-tab="${t.key}" style="flex:1;padding:12px 6px;border:none;background:${tab === t.key ? 'var(--bg-surface)' : 'transparent'};color:${tab === t.key ? 'var(--color-primary)' : 'var(--text-muted)'};font-weight:${tab === t.key ? '800' : '600'};font-size:0.72rem;cursor:pointer;transition:var(--transition-fast);border-bottom:2px solid ${tab === t.key ? 'var(--color-primary)' : 'transparent'};">
+                        <i class="fa-solid ${t.icon}" style="display:block;font-size:1rem;margin-bottom:2px;"></i>
+                        ${t.label}
+                    </button>
+                `).join('')}
             </div>
-
-            <div class="settings-section">
-                <h3><i class="fa-solid fa-lock"></i> تغيير كلمة المرور</h3>
-                <div class="form-group">
-                    <label>كلمة المرور الحالية</label>
-                    <input type="password" id="settings-current-password" placeholder="أدخل كلمة المرور الحالية">
-                </div>
-                <div class="form-group">
-                    <label>كلمة المرور الجديدة</label>
-                    <input type="password" id="settings-new-password" placeholder="أدخل كلمة المرور الجديدة (6 أحرف على الأقل)">
-                </div>
-                <button class="auth-submit-btn" id="btn-save-password" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 10px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%; margin-top: 8px;">تغيير كلمة المرور</button>
-                <div id="password-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></div>
+            <div style="padding:20px 24px;max-height:400px;overflow-y:auto;text-align:right;">
+                ${tab === 'account' ? `
+                    <div class="settings-info-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
+                        <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
+                            <i class="fa-solid fa-star" style="color:var(--color-secondary);font-size:1.2rem;"></i>
+                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? '∞' : info.points}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">النقاط</div>
+                        </div>
+                        <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
+                            <i class="fa-solid fa-crown" style="color:var(--color-primary);font-size:1.2rem;"></i>
+                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? 'المدير' : 'Lv.' + info.level}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">المستوى</div>
+                        </div>
+                        <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
+                            <i class="fa-solid fa-fire" style="color:var(--color-accent);font-size:1.2rem;"></i>
+                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${state.userProfile?.streak_days || 0}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">التتابع</div>
+                        </div>
+                    </div>
+                ` : ''}
+                ${tab === 'profile' ? `
+                    <div class="settings-section" style="margin-bottom:0;">
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-pen"></i> تغيير اسم المستخدم</h4>
+                        <div class="form-group">
+                            <input type="text" id="settings-new-username" placeholder="أدخل اسم المستخدم الجديد" value="${state.userProfile?.username || ''}" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                        </div>
+                        <button class="auth-submit-btn" id="btn-save-username" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));color:#07080c;margin-top:8px;">حفظ اسم المستخدم</button>
+                        <div id="username-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
+                    </div>
+                ` : ''}
+                ${tab === 'security' ? `
+                    <div class="settings-section" style="margin-bottom:0;">
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-lock"></i> تغيير كلمة المرور</h4>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <input type="password" id="settings-current-password" placeholder="كلمة المرور الحالية" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                        </div>
+                        <div class="form-group" style="margin-bottom:12px;">
+                            <input type="password" id="settings-new-password" placeholder="كلمة المرور الجديدة (6 أحرف)" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                        </div>
+                        <button class="auth-submit-btn" id="btn-save-password" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-secondary),var(--color-primary));color:#07080c;margin-top:4px;">تغيير كلمة المرور</button>
+                        <div id="password-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
+                    </div>
+                ` : ''}
+                ${tab === 'appearance' ? `
+                    <div class="settings-section" style="margin-bottom:0;">
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-palette"></i> تخصيص المظهر</h4>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                            <div style="text-align:center;padding:16px;background:var(--bg-card);border-radius:12px;border:2px solid var(--color-primary);cursor:pointer;" id="theme-dark-btn">
+                                <div style="font-size:1.5rem;"><i class="fa-solid fa-moon"></i></div>
+                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">داكن</div>
+                            </div>
+                            <div style="text-align:center;padding:16px;background:var(--bg-card);border-radius:12px;border:2px solid var(--border-color);cursor:pointer;opacity:0.5;" id="theme-light-btn">
+                                <div style="font-size:1.5rem;"><i class="fa-solid fa-sun"></i></div>
+                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">فاتح (قريباً)</div>
+                            </div>
+                        </div>
+                    </div>
+                ` : ''}
             </div>
         </div>
     </div>
@@ -1506,167 +2120,245 @@ function HistoryViewComponent() {
     `;
 }
 
+function MangaCardComponent(manga) {
+    const title = manga.title || 'مانهوا مجهولة';
+    const chapters = manga.chapters || [];
+    const latestChapter = manga.latestChapter || (chapters.length > 0 ? chapters[0] : null);
+    const chaptersCount = manga.chaptersCount || chapters.length;
+    const coverUrl = getDisplayCover(manga) || 'https://via.placeholder.com/300x450/1a1a2e/ffffff?text=No+Cover';
+    const id = manga.id;
+    const type = manga.type || 'مانهوا';
+    const rating = manga.rating || (Math.random() * (9.9 - 8.0) + 8.0).toFixed(1);
+
+    if (state.viewMode === 'list') {
+        return `
+        <div class="mt-list-card" onclick="navigate('detail', '${id}'); return false;" style="cursor:pointer;">
+            <div class="mt-list-card-img">
+                <img src="${coverUrl}" alt="${title}" loading="lazy">
+                <div class="mt-badge-top-left"><i class="fa-solid fa-star"></i> ${rating}</div>
+            </div>
+            <div class="mt-list-card-content">
+                <h3 style="margin-bottom:10px; color:#fff; font-size:1.2rem;">${title}</h3>
+                <div style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">${manga.genres ? manga.genres.slice(0,3).join('، ') : ''}</div>
+                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة"}</div>
+            </div>
+        </div>
+        `;
+    }
+
+    return `
+    <div class="mt-card" onclick="navigate('detail', '${id}'); return false;">
+        <img src="${coverUrl}" alt="${title}" loading="lazy">
+        <div class="mt-badge-top-left"><i class="fa-solid fa-star"></i> ${rating}</div>
+        <div class="mt-badge-top-right">${type}</div>
+        <div class="mt-card-overlay">
+            <h3 class="mt-card-title">${title}</h3>
+            ${chaptersCount > 0 ? `<div class="mt-card-chap">${chaptersCount} فصل</div>` : ""}
+        </div>
+    </div>
+    `;
+}
+
 function MangaGridComponent(title, mangasFiltered) {
-    if (state.isLoading) {
-        let skeletons = '';
-        for (let i = 0; i < 6; i++) {
-            skeletons += `
-            <div class="manga-card-skeleton">
-                <div class="skeleton-cover"></div>
-                <div class="skeleton-info">
-                    <div class="skeleton-title"></div>
-                    <div class="skeleton-text"></div>
-                </div>
-            </div>
-            `;
-        }
-        return `
-        <div class="section-header">
-            <h2 class="section-title">${title}</h2>
-        </div>
-        <div class="manga-grid">
-            ${skeletons}
-        </div>
-        `;
-    }
-
-    if (mangasFiltered.length === 0) {
-        return `
-        <div class="section-header">
-            <h2 class="section-title">${title}</h2>
-        </div>
-        <div class="empty-state">
-            <i class="fa-regular fa-folder-open"></i>
-            <h3>لا توجد نتائج مطابقة</h3>
-            <p>جرّب البحث بكلمة مفتاحية أخرى أو تغيير التصنيف.</p>
-        </div>
-        `;
-    }
-
-    let cardsHtml = '';
-    mangasFiltered.forEach(manga => {
-        const totalChaps = manga.chapters ? manga.chapters.length : 0;
-        const chapsLabel = totalChaps > 0 ? totalChaps + ' فصل' : 'قريباً';
-        const typeLabel = manga.type || 'منهوا';
-        const ongoing = manga.status === 'Ongoing' || manga.status === 'مستمرة' || manga.status === 'مستمر';
-        const statusText = ongoing ? 'مستمرة' : 'مكتملة';
-        const statusColor = ongoing ? '#ffb703' : '#00ff7f';
-        cardsHtml += `
-        <div class="manga-card" data-id="${manga.id}">
-            <div class="manga-card-cover">
-                <img src="${getDisplayCover(manga)}" alt="${manga.title}" loading="lazy">
-                <span class="card-badge">${manga.status}</span>
-                <span class="card-rating"><i class="fa-solid fa-star"></i> ${manga.rating}</span>
-            </div>
-            <div class="manga-card-info">
-                <h3 class="manga-card-title">${manga.title}</h3>
-                <div class="manga-card-chapter">
-                    <span>${typeLabel}</span>
-                    <span class="chap-num">${chapsLabel}</span>
-                </div>
-                <div style="display:flex;gap:8px;font-size:0.75rem;color:var(--text-dark);margin-top:4px;align-items:center;">
-                    <span style="color:${statusColor};">●</span>
-                    <span>${statusText}</span>
-                </div>
-            </div>
-        </div>
-        `;
-    });
-
-    return `
-    <div class="section-header">
-        <h2 class="section-title">${title}</h2>
-    </div>
-    <div class="manga-grid">
-        ${cardsHtml}
-    </div>
-    `;
-}
-
-// مكونات القائمة الجانبية (Sidebar)
-function UserProfileWidgetComponent() {
-    if (!state.sessionToken) return '';
-    const info = state.getUserLevelInfo();
-    const isAdmin = state.userRole === 'admin';
-    const rankClass = isAdmin ? 'rank-admin' : (info.level <= 30 ? 'rank-bronze' : info.level <= 60 ? 'rank-silver' : 'rank-gold');
-    return `
-    <div class="sidebar-card glam-card ${isAdmin ? 'admin-card' : ''}">
-        <div class="user-widget-profile">
-            <div class="user-widget-avatar ${rankClass}">${state.userProfile.username.charAt(0)}</div>
-            <div class="user-widget-info">
-                <h4>${state.userProfile.username}</h4>
-                <p class="${rankClass}">${isAdmin ? 'مدير المشروع 🌟' : info.rankTitle}</p>
-            </div>
-        </div>
-        <div class="gamification-panel">
-            <div class="level-badge ${rankClass}">${isAdmin ? 'مدير المشروع' : 'المستوى ' + info.level}</div>
-            <div class="level-progress-info">
-                <span>النقاط</span>
-                <span class="points-display">${isAdmin ? '∞' : info.points}</span>
-            </div>
-            <div class="progress-bar-glam">
-                <div class="progress-fill ${rankClass}" style="width: ${Math.min(info.levelProgress, 100)}%"></div>
-            </div>
-            <div class="level-progress-info" style="margin-top: 4px;">
-                <span style="font-size:0.7rem;color:var(--text-dark);">${isAdmin ? 'أنت مدير المشروع ✨' : info.pointsToNext + ' نقطة للمستوى التالي'}</span>
-            </div>
-        </div>
-    </div>
-    `;
-}
-
-function TrendingSidebarComponent() {
-    const trending = [...state.mangas].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 5);
+    const isListView = state.viewMode === 'list';
+    const s = state;
+    if (!s.limit) s.limit = 48;
     
-    let listHtml = '';
-    trending.forEach((manga, idx) => {
-        listHtml += `
-        <div class="trending-item" data-id="${manga.id}">
-            <div class="trending-rank">${idx + 1}</div>
-            <div class="trending-cover">
-                <img src="${getDisplayCover(manga)}" alt="${manga.title}">
-            </div>
-            <div class="trending-details">
-                <h4 class="trending-title">${manga.title}</h4>
-                <div class="trending-stats">
-                    <span style="margin-left: 10px;"><i class="fa-solid fa-eye"></i> ${manga.views || 0}</span>
-                    <span><i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</span>
-                </div>
-            </div>
+    // Pagination slicing
+    const total = mangasFiltered.length;
+    const paginated = mangasFiltered.slice(0, s.limit);
+
+    
+
+    if (!paginated || paginated.length === 0) {
+        return `
+        <div class="empty-state">
+            <i class="fa-regular fa-folder-open" style="font-size:3rem; margin-bottom:15px; color:var(--text-muted);"></i>
+            <h3>لا توجد نتائج مطابقة للبحث</h3>
         </div>
         `;
-    });
+    }
 
+    const gridClass = isListView ? 'mt-manga-list' : 'mt-manga-grid';
+    
     return `
-    <div class="sidebar-card">
-        <div class="sidebar-card-title">
-            <span class="title-text">الأكثر شعبية</span>
-            <i class="fa-solid fa-fire"></i>
-        </div>
-        <div class="trending-list">
-            ${listHtml}
-        </div>
+    <div class="${gridClass}">
+        ${paginated.map(m => MangaCardComponent(m)).join('')}
+    </div>
+    <div class="mangatime-pagination">
+        <button class="mangatime-page-btn" disabled><i class="fa-solid fa-chevron-right"></i> السابق</button>
+        <button class="mangatime-page-btn active" style="background:var(--primary-color);color:#fff;">1</button>
+        <button class="mangatime-page-btn" disabled>التالي <i class="fa-solid fa-chevron-left"></i></button>
     </div>
     `;
 }
 
-function GenresFilterComponent() {
+window.toggleFilter = function(type, value) {
+    const s = state;
+    if (type === 'genre') s.activeGenre = (s.activeGenre === value) ? '' : value;
+    else if (type === 'status') s.filterStatus = value;
+    else if (type === 'type') s.filterType = value;
+    else if (type === 'sort') s.filterSort = value;
+    else if (type === 'limit') s.limit = parseInt(value);
+    else if (type === 'search_type') {
+        s.searchType = value;
+        document.querySelectorAll('.mangatime-s-filter').forEach(el => el.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+    }
+    else if (type === 'tab') {
+        s.activeTab = value;
+        document.querySelectorAll('.mangatime-tab').forEach(el => el.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+        
+        // Hide/Show dropdowns based on tab
+        const dropdowns = document.querySelector('.mangatime-dropdowns-row');
+        if (dropdowns) {
+            dropdowns.style.display = value === 'users' ? 'none' : 'flex';
+        }
+    }
+    
+    updateGridOnly();
+};
+window.toggleViewMode = function(mode) {
+    state.viewMode = mode;
+    updateGridOnly();
+};
+window.handleSearchInput = function(e) {
+    state.searchQuery = e.target.value;
+    updateGridOnly();
+};
+window.handleNumberInput = function(type, value) {
+    state[type] = value;
+    updateGridOnly();
+};
+
+function AdvancedFiltersComponent() {
+    const s = state;
+    if (!s.limit) s.limit = 48;
+    if (!s.activeTab) s.activeTab = 'series';
+    if (!s.searchType) s.searchType = 'all';
+
     const allGenres = ['الكل'];
-    state.mangas.forEach(manga => {
-        manga.genres.forEach(g => {
-            if (!allGenres.includes(g)) allGenres.push(g);
-        });
-    });
+    if (s.mangas) s.mangas.forEach(m => { if (m.genres) m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }); });
 
-    let html = '<div class="genres-list" style="margin-bottom: 30px;">';
-    allGenres.forEach(genre => {
-        const isActive = state.activeGenre === genre;
-        html += `<span class="genre-tag ${isActive ? 'active' : ''}" style="${isActive ? 'background:var(--color-primary);color:#fff;' : ''}" data-genre="${genre}">${genre}</span>`;
-    });
-    html += '</div>';
-    return html;
+    const searchTypes = [
+        {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+        {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
+    ];
+
+    const searchTypeHtml = searchTypes.map(t => 
+        `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
+    ).join('');
+
+    return `
+    <div class="mangatime-browse-container">
+        
+        <div class="mangatime-hero-section">
+            <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+            <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+        </div>
+
+        <div class="mangatime-search-wrapper">
+            <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+            <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
+            <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
+        </div>
+
+        <div class="mangatime-search-filters">
+            <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
+            ${searchTypeHtml}
+        </div>
+
+        
+
+        <div class="mangatime-dropdowns-row">
+            <!-- التصنيف -->
+            <div class="glass-select-wrapper">
+                <i class="fa-solid fa-tags glass-icon"></i>
+                <select class="glass-select" onchange="toggleFilter('genre', this.value)">
+                    <option value="">كل التصنيفات</option>
+                    ${allGenres.map(g => `<option value="${g}" ${s.activeGenre===g?'selected':''}>${g}</option>`).join('')}
+                </select>
+            </div>
+
+            <!-- النوع -->
+            <div class="glass-select-wrapper">
+                <i class="fa-solid fa-book-open glass-icon"></i>
+                <select class="glass-select" onchange="toggleFilter('type', this.value)">
+                    <option value="الكل" ${s.filterType==='الكل'?'selected':''}>كل الأنواع</option>
+                    <option value="مانهوا كورية" ${s.filterType==='مانهوا كورية'?'selected':''}>مانهوا كورية</option>
+                    <option value="مانجا يابانية" ${s.filterType==='مانجا يابانية'?'selected':''}>مانجا يابانية</option>
+                    <option value="مانهوا صينية" ${s.filterType==='مانهوا صينية'?'selected':''}>مانهوا صينية</option>
+                    <option value="رواية" ${s.filterType==='رواية'?'selected':''}>رواية</option>
+                </select>
+            </div>
+
+            <!-- الحالة -->
+            <div class="glass-select-wrapper">
+                <i class="fa-solid fa-circle-check glass-icon"></i>
+                <select class="glass-select" onchange="toggleFilter('status', this.value)">
+                    <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                    <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                    <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                    <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                </select>
+            </div>
+
+            <!-- الترتيب -->
+            <div class="glass-select-wrapper">
+                <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
+                <select class="glass-select" onchange="toggleFilter('sort', this.value)">
+                    <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                    <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                    <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                    <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                    <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                    <option value="الأكثر فصولاً" ${s.filterSort==='الأكثر فصولاً'?'selected':''}>الأكثر فصولاً</option>
+                    <option value="الأقل فصولاً" ${s.filterSort==='الأقل فصولاً'?'selected':''}>الأقل فصولاً</option>
+                </select>
+            </div>
+
+            <!-- السنة -->
+            <div class="glass-input-group">
+                <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
+                <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                <span class="glass-separator">-</span>
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+            </div>
+
+            <!-- التقييم -->
+            <div class="glass-input-group">
+                <i class="fa-solid fa-star glass-icon" style="margin-left:5px;"></i>
+                <input type="number" class="glass-input" placeholder="من تقييم" value="${s.filterRatingMin||''}" step="0.1" oninput="handleNumberInput('filterRatingMin', this.value)">
+                <span class="glass-separator">-</span>
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterRatingMax||''}" step="0.1" oninput="handleNumberInput('filterRatingMax', this.value)">
+            </div>
+
+            <!-- الفصول -->
+            <div class="glass-input-group">
+                <i class="fa-solid fa-list-ol glass-icon" style="margin-left:5px;"></i>
+                <input type="number" class="glass-input" placeholder="من فصول" value="${s.filterChaptersMin||''}" oninput="handleNumberInput('filterChaptersMin', this.value)">
+                <span class="glass-separator">-</span>
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterChaptersMax||''}" oninput="handleNumberInput('filterChaptersMax', this.value)">
+            </div>
+
+            <!-- أدوات العرض والتقسيم -->
+            <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
+                <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
+                <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
+                    <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
+                        <option value="12" ${s.limit===12?'selected':''}>12</option>
+                        <option value="24" ${s.limit===24?'selected':''}>24</option>
+                        <option value="48" ${s.limit===48?'selected':''}>48</option>
+                    </select>
+                </div>
+                <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض رأسي" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+            </div>
+        </div>
+    </div>
+    `;
 }
-
 // صفحة التفاصيل الكاملة
 async function DetailViewComponent() {
     if (state.isLoading) {
@@ -1714,15 +2406,24 @@ async function DetailViewComponent() {
 
     let genresHtml = '';
     manga.genres.forEach(g => {
-        genresHtml += `<span class="genre-tag clickable-genre" style="cursor: pointer;" onclick="event.stopPropagation(); state.activeGenre='${g}'; navigate('home'); window.scrollTo(0, 0);">${g}</span>`;
+        const escapedG = g.replace(/'/g, "\\'");
+        genresHtml += `<span class="genre-tag clickable-genre" style="cursor: pointer;" onclick="event.stopPropagation(); state.activeGenre='${escapedG}'; navigate('home'); window.scrollTo(0, 0);">${g}</span>`;
     });
 
-    const searchQ = (state.chapterSearchQuery || '').trim().toLowerCase();
-    const filteredChapters = manga.chapters.filter(ch => {
+    const searchQ = (state.chapterSearchQuery || '').trim();
+    let filteredChapters = manga.chapters.filter(ch => {
         if (!searchQ) return true;
-        return ch.id.includes(searchQ) || ch.title.toLowerCase().includes(searchQ);
+        const qLower = searchQ.toLowerCase();
+        const idStr = String(ch.id).toLowerCase();
+        const titleStr = (ch.title || '').toLowerCase();
+        return idStr === qLower || idStr.replace(/[^0-9]/g, '') === qLower || titleStr === qLower || titleStr.includes(qLower);
     });
 
+    filteredChapters = [...filteredChapters].sort((a, b) => {
+        const na = parseFloat(String(a.id).replace(/[^0-9.]/g, '')) || 0;
+        const nb = parseFloat(String(b.id).replace(/[^0-9.]/g, '')) || 0;
+        return state.chapterSortOrder === 'oldest' ? na - nb : nb - na;
+    });
     let chaptersHtml = '';
     if (filteredChapters.length === 0) {
         chaptersHtml = `<p style="padding: 20px; color: var(--text-dark); text-align: center;">${searchQ ? 'لا توجد فصول تطابق البحث.' : 'لا تتوفر أي فصول حالياً لهذه المانجا.'}</p>`;
@@ -1949,6 +2650,10 @@ async function DetailViewComponent() {
                             <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
+                        <select id="chapter-sort-select" style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-main);padding:6px 12px;border-radius:8px;font-size:0.8rem;outline:none;cursor:pointer;">
+                            <option value="newest" ${state.chapterSortOrder === 'newest' ? 'selected' : ''}>الأحدث أولاً</option>
+                            <option value="oldest" ${state.chapterSortOrder === 'oldest' ? 'selected' : ''}>الأقدم أولاً</option>
+                        </select>
                         <span>إجمالي الفصول: ${manga.chapters.length}</span>
                     </div>
                     <div class="chapters-list">
@@ -1957,8 +2662,27 @@ async function DetailViewComponent() {
                 </div>
             </div>
         </div>
+        ${renderRelatedMangas(manga)}
     </div>
     `;
+}
+
+function renderRelatedMangas(manga) {
+    const related = getRelatedMangas(manga);
+    if (related.length === 0) return '';
+    return `
+    <div class="related-section">
+        <div class="section-header"><h2 class="section-title">قد يعجبك أيضاً <span>توصيات</span></h2></div>
+        <div class="related-grid">
+            ${related.map(m => `
+                <div class="related-card" onclick="navigate('detail','${m.id}')" role="button">
+                    <img src="${m.cover || DEFAULT_COVER_URL}" alt="${m.title}" loading="lazy">
+                    <div class="related-title">${m.title}</div>
+                    <div class="related-rating">${m.rating ? '⭐ '.repeat(Math.round(m.rating)) : ''}</div>
+                </div>
+            `).join('')}
+        </div>
+    </div>`;
 }
 
 // قارئ الفصول
@@ -1977,10 +2701,9 @@ async function ReaderViewComponent() {
     
     // زيادة المشاهدات محلياً
     manga.views = (manga.views || 0) + 1;
-    state.saveMangas();
     
     // نقاط القراءة
-    state.addPoints(10);
+    state.addPoints(3);
 
     // فحص ما إذا كان هذا الفصل محمل أوفلاين
     let pages = chapter.images;
@@ -2066,12 +2789,18 @@ async function ReaderViewComponent() {
                     const userDisplay = comm.email.split('@')[0];
                     const firstLetter = userDisplay.charAt(0).toUpperCase();
                     const dateStr = new Date(comm.created_at * 1000).toLocaleDateString('ar-EG');
+                    const badgeIcons = {
+                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="أول تعليق"></i>',
+                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="ثاني تعليق"></i>',
+                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="ثالث تعليق"></i>'
+                    };
+                    const badgeHtml = badgeIcons[comm.badge] ? `<span class="comment-badge">${badgeIcons[comm.badge]}</span>` : '';
                     commentsListHtml += `
                     <div class="comment-item">
                         <div class="comment-avatar">${firstLetter}</div>
                         <div class="comment-body">
                             <div class="comment-header">
-                                <span class="comment-username">${userDisplay}</span>
+                                <span class="comment-username">${userDisplay} ${badgeHtml}</span>
                                 <span class="comment-time">${dateStr}</span>
                             </div>
                             <p class="comment-text">${comm.comment_text}</p>
@@ -2130,7 +2859,7 @@ async function ReaderViewComponent() {
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
-                        <span>الفصل ${String(chapter.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}</span>
+                        <span>${chapter.title}</span>
                         <i class="fa-solid fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-content">
@@ -2140,17 +2869,14 @@ async function ReaderViewComponent() {
                         </div>
                         <div class="dropdown-items-list">
                             ${manga.chapters.map(ch => {
-                                let numClean = String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.');
-                                let subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : ch.title) : '';
-                                
-                                // Prevent duplication if subtitle is exactly "الفصل X" or "chapter X"
-                                if (subtitle.replace(/[^0-9.]/g, '') === numClean) {
+                                let subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : '') : '';
+                                let mainTitle = ch.title ? ch.title.split(':')[0].trim() : `الفصل ${String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}`;
+                                if (subtitle.replace(/[^0-9.]/g, '') === mainTitle.replace(/[^0-9.]/g, '')) {
                                     subtitle = '';
                                 }
-
                                 return `
                                     <div class="dropdown-item-opt ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'active' : ''}" data-value="${ch.id}">
-                                        <span class="opt-num">الفصل ${numClean}</span>
+                                        <span class="opt-num">${mainTitle}</span>
                                         ${subtitle ? `<span class="opt-title">${subtitle}</span>` : ''}
                                     </div>
                                 `;
@@ -2160,7 +2886,7 @@ async function ReaderViewComponent() {
                 </div>
 
                 <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
-                ${state.sessionUser && state.sessionUser.role === 'admin' ? `
+                ${state.userRole === 'admin' ? `
                 <button class="reader-btn translate-chapter-btn" title="ترجمة هذا الفصل" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
                     <i class="fa-solid fa-language"></i>
                 </button>` : ''}
@@ -2220,13 +2946,23 @@ async function ReaderViewComponent() {
                     <button class="setting-btn ${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
                 </div>
             </div>
+            <div class="setting-row">
+                <label>وضع القراءة</label>
+                <div class="setting-buttons">
+                    <button class="setting-btn" id="reader-fullscreen-btn"><i class="fa-solid fa-expand"></i> ملء الشاشة</button>
+                    <button class="setting-btn" id="reader-strip-toggle"><i class="fa-solid fa-align-center"></i> تمرير مستمر</button>
+                    <button class="setting-btn" id="reader-zoom-in" title="تكبير"><i class="fa-solid fa-plus"></i></button>
+                    <button class="setting-btn" id="reader-zoom-out" title="تصغير"><i class="fa-solid fa-minus"></i></button>
+                    <button class="setting-btn" id="reader-zoom-reset" title="إعادة الضبط"><i class="fa-solid fa-undo"></i></button>
+                </div>
+            </div>
         </div>
         
         <div class="main-content" style="max-width: 800px; margin: 0 auto; width: 100%;">
             <div class="comments-container" style="margin-bottom: 50px;">
                 <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (${chapterComments.length})</h3>
                 ${commentFormHtml}
-                <div class="comments-list">
+                <div class="comments-list" id="chapter-comments-list">
                     ${commentsListHtml}
                 </div>
             </div>
@@ -2237,6 +2973,9 @@ async function ReaderViewComponent() {
 
 // لوحة الإدارة
 function AdminPanelViewComponent() {
+    if (state.userRole !== 'admin') {
+        return '<p style="padding: 40px; text-align: center; color: var(--text-dark);">لا تملك صلاحية الوصول إلى لوحة الإدارة.</p>';
+    }
     if (!state.adminStats) {
         loadAdminStats();
     }
@@ -2304,9 +3043,9 @@ function AdminPanelViewComponent() {
         </div>
 
         <div class="admin-tabs">
-            <button class="admin-tab active" id="tab-add-manga">إضافة مانجا/منهوا جديدة</button>
             <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
             <button class="admin-tab" id="tab-edit-manga">تعديل مانجا/منهوا</button>
+            <button class="admin-tab active" id="tab-live-scraper"><i class="fa-solid fa-terminal"></i> سحب و مراقبة (Pro)</button>
             <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
             <button class="admin-tab" id="tab-site-settings">إعدادات الموقع</button>
             <button class="admin-tab" id="tab-alt-sources">مصادر بديلة</button>
@@ -2346,6 +3085,17 @@ function AdminPanelViewComponent() {
                         <label>القصة (الوصف)</label>
                         <textarea id="edit-manga-synopsis" rows="4" placeholder="وصف القصة"></textarea>
                     </div>
+
+
+                    <div class="admin-form-group">
+                        <label>نوع العمل (Type)</label>
+                        <select id="edit-manga-type">
+                            <option value="Manga">مانجا (Manga)</option>
+                            <option value="Manhwa">مانهوا كورية (Manhwa)</option>
+                            <option value="Manhua">مانهوا صينية (Manhua)</option>
+                            <option value="Comic">كوميك (Comic)</option>
+                        </select>
+                    </div>
                     <div class="admin-form-group">
                         <label>حالة العمل</label>
                         <select id="edit-manga-status">
@@ -2373,7 +3123,7 @@ function AdminPanelViewComponent() {
             <div id="alt-source-results" style="margin-top:20px;"></div>
         </div>
         
-        <div class="admin-form-panel" id="panel-add-manga">
+        <div class="admin-form-panel" id="panel-add-manga" style="display:none;">
             <form id="add-manga-form">
                 <div class="admin-form-group">
                     <label>عنوان المانجا الأصلي</label>
@@ -2436,6 +3186,36 @@ function AdminPanelViewComponent() {
                 </div>
                 <button type="submit" class="admin-submit-btn">حفظ ونشر الفصل الجديد</button>
             </form>
+        </div>
+
+        
+        <div class="admin-form-panel" id="panel-live-scraper" style="display:none; text-align: right;">
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px; margin-bottom:20px;">
+                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-robot"></i> المحدث التلقائي (Auto-Updater)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">يتحكم في تشغيل وإيقاف الروبوت الذي يبحث عن الفصول الجديدة للمانهوات الموجودة في الموقع بشكل تلقائي.</p>
+                
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <label class="switch">
+                        <input type="checkbox" id="auto-updater-toggle" onchange="toggleAutoUpdater()">
+                        <span class="slider round"></span>
+                    </label>
+                    <span id="auto-updater-status" style="font-weight:bold; color:#ff4444;">متوقف</span>
+                </div>
+            </div>
+
+            <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px;">
+                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-terminal"></i> السحب المباشر (Live Terminal)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">اسحب أي مانهوا يدوياً وراقب تقدم العمليات هنا في الوقت الفعلي.</p>
+                
+                <div style="display:flex; gap:10px; margin-bottom:20px;">
+                    <input type="text" id="live-scrape-url" placeholder="أدخل رابط المانهوا هنا..." style="flex:1; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; border-radius:5px; outline:none;">
+                    <button id="live-scrape-btn" class="primary-btn" onclick="startLiveScrape()" style="padding:10px 20px; border-radius:5px;"><i class="fa-solid fa-play"></i> ابدأ السحب</button>
+                </div>
+                
+                <div id="terminal-output" style="background:#0a0a0a; border:1px solid #333; border-radius:5px; padding:15px; height:350px; overflow-y:auto; color:#0f0; font-family:monospace; font-size:0.9rem; white-space:pre-wrap; direction:ltr; text-align:left;">
+                    <span style="color:#666;">$ Terminal ready. Waiting for command...</span>
+                </div>
+            </div>
         </div>
 
         <div class="admin-form-panel" id="panel-suggestions" style="display:none; text-align: right;">
@@ -2635,48 +3415,440 @@ function ResetPasswordViewComponent() {
     `;
 }
 
+// ==========================================
+// 4.4.7. المكافآت اليومية
+// ==========================================
+
+function DailyRewardModalComponent() {
+    if (!state.showDailyReward) return '';
+    const data = state.dailyRewardData;
+    if (!data) {
+        return `
+        <div class="reward-modal-overlay" id="reward-modal-overlay">
+            <div class="reward-modal-card">
+                <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
+                <div class="reward-header">
+                    <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
+                    <h2>المكافآت اليومية</h2>
+                    <p class="reward-streak-text">🔥 المكافآت اليومية غير متوفرة حالياً</p>
+                </div>
+                <p style="text-align:center;padding:20px;color:var(--text-muted);">هذه الميزة قيد الإعداد</p>
+            </div>
+        </div>`;
+    }
+    const rewards = data.rewards || [];
+    const currentDay = data.current_day || 1;
+    const streak = data.current_streak || 0;
+    const canClaim = data.can_claim;
+
+    return `
+    <div class="reward-modal-overlay" id="reward-modal-overlay">
+        <div class="reward-modal-card">
+            <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="reward-header">
+                <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
+                <h2>المكافآت اليومية</h2>
+                <p class="reward-streak-text">🔥 اليوم ${currentDay} من 7 — ${streak} يوم متتالٍ</p>
+            </div>
+            <div class="reward-cards-grid">
+                ${rewards.map(r => {
+                    const isPast = r.day < currentDay;
+                    const isCurrent = r.day === currentDay;
+                    const isFuture = r.day > currentDay;
+                    const isWeekBonus = r.day === 7;
+                    let cardClass = 'reward-card';
+                    if (isPast) cardClass += ' claimed';
+                    if (isCurrent) cardClass += ' current';
+                    if (isFuture) cardClass += ' locked';
+                    if (isWeekBonus) cardClass += ' week-bonus';
+                    return `
+                    <div class="${cardClass}">
+                        ${isWeekBonus ? '<span class="week-badge">مكافأة الأسبوع</span>' : ''}
+                        <div class="reward-card-day">اليوم ${r.day}</div>
+                        <div class="reward-card-points"><i class="fa-solid fa-star"></i> ${r.points}</div>
+                        <div class="reward-card-status">
+                            ${isPast ? '<i class="fa-solid fa-check"></i>' : isCurrent && canClaim ? '<i class="fa-solid fa-gift" style="color:var(--color-secondary);"></i>' : isCurrent ? '<i class="fa-solid fa-star" style="color:var(--color-primary);"></i>' : '<i class="fa-solid fa-lock"></i>'}
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+            ${canClaim ? '<button class="claim-reward-btn" id="claim-reward-btn"><i class="fa-solid fa-gift"></i> جمع المكافأة</button>' : '<p class="reward-claimed-msg">✅ تم جمع مكافأة اليوم، عد غداً ليوم جديد!</p>'}
+        </div>
+    </div>
+    `;
+}
+
+// ==========================================
+// 4.4.8. Confetti Effect
+// ==========================================
+
+function triggerConfetti() {
+    const colors = ['#ff007f', '#00f0ff', '#ffd700', '#8a2be2', '#ff6b35', '#00ff7f', '#ff4500'];
+    const container = document.body;
+    for (let i = 0; i < 80; i++) {
+        const el = document.createElement('div');
+        el.className = 'confetti-piece';
+        el.style.cssText = `
+            position: fixed;
+            z-index: 99999;
+            width: ${6 + Math.random() * 8}px;
+            height: ${6 + Math.random() * 8}px;
+            background: ${colors[Math.floor(Math.random() * colors.length)]};
+            left: ${Math.random() * 100}vw;
+            top: -10px;
+            border-radius: ${Math.random() > 0.5 ? '50%' : '2px'};
+            pointer-events: none;
+            opacity: ${0.7 + Math.random() * 0.3};
+            transform: rotate(${Math.random() * 360}deg);
+            animation: confettiFall ${2 + Math.random() * 2}s ease-out forwards;
+            animation-delay: ${Math.random() * 0.5}s;
+        `;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+    }
+}
+
 // تجميع وتصيير التطبيق بالكامل
+async function renderReaderContent() {
+    const root = document.getElementById('app-root');
+    if (!root) { renderApp(); return; }
+    const readerEl = root.querySelector('.reader-wrapper, main .reader-wrapper');
+    const readerHtml = await ReaderViewComponent();
+    if (readerEl) {
+        readerEl.outerHTML = readerHtml;
+    } else {
+        const mainEl = root.querySelector('main') || root;
+        mainEl.innerHTML = readerHtml;
+    }
+    attachEventListeners();
+    state.dailyRewardLoading = false;
+}
+
+function getFilteredMangas() {
+    const s = state;
+    let result = s.mangas;
+    if (s.searchQuery) {
+        result = result.filter(m => 
+            (m.title || '').toLowerCase().includes(s.searchQuery.toLowerCase()) ||
+            (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
+        );
+    }
+    if (s.activeGenre !== 'الكل') {
+        result = result.filter(m => m.genres.includes(s.activeGenre));
+    }
+    if (s.filterStatus !== 'الكل') {
+        result = result.filter(m => m.status === s.filterStatus);
+    }
+    if (s.filterType !== 'الكل') {
+        result = result.filter(m => (m.type || '') === s.filterType);
+    }
+    if (s.filterYearMin) {
+        const yearMin = parseFloat(s.filterYearMin);
+        if (!isNaN(yearMin)) result = result.filter(m => (m.year || 0) >= yearMin);
+    }
+    if (s.filterYearMax) {
+        const yearMax = parseFloat(s.filterYearMax);
+        if (!isNaN(yearMax)) result = result.filter(m => (m.year || 9999) <= yearMax);
+    }
+    if (s.filterRatingMin) {
+        const ratingMin = parseFloat(s.filterRatingMin);
+        if (!isNaN(ratingMin)) result = result.filter(m => (m.rating || 0) >= ratingMin);
+    }
+    if (s.filterRatingMax) {
+        const ratingMax = parseFloat(s.filterRatingMax);
+        if (!isNaN(ratingMax)) result = result.filter(m => (m.rating || 5) <= ratingMax);
+    }
+    if (s.filterChaptersMin) {
+        const chMin = parseInt(s.filterChaptersMin);
+        if (!isNaN(chMin)) result = result.filter(m => (m.chapters ? m.chapters.length : 0) >= chMin);
+    }
+    if (s.filterChaptersMax) {
+        const chMax = parseInt(s.filterChaptersMax);
+        if (!isNaN(chMax)) result = result.filter(m => (m.chapters ? m.chapters.length : 0) <= chMax);
+    }
+    if (s.filterSort === 'الأقدم') {
+        result = [...result].reverse();
+    } else if (s.filterSort === 'التقييم') {
+        result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (s.filterSort === 'عدد الفصول') {
+        result = [...result].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+    }
+    if (s.filterTime === 'today') {
+        result = result.filter(m => m.lastUpdated && Date.now() - new Date(m.lastUpdated).getTime() < 86400000);
+    } else if (s.filterTime === 'week') {
+        result = result.filter(m => m.lastUpdated && Date.now() - new Date(m.lastUpdated).getTime() < 604800000);
+    } else if (s.filterTime === 'month') {
+        result = result.filter(m => m.lastUpdated && Date.now() - new Date(m.lastUpdated).getTime() < 2592000000);
+    } else if (s.filterTime === 'year') {
+        result = result.filter(m => m.lastUpdated && Date.now() - new Date(m.lastUpdated).getTime() < 31536000000);
+    }
+    return result;
+}
+
+function updateGridOnly() {
+    if (state.activeTab === 'users') {
+        const usersContainer = document.getElementById('users-grid-container');
+        if (!usersContainer) { renderApp(); return; }
+        
+        let filteredUsers = state.browseUsers || [];
+        if (state.searchQuery) {
+            const q = state.searchQuery.toLowerCase();
+            filteredUsers = filteredUsers.filter(u => (u.username || '').toLowerCase().includes(q));
+        }
+
+        const totalUsers = filteredUsers.length;
+        const usersCards = filteredUsers.map(u => `
+            <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+                <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+                <div>
+                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
+                </div>
+                <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
+                    ${u.points || 0} XP
+                </div>
+            </div>
+        `).join('');
+
+        usersContainer.innerHTML = `
+            <div class="mangatime-toolbar" style="margin-bottom:20px;">
+                <div class="mangatime-toolbar-left">${totalUsers} مستخدم</div>
+            </div>
+            ${filteredUsers.length === 0 ? '<div class="empty-state"><h3>لا يوجد مستخدمين</h3></div>' : `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">${usersCards}</div>`}
+        `;
+        return;
+    }
+
+    const gridContainer = document.getElementById('manga-grid-container');
+    if (!gridContainer) { renderApp(); return; }
+
+    const s = state;
+    let filtered = [...s.mangas];
+
+    if (s.activeGenre && s.activeGenre !== 'الكل') {
+        filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
+    }
+    if (s.filterStatus && s.filterStatus !== 'الكل') {
+        filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+    }
+    if (s.filterType && s.filterType !== 'الكل') {
+        filtered = filtered.filter(m => m.type === s.filterType);
+    }
+    if (s.filterYearMin) {
+        filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+    }
+    if (s.filterYearMax) {
+        filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+    }
+    if (s.filterRatingMin) {
+        filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+    }
+    if (s.filterRatingMax) {
+        filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+    }
+    if (s.filterChaptersMin) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+    }
+    if (s.filterChaptersMax) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+    }
+
+    if (s.searchQuery) {
+        const q = s.searchQuery.toLowerCase();
+        filtered = filtered.filter(m => {
+            const inTitle = (m.title && m.title.toLowerCase().includes(q)) || (m.alternative && m.alternative.toLowerCase().includes(q));
+            const inAuthor = m.author && m.author.toLowerCase().includes(q);
+            const inTags = m.genres && m.genres.some(g => g.toLowerCase().includes(q));
+            const inType = m.type && m.type.toLowerCase().includes(q);
+            const inDesc = m.description && m.description.toLowerCase().includes(q);
+            
+            if (s.searchType === 'title') return inTitle;
+            if (s.searchType === 'author') return inAuthor;
+            if (s.searchType === 'tags') return inTags || inType;
+            if (s.searchType === 'desc') return inDesc;
+            
+            return inTitle || inAuthor || inTags || inType || inDesc;
+        });
+    }
+
+    if (s.filterSort === 'الأحدث' || !s.filterSort) {
+        filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (s.filterSort === 'أحدث التحديثات') {
+        filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+    } else if (s.filterSort === 'أ-ي') {
+        filtered.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
+    } else if (s.filterSort === 'الأعلى تقييماً') {
+        filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
+    } else if (s.filterSort === 'الأكثر فصولاً') {
+        filtered.sort((a,b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+    } else if (s.filterSort === 'الأقل فصولاً') {
+        filtered.sort((a,b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
+    } else if (s.filterSort === 'الأكثر شعبية') {
+        filtered.sort((a,b) => (b.views||0) - (a.views||0));
+    }
+
+    gridContainer.innerHTML = MangaGridComponent("تصفح المانهوا", filtered);
+}
+
 async function renderApp() {
+    try {
     const root = document.getElementById('app');
     
     const loader = document.getElementById('initial-loader');
     if (loader) loader.remove();
 
     // 1. تصفية المانجا
-    let filteredMangas = state.mangas;
-    if (state.searchQuery) {
+    let filteredMangas = getFilteredMangas();
+    const s = state;
+    if (s.searchQuery) {
         filteredMangas = filteredMangas.filter(m => 
-            m.title.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-            m.alternative.toLowerCase().includes(state.searchQuery.toLowerCase())
+            (m.title || '').toLowerCase().includes(s.searchQuery.toLowerCase()) ||
+            (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
         );
     }
-    if (state.activeGenre !== 'الكل' && state.currentView === 'home') {
-        filteredMangas = filteredMangas.filter(m => m.genres.includes(state.activeGenre));
+    if (s.activeGenre !== 'الكل' && s.currentView === 'home') {
+        filteredMangas = filteredMangas.filter(m => m.genres && m.genres.includes(s.activeGenre));
+    }
+    if (s.currentView === 'home') {
+        if (s.filterStatus !== 'الكل') {
+            filteredMangas = filteredMangas.filter(m => m.status === s.filterStatus);
+        }
+        if (s.filterType !== 'الكل') {
+            filteredMangas = filteredMangas.filter(m => (m.type || '') === s.filterType);
+        }
+        if (s.filterYearMin) {
+            const yearMin = parseFloat(s.filterYearMin);
+            if (!isNaN(yearMin)) filteredMangas = filteredMangas.filter(m => (m.year || 0) >= yearMin);
+        }
+        if (s.filterYearMax) {
+            const yearMax = parseFloat(s.filterYearMax);
+            if (!isNaN(yearMax)) filteredMangas = filteredMangas.filter(m => (m.year || 9999) <= yearMax);
+        }
+        if (s.filterRatingMin) {
+            const ratingMin = parseFloat(s.filterRatingMin);
+            if (!isNaN(ratingMin)) filteredMangas = filteredMangas.filter(m => (m.rating || 0) >= ratingMin);
+        }
+        if (s.filterRatingMax) {
+            const ratingMax = parseFloat(s.filterRatingMax);
+            if (!isNaN(ratingMax)) filteredMangas = filteredMangas.filter(m => (m.rating || 5) <= ratingMax);
+        }
+        if (s.filterChaptersMin) {
+            const chMin = parseInt(s.filterChaptersMin);
+            if (!isNaN(chMin)) filteredMangas = filteredMangas.filter(m => (m.chapters ? m.chapters.length : 0) >= chMin);
+        }
+        if (s.filterChaptersMax) {
+            const chMax = parseInt(s.filterChaptersMax);
+            if (!isNaN(chMax)) filteredMangas = filteredMangas.filter(m => (m.chapters ? m.chapters.length : 0) <= chMax);
+        }
+        if (s.filterSort === 'الأقدم') {
+            filteredMangas = [...filteredMangas].reverse();
+        } else if (s.filterSort === 'التقييم') {
+            filteredMangas = [...filteredMangas].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (s.filterSort === 'عدد الفصول') {
+            filteredMangas = [...filteredMangas].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+        }
     }
 
     // 2. تجميع محتوى الواجهة المعنية
     let viewHtml = '';
     
-    if (state.currentView === 'home') {
-        const mainContentHtml = `
-            ${HeroSliderComponent()}
-            ${ReadingHistoryComponent()}
-            ${GenresFilterComponent()}
-            ${MangaGridComponent("تحديثات المانجا اليومية", filteredMangas)}
-        `;
-        
-        const sidebarHtml = `
-            ${UserProfileWidgetComponent()}
-            ${TrendingSidebarComponent()}
-        `;
+        if (state.currentView === 'home') {
+            const s = state;
+            const searchTypes = [
+                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+                {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
+            ];
+            const searchTypeHtml = searchTypes.map(t => 
+                `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
+            ).join('');
 
-        viewHtml = `
-        <div class="homepage-layout">
-            <div class="homepage-main">${mainContentHtml}</div>
-            <aside class="homepage-sidebar">${sidebarHtml}</aside>
-        </div>
-        `;
+            const allGenres = ['الكل'];
+            if (s.mangas) s.mangas.forEach(m => { if (m.genres) m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }); });
+
+            const contentHtml = await window.generateHomeGridHtml();
+
+            viewHtml = `
+            <div class="mangatime-browse-container">
+                <div class="mangatime-hero-section">
+                    <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+                    <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+                </div>
+                <div class="mangatime-search-wrapper">
+                    <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+                    <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
+                    <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
+                </div>
+                <div class="mangatime-search-filters">
+                    <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
+                    ${searchTypeHtml}
+                </div>
+                <div class="mangatime-dropdowns-row" style="display:${s.searchType==='username'?'none':'flex'}">
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-tags glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('genre', this.value)">
+                            ${allGenres.map(g => `<option value="${g}" ${s.activeGenre===g?'selected':''}>${g}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-book-open glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('type', this.value)">
+                            <option value="الكل" ${s.filterType==='الكل'?'selected':''}>كل الأنواع</option>
+                            <option value="مانهوا كورية" ${s.filterType==='مانهوا كورية'?'selected':''}>مانهوا كورية</option>
+                            <option value="مانجا يابانية" ${s.filterType==='مانجا يابانية'?'selected':''}>مانجا يابانية</option>
+                            <option value="مانها صينية" ${s.filterType==='مانها صينية'?'selected':''}>مانها صينية</option>
+                            <option value="كوميك" ${s.filterType==='كوميك'?'selected':''}>كوميك</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-circle-check glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('status', this.value)">
+                            <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                            <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                            <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                            <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('sort', this.value)">
+                            <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                            <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                            <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                            <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                            <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                            <option value="عدد الفصول" ${s.filterSort==='عدد الفصول'?'selected':''}>عدد الفصول</option>
+                        </select>
+                    </div>
+                    <div class="glass-input-group">
+                        <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
+                        <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                        <span class="glass-separator">-</span>
+                        <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+                    </div>
+                    <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
+                        <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
+                            <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
+                                <option value="12" ${s.limit===12?'selected':''}>12</option>
+                                <option value="24" ${s.limit===24?'selected':''}>24</option>
+                                <option value="48" ${s.limit===48?'selected':''}>48</option>
+                            </select>
+                        </div>
+                        <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                        <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض قائمة" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                ${contentHtml}
+            </div>
+            `;
         startSliderTimer();
+    } else if (state.currentView === 'profile') {
+        viewHtml = await ProfileViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'settings') {
+        viewHtml = SettingsViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
     } else if (state.currentView === 'detail') {
         viewHtml = await DetailViewComponent();
         if (sliderInterval) clearInterval(sliderInterval);
@@ -2695,34 +3867,810 @@ async function renderApp() {
     } else if (state.currentView === 'history') {
         viewHtml = HistoryViewComponent();
         if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'profile') {
+        viewHtml = await ProfileViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'leaderboard') {
+        viewHtml = await LeaderboardViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
     } else if (state.currentView === 'reset-password') {
         viewHtml = ResetPasswordViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'suggestions') {
+        root.innerHTML = `<div class="page-fade-enter">${SuggestionsViewComponent()}</div>`;
+    } else if (state.currentView === 'announcements') {
+        viewHtml = await AnnouncementsViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'store') {
+        viewHtml = await StoreViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'chat') {
+        viewHtml = ChatViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'search') {
+        viewHtml = SearchViewComponent();
         if (sliderInterval) clearInterval(sliderInterval);
     }
 
     // 3. بناء وتصيير الهيكل الأساسي للواجهة
-    if (state.currentView === 'reader') {
-        root.innerHTML = `<div id="app-root">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()}</div>`;
-        
-        if (state.readerSettings.mode !== 'horizontal') {
-            initLazyLoading();
-            initProgressTracker();
+    const isReader = state.currentView === 'reader';
+    let appRoot = document.getElementById('app-root');
+    let mainContent = document.getElementById('main-content');
+    const currentShellIsReader = appRoot && appRoot.getAttribute('data-shell') === 'reader';
+
+    if (!appRoot || (isReader !== currentShellIsReader)) {
+        if (isReader) {
+            root.innerHTML = `<div id="app-root" data-shell="reader">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()} ${DailyRewardModalComponent()}</div>`;
+        } else {
+            root.innerHTML = `
+            <div id="app-root" data-shell="main">
+                ${HeaderComponent()}
+                <main id="main-content" class="main-content page-fade-in">${viewHtml}</main>
+                ${BottomNavComponent()}
+                ${AuthModalComponent()}
+                ${SuggestionsModalComponent()}
+                ${SettingsModalComponent()}
+                ${DailyRewardModalComponent()}
+            </div>
+            `;
         }
     } else {
-        root.innerHTML = `
-        <div id="app-root">
-            ${HeaderComponent()}
-            <main class="main-content page-fade-in">
-                ${viewHtml}
-            </main>
-            ${AuthModalComponent()}
-            ${SuggestionsModalComponent()}
-            ${SettingsModalComponent()}
-        </div>
-        `;
+        if (isReader) {
+            appRoot.innerHTML = `${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()} ${DailyRewardModalComponent()}`;
+        } else {
+            if (mainContent) {
+                mainContent.innerHTML = viewHtml;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                updateBottomNavActiveState();
+                
+                // Update header active state
+                const headerNavLinks = document.querySelectorAll('.header-nav a');
+                headerNavLinks.forEach(link => {
+                    link.classList.remove('active');
+                    const onclick = link.getAttribute('onclick') || '';
+                    if (onclick.includes(`navigateView('${state.currentView}')`)) {
+                        link.classList.add('active');
+                    } else if (state.currentView === 'bookmarks' && onclick.includes('bookmarks')) {
+                        link.classList.add('active');
+                    }
+                });
+            }
+        }
     }
 
+    if (state.currentView === 'reader' && state.readerSettings.mode !== 'horizontal') {
+        initLazyLoading();
+        initProgressTracker();
+    }
+
+    initScrollToTop();
+    initLazyImages();
     attachEventListeners();
+    } catch (err) {
+        console.error(err);
+        document.body.innerHTML = `<div style="background:#fff; color:#f00; padding:20px; font-family:monospace; direction:ltr; text-align:left; font-size:16px;"><h1>Fatal Error in renderApp</h1><pre>${err.message}\n${err.stack}</pre></div>`;
+    }
+}
+
+function BottomNavComponent() {
+    const s = state.currentView;
+    return `
+    <nav class="bottom-nav">
+        <a href="#" class="bottom-nav-item ${s==='home'?'active':''}" onclick="window.navigateView('home')">
+            <i class="fa-solid fa-house"></i>
+            <span>الرئيسية</span>
+        </a>
+        <a href="#" class="bottom-nav-item ${s==='search'?'active':''}" onclick="window.navigateView('search')">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <span>بحث</span>
+        </a>
+        <a href="#" class="bottom-nav-item ${s==='bookmarks'?'active':''}" onclick="window.navigateView('bookmarks')">
+            <i class="fa-solid fa-bookmark"></i>
+            <span>مكتبتي</span>
+        </a>
+        <a href="#" class="bottom-nav-item ${s==='profile'?'active':''}" onclick="if(state.sessionToken){ window.navigateProfile(state.sessionUsername); } else { window.toggleModal('auth-modal'); }">
+            <i class="fa-solid fa-user"></i>
+            <span>حسابي</span>
+        </a>
+    </nav>
+    `;
+}
+
+function updateBottomNavActiveState() {
+    const s = state.currentView;
+    const items = document.querySelectorAll('.bottom-nav-item');
+    items.forEach(item => {
+        item.classList.remove('active');
+        const onclick = item.getAttribute('onclick') || '';
+        if (s === 'home' && onclick.includes('home')) item.classList.add('active');
+        if (s === 'search' && onclick.includes('search')) item.classList.add('active');
+        if (s === 'bookmarks' && onclick.includes('bookmarks')) item.classList.add('active');
+        if (s === 'profile' && onclick.includes('profile')) item.classList.add('active');
+    });
+}
+
+
+// ==========================================
+// 4.4.5. معاينة ملف المستخدم
+// ==========================================
+
+async function ProfileViewComponent() {
+    const username = state.profileUsername;
+    if (!username) return '<div class="empty-state"><p>لم يتم تحديد مستخدم</p></div>';
+    try {
+        const res = await fetch('/api/profile/' + encodeURIComponent(username));
+        if (!res.ok) return '<div class="empty-state"><p>المستخدم غير موجود</p></div>';
+        const profile = await res.json();
+        
+        // Fetch activity, reviews, lists in parallel
+        const [activityRes, libraryRes, reviewsRes, listsRes] = await Promise.all([
+            fetch('/api/profile/' + encodeURIComponent(username) + '/activity'),
+            state.sessionToken ? fetch('/api/profile/' + encodeURIComponent(username) + '/library') : Promise.resolve({json: () => []}),
+            fetch('/api/profile/' + encodeURIComponent(username) + '/reviews'),
+            fetch('/api/profile/' + encodeURIComponent(username) + '/lists')
+        ]);
+        const activities = await activityRes.json();
+        const library = state.sessionToken ? await libraryRes.json() : [];
+        const reviews = await reviewsRes.json();
+        const lists = await listsRes.json();
+        
+        const rankName = profile.rank;
+        const isOwner = profile.is_owner;
+        const userHandle = getUserHandle(profile.email);
+        const userInitial = getUserInitial(profile.email);
+        const rankClass = profile.level <= 5 ? 'rank-starter' : profile.level <= 15 ? 'rank-reader' : profile.level <= 30 ? 'rank-bronze' : profile.level <= 50 ? 'rank-silver' : profile.level <= 70 ? 'rank-gold' : profile.level <= 99 ? 'rank-platinum' : profile.level <= 149 ? 'rank-emerald' : profile.level <= 199 ? 'rank-diamond' : profile.level <= 299 ? 'rank-master' : 'rank-admin';
+        
+        const xpPercent = profile.xp_for_next > 0 ? Math.min(100, Math.round(((profile.points - profile.xp_for_current) / (profile.xp_for_next - profile.xp_for_current)) * 100)) : 0;
+        
+        let followBtnHtml = '';
+        if (state.sessionToken && !isOwner) {
+            followBtnHtml = `<button class="follow-btn ${profile.is_following ? 'following' : ''}" id="profile-follow-btn" data-username="${username}">
+                <i class="fa-solid ${profile.is_following ? 'fa-user-check' : 'fa-user-plus'}"></i>
+                ${profile.is_following ? 'متابَع' : 'متابعة'}
+            </button>`;
+        }
+        
+        const initials = getUserInitial(profile.email);
+        
+        return `
+        <div class="profile-page">
+            <div class="profile-header-card">
+                <div class="profile-cover"></div>
+                <div class="profile-info-row">
+                    <div class="profile-avatar-wrapper ${rankClass}">
+                        <span class="profile-avatar-text">${initials}</span>
+                    </div>
+                    <div class="profile-meta">
+                        <h1 class="profile-username">${profile.username}</h1>
+                        <div class="profile-rank-badge ${rankClass}"><i class="fa-solid fa-crown"></i> ${rankName}</div>
+                        ${profile.bio ? `<p class="profile-bio">${profile.bio}</p>` : ''}
+                    </div>
+                    <div class="profile-actions">
+                        ${followBtnHtml}
+                    </div>
+                </div>
+                <div class="profile-stats-row">
+                    <div class="profile-stat"><span class="stat-value">${profile.points.toLocaleString()}</span><span class="stat-label">نقاط</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.level}</span><span class="stat-label">المستوى</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.chapters_read}</span><span class="stat-label">فصل مقروء</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.followers}</span><span class="stat-label">متابعون</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.following}</span><span class="stat-label">يتابع</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.streak_days || 0}</span><span class="stat-label">streak 🔥</span></div>
+                    ${profile.created_at ? `<div class="profile-stat"><span class="stat-value">${new Date(profile.created_at).toLocaleDateString('ar-EG')}</span><span class="stat-label">تاريخ الانضمام</span></div>` : ''}
+                    ${profile.comments_count !== undefined ? `<div class="profile-stat"><span class="stat-value">${profile.comments_count}</span><span class="stat-label">تعليقات</span></div>` : ''}
+                </div>
+                <div class="profile-xp-bar-container">
+                    <div class="profile-xp-bar-fill" style="width:${xpPercent}%"></div>
+                    <span class="profile-xp-text">المستوى ${profile.level} — ${profile.points} XP</span>
+                </div>
+            </div>
+
+            <div class="reading-stats-section" style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;padding:16px;background:var(--bg-surface);border-radius:12px;border:1px solid var(--border-color);">
+                <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
+                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.chapters_read || 0}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">إجمالي الفصول</div>
+                </div>
+                <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
+                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.avg_rating ? profile.avg_rating.toFixed(1) : '—'}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">متوسط التقييم</div>
+                </div>
+                <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
+                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.unique_manga || 0}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">مانجا مختلفة</div>
+                </div>
+                <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
+                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.weekly_pace || 0}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">فصل/أسبوع</div>
+                </div>
+            </div>
+
+            <div class="profile-tabs">
+                <button class="profile-tab active" data-tab="activity">النشاط</button>
+                <button class="profile-tab" data-tab="library">المكتبة</button>
+                <button class="profile-tab" data-tab="reviews">التقييمات (${reviews.length})</button>
+                <button class="profile-tab" data-tab="lists">القوائم (${lists.length})</button>
+            </div>
+
+            <div class="profile-tab-content active" id="profile-tab-activity">
+                ${activities.length === 0 ? '<div class="empty-state"><p>لا يوجد نشاط بعد</p></div>' : activities.map(a => `
+                    <div class="activity-item" data-manga="${a.manga_id}">
+                        <img src="${a.cover || DEFAULT_COVER_URL}" class="activity-cover">
+                        <div class="activity-info">
+                            <strong>${a.title}</strong>
+                            <span>الفصل ${a.chapter_id}</span>
+                            <small>${timeAgo(a.time)}</small>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="profile-tab-content" id="profile-tab-library">
+                ${library.length === 0 ? '<div class="empty-state"><p>لا توجد مانجا في المكتبة</p></div>' : `<div class="profile-library-grid">${library.map(m => `
+                    <div class="library-card" data-manga="${m.manga_id}">
+                        <img src="${m.cover || DEFAULT_COVER_URL}" class="library-card-cover">
+                        <span class="library-card-title">${m.title}</span>
+                    </div>
+                `).join('')}</div>`}
+            </div>
+
+            <div class="profile-tab-content" id="profile-tab-reviews">
+                ${reviews.length === 0 ? '<div class="empty-state"><p>لا توجد تقييمات بعد</p></div>' : reviews.map(r => `
+                    <div class="review-card" data-manga="${r.manga_id}">
+                        <img src="${r.cover || DEFAULT_COVER_URL}" class="review-cover">
+                        <div class="review-body">
+                            <strong>${r.title}</strong>
+                            <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
+                            ${r.review ? `<p class="review-text">${r.review}</p>` : ''}
+                            <small>${timeAgo(r.time)}</small>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+
+            <div class="profile-tab-content" id="profile-tab-lists">
+                ${lists.length === 0 ? '<div class="empty-state"><p>لا توجد قوائم بعد</p></div>' : lists.map(l => `
+                    <div class="list-card" data-list="${l.id}">
+                        <div class="list-card-header">
+                            <strong>${l.name}</strong>
+                            <span class="list-count">${l.count} مانجا</span>
+                        </div>
+                        ${l.description ? `<p class="list-desc">${l.description}</p>` : ''}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+        `;
+    } catch (e) {
+        console.error('Profile error:', e);
+        return '<div class="empty-state"><p>حدث خطأ في تحميل الملف الشخصي</p></div>';
+    }
+}
+
+// ==========================================
+// 4.4.6. صفحة الإعلانات
+// ==========================================
+
+async function AnnouncementsViewComponent() {
+    try {
+        const res = await fetch('/api/announcements');
+        if (!res.ok) return '<div class="empty-state"><p>لا توجد إعلانات حالياً</p></div>';
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data.announcements || []);
+        if (list.length === 0) return '<div class="empty-state"><p>لا توجد إعلانات حالياً</p></div>';
+        const items = list.map(a => {
+            const date = a.created_at ? new Date(a.created_at).toLocaleDateString('ar-EG') : '';
+            return `
+            <div class="announcement-card" style="background:var(--bg-surface);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <h3 style="margin:0;font-size:1.1rem;">${a.title || 'إعلان'}</h3>
+                    ${date ? `<small style="color:var(--text-muted);">${date}</small>` : ''}
+                </div>
+                <p style="margin:0;color:var(--text-dark);line-height:1.6;">${a.content || a.body || ''}</p>
+            </div>`;
+        }).join('');
+        return `
+        <div style="max-width:800px;margin:0 auto;padding:24px;">
+            <div class="section-header"><h2 class="section-title">الإعلانات <span>والتحديثات</span></h2></div>
+            ${items}
+        </div>`;
+    } catch (e) {
+        console.error('Announcements error:', e);
+        return '<div class="empty-state"><p>تعذر تحميل الإعلانات</p></div>';
+    }
+}
+
+// ==========================================
+// 4.4.7. صفحة المتجر
+// ==========================================
+
+async function StoreViewComponent() {
+    try {
+        const res = await fetch('/api/store/items');
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.items || []);
+        if (items.length === 0) return '<div class="empty-state"><p>المتجر قيد الإعداد، عد لاحقاً!</p></div>';
+        const s = state;
+        return `
+        <div style="max-width:1000px;margin:0 auto;padding:24px;">
+            <div class="section-header"><h2 class="section-title">المتجر <span>استبدل نقاطك</span></h2></div>
+            <div class="manga-grid">
+                ${items.map(item => {
+                    const canBuy = (s.userProfile.points || 0) >= item.cost;
+                    return `
+                    <div class="store-item" data-id="${item.id}" style="background:var(--bg-surface);border-radius:16px;overflow:hidden;border:1px solid var(--border-color);transition:var(--transition-fast);">
+                        <div style="padding:24px;text-align:center;">
+                            <div style="font-size:3rem;margin-bottom:12px;">${item.icon || '🎁'}</div>
+                            <h3 style="margin:0 0 8px;font-size:1rem;">${item.name}</h3>
+                            <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px;">${item.description || ''}</p>
+                            <div style="font-size:1.1rem;font-weight:700;color:var(--color-secondary);margin-bottom:12px;">
+                                <i class="fa-solid fa-star"></i> ${item.cost}
+                            </div>
+                            <button class="store-buy-btn" data-id="${item.id}" ${canBuy ? '' : 'disabled'} style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:700;cursor:${canBuy ? 'pointer' : 'not-allowed'};background:${canBuy ? 'var(--color-primary)' : 'var(--border-color)'};color:#fff;">
+                                ${canBuy ? 'شراء' : 'نقاط غير كافية'}
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        </div>`;
+    } catch (e) {
+        console.error('Store error:', e);
+        return '<div class="empty-state"><p>المتجر غير متاح حالياً</p></div>';
+    }
+}
+
+// ==========================================
+// 4.4.8. الشات العام (واجهة فقط)
+// ==========================================
+
+function ChatViewComponent() {
+    const demoMsgs = [
+        { user: 'Kairo', text: 'مرحباً بالجميع في الشات! 🙌', time: '02:30', mine: false },
+        { user: 'ReadMaster', text: 'هل هناك مانجا جديدة اليوم؟', time: '02:31', mine: false },
+        { user: 'أنت', text: 'أهلاً! نعم فيه إصدارات جديدة', time: '02:32', mine: true },
+    ];
+    const msgsHtml = demoMsgs.map(m => `
+        <div class="chat-msg ${m.mine ? 'mine' : 'other'}">
+            ${!m.mine ? `<div class="chat-user">${m.user}</div>` : ''}
+            <div>${m.text}</div>
+            <div class="chat-time">${m.time}</div>
+        </div>
+    `).join('');
+    const isLoggedIn = !!state.sessionToken;
+    return `
+    <div style="max-width:700px;margin:0 auto;padding:24px;">
+        <div class="section-header"><h2 class="section-title">الشات العام <span>تواصل مع المجتمع</span></h2></div>
+        <div class="chat-container">
+            <div class="chat-messages" id="chat-messages">
+                ${msgsHtml}
+                ${!isLoggedIn ? '<div class="empty-state" style="margin:auto;"><p>سجّل الدخول للمشاركة في الشات</p></div>' : ''}
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="${isLoggedIn ? 'اكتب رسالتك...' : 'سجّل الدخول أولاً'}" ${!isLoggedIn ? 'disabled' : ''}>
+                <button id="chat-send-btn" ${!isLoggedIn ? 'disabled style="opacity:0.5"' : ''}><i class="fa-solid fa-paper-plane"></i> إرسال</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+// ==========================================
+// 4.4.9. صفحة البحث المتقدم
+// ==========================================
+
+function getLastChapterNum(m) {
+    if (m.chapters && m.chapters.length > 0) {
+        const last = m.chapters[m.chapters.length - 1];
+        if (last && last.number != null) return last.number;
+    }
+    return null;
+}
+
+function getTypeLabel(m) {
+    const t = (m.type || '').trim();
+    if (!t) return '';
+    const labels = { 'manga': 'مانجا', 'manhwa': 'مانهوا', 'manhua': 'مانها', 'مانجا': 'مانجا', 'مانهوا': 'مانهوا', 'مانها': 'مانها' };
+    return labels[t.toLowerCase()] || t;
+}
+
+function getStatusLabel(s) {
+    const labels = { 'ongoing': 'مستمرة', 'completed': 'مكتملة', 'hiatus': 'متوقفة', 'cancelled': 'ملغية', 'مستمرة': 'مستمرة', 'مكتملة': 'مكتملة', 'متوقفة': 'متوقفة' };
+    return labels[s] || s;
+}
+
+function SearchViewComponent() {
+    const query = (state.searchQuery || '').trim();
+    const viewMode = state.searchViewMode || 'grid';
+    const perPage = 30;
+    const page = state.searchPage || 1;
+    const scope = state.searchScope || 'الكل';
+    const sortBy = state.filterSort || 'الأكثر شعبية';
+    const showFilters = state.browseShowFilters;
+    const filterStatus = state.filterStatus || 'الكل';
+    const filterType = state.filterType || 'الكل';
+    const filterYearMin = state.filterYearMin || '';
+    const filterYearMax = state.filterYearMax || '';
+    const filterRatingMin = state.filterRatingMin || '';
+    const filterRatingMax = state.filterRatingMax || '';
+    const filterChaptersMin = state.filterChaptersMin || '';
+    const filterChaptersMax = state.filterChaptersMax || '';
+
+    let results = state.mangas ? [...state.mangas] : [];
+
+    if (query) {
+        const q = query.toLowerCase();
+        if (scope === 'العنوان') {
+            results = results.filter(m => m.title.toLowerCase().includes(q));
+        } else if (scope === 'المؤلف') {
+            results = results.filter(m => (m.author || '').toLowerCase().includes(q));
+        } else if (scope === 'الوسوم') {
+            results = results.filter(m => (m.genres || []).some(g => g.toLowerCase().includes(q)));
+        } else if (scope === 'الوصف') {
+            results = results.filter(m => (m.synopsis || '').toLowerCase().includes(q));
+        } else {
+            results = results.filter(m =>
+                m.title.toLowerCase().includes(q) ||
+                (m.alternative || '').toLowerCase().includes(q) ||
+                (m.author || '').toLowerCase().includes(q) ||
+                (m.artist || '').toLowerCase().includes(q) ||
+                (m.genres || []).some(g => g.toLowerCase().includes(q))
+            );
+        }
+    }
+
+    if (filterStatus !== 'الكل') {
+        results = results.filter(m => {
+            const s = (m.status || '').trim();
+            return s === filterStatus || getStatusLabel(s) === filterStatus;
+        });
+    }
+    if (filterType !== 'الكل') {
+        results = results.filter(m => {
+            const t = (m.type || '').trim();
+            return t === filterType || getTypeLabel(t) === filterType;
+        });
+    }
+
+    const allGenres = [...new Set((state.mangas || []).flatMap(m => m.genres || []))].sort();
+    const activeGenre = state.activeGenre || 'الكل';
+    if (activeGenre !== 'الكل') {
+        results = results.filter(m => m.genres && m.genres.includes(activeGenre));
+    }
+
+    if (filterYearMin) {
+        const yMin = parseInt(filterYearMin);
+        if (!isNaN(yMin)) results = results.filter(m => (m.year || 9999) >= yMin);
+    }
+    if (filterYearMax) {
+        const yMax = parseInt(filterYearMax);
+        if (!isNaN(yMax)) results = results.filter(m => (m.year || 0) <= yMax);
+    }
+    if (filterRatingMin) {
+        const rMin = parseFloat(filterRatingMin);
+        if (!isNaN(rMin)) results = results.filter(m => (m.rating || 0) >= rMin);
+    }
+    if (filterRatingMax) {
+        const rMax = parseFloat(filterRatingMax);
+        if (!isNaN(rMax)) results = results.filter(m => (m.rating || 5) <= rMax);
+    }
+    if (filterChaptersMin) {
+        const cMin = parseInt(filterChaptersMin);
+        if (!isNaN(cMin)) results = results.filter(m => (m.chapters ? m.chapters.length : 0) >= cMin);
+    }
+    if (filterChaptersMax) {
+        const cMax = parseInt(filterChaptersMax);
+        if (!isNaN(cMax)) results = results.filter(m => (m.chapters ? m.chapters.length : 0) <= cMax);
+    }
+
+    if (sortBy === 'الأكثر شعبية') {
+        results.sort((a, b) => (b.popularity || b.rating || 0) - (a.popularity || a.rating || 0));
+    } else if (sortBy === 'الأحدث') {
+        results.sort((a, b) => (b.year || 0) - (a.year || 0));
+    } else if (sortBy === 'الأعلى تقييماً') {
+        results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortBy === 'الأكثر فصولاً') {
+        results.sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+    } else if (sortBy === 'الأقل فصولاً') {
+        results.sort((a, b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
+    }
+
+    const totalCount = results.length;
+    const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
+    const startIdx = (page - 1) * perPage;
+    const pageResults = results.slice(startIdx, startIdx + perPage);
+
+    const itemsHtml = pageResults.map(m => {
+        const lastCh = getLastChapterNum(m);
+        const chLabel = lastCh != null ? `الفصل ${lastCh}` : (m.chapters ? `${m.chapters.length} فصول` : '');
+
+        if (viewMode === 'list') {
+            return `
+            <div class="browse-list-item" data-id="${m.id}">
+                <img src="${getDisplayCover(m)}" class="browse-list-cover" alt="${m.title}" loading="lazy">
+                <div class="browse-list-info">
+                    <h3 class="browse-list-title">${m.title}</h3>
+                    <div class="browse-list-chapter">
+                        <span class="browse-chapter-num">${chLabel}</span>
+                        <span class="browse-type-tag">${getTypeLabel(m) || ''}</span>
+                    </div>
+                </div>
+            </div>
+            `;
+        }
+        return `
+        <div class="browse-card" data-id="${m.id}">
+            <div class="browse-card-cover">
+                <img src="${getDisplayCover(m)}" alt="${m.title}" loading="lazy">
+            </div>
+            <div class="browse-card-body">
+                <h3 class="browse-card-title">${m.title}</h3>
+                <div class="browse-card-meta">
+                    <span class="browse-chapter-num">${chLabel}</span>
+                    <span class="browse-type-tag">${getTypeLabel(m) || ''}</span>
+                </div>
+            </div>
+        </div>
+        `;
+    }).join('');
+
+    const emptyMsg = query
+        ? `<div class="empty-state"><i class="fa-solid fa-search" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>لا توجد نتائج لـ "${query}"</p></div>`
+        : `<div class="empty-state"><i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>لا توجد مانجا بعد</p></div>`;
+
+    let pagHtml = '';
+    if (totalPages > 1) {
+        let pages = [];
+        const startP = Math.max(1, page - 2);
+        const endP = Math.min(totalPages, page + 2);
+        if (startP > 1) pages.push(1);
+        if (startP > 2) pages.push('...');
+        for (let i = startP; i <= endP; i++) pages.push(i);
+        if (endP < totalPages - 1) pages.push('...');
+        if (endP < totalPages) pages.push(totalPages);
+
+        pagHtml = `<div class="browse-pagination">${pages.map(p => {
+            if (p === '...') return `<span class="page-dots">...</span>`;
+            return `<button class="page-btn ${p === page ? 'active' : ''}" data-page="${p}">${p}</button>`;
+        }).join('')}</div>`;
+    }
+
+    const scopeTabs = ['الكل', 'العنوان', 'المؤلف', 'الوسوم', 'الوصف'];
+    const filterStatuses = ['الكل', 'مستمرة', 'مكتملة', 'متوقفة'];
+    const filterTypes = ['الكل', 'مانجا', 'مانهوا', 'مانها'];
+    const sortOptions = ['الأكثر شعبية', 'الأحدث', 'الأعلى تقييماً', 'الأكثر فصولاً', 'الأقل فصولاً'];
+
+    return `
+    <div class="browse-page">
+        <div class="browse-hero">
+            <h1 class="browse-hero-title">عالم المانجا</h1>
+            <p class="browse-hero-sub">تصفّح عالم المانجا</p>
+            <p class="browse-hero-desc">اكتشف عملك التالي بين آلاف السلاسل</p>
+        </div>
+
+        <div class="browse-toolbar">
+            <div class="browse-counter">${totalCount} سلسلة</div>
+            <div class="browse-actions">
+                <select class="browse-sort-select" id="browse-sort">
+                    ${sortOptions.map(s => `<option value="${s}" ${s === sortBy ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+                <div class="view-toggle">
+                    <button class="view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="شبكة"><i class="fa-solid fa-th-large"></i></button>
+                    <button class="view-toggle-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="قائمة"><i class="fa-solid fa-list"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="browse-scope-bar">
+            <span class="browse-scope-label">البحث بـ:</span>
+            ${scopeTabs.map(s => `
+                <button class="browse-scope-btn ${s === scope ? 'active' : ''}" data-scope="${s}">${s}</button>
+            `).join('')}
+        </div>
+
+        <div class="browse-filter-bar">
+            <div class="browse-filter-group">
+                <label>الحالة</label>
+                <select class="browse-filter-select" id="browse-filter-status">
+                    ${filterStatuses.map(s => `<option value="${s}" ${s === filterStatus ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+            </div>
+            <div class="browse-filter-group">
+                <label>النوع</label>
+                <select class="browse-filter-select" id="browse-filter-type">
+                    ${filterTypes.map(s => `<option value="${s}" ${s === filterType ? 'selected' : ''}>${s}</option>`).join('')}
+                </select>
+            </div>
+            <div class="browse-filter-group">
+                <label>التصنيفات</label>
+                <select class="browse-filter-select" id="browse-filter-genre">
+                    <option value="الكل" ${activeGenre === 'الكل' ? 'selected' : ''}>الكل</option>
+                    ${allGenres.map(g => `<option value="${g}" ${g === activeGenre ? 'selected' : ''}>${g}</option>`).join('')}
+                </select>
+            </div>
+            <div class="browse-filter-group browse-filter-collapsible">
+                <button class="browse-filter-toggle" id="browse-filter-toggle">
+                    <i class="fa-solid fa-sliders"></i> خيارات أخرى
+                </button>
+            </div>
+        </div>
+
+        <div class="browse-extra-filters" id="browse-extra-filters" style="display:${showFilters ? 'flex' : 'none'}">
+            <div class="browse-filter-group">
+                <label>السنة من</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-year-min" value="${filterYearMin}" placeholder="مثال: 2020">
+            </div>
+            <div class="browse-filter-group">
+                <label>السنة إلى</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-year-max" value="${filterYearMax}" placeholder="مثال: 2026">
+            </div>
+            <div class="browse-filter-group">
+                <label>التقييم من</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-rating-min" value="${filterRatingMin}" placeholder="0" min="0" max="5" step="0.5">
+            </div>
+            <div class="browse-filter-group">
+                <label>التقييم إلى</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-rating-max" value="${filterRatingMax}" placeholder="5" min="0" max="5" step="0.5">
+            </div>
+            <div class="browse-filter-group">
+                <label>أقل فصول</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-ch-min" value="${filterChaptersMin}" placeholder="0">
+            </div>
+            <div class="browse-filter-group">
+                <label>أكثر فصول</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-ch-max" value="${filterChaptersMax}" placeholder="1000">
+            </div>
+        </div>
+
+        <div class="browse-results ${viewMode === 'grid' ? 'browse-grid' : 'browse-list'}">
+            ${totalCount > 0 ? itemsHtml : emptyMsg}
+        </div>
+
+        ${pagHtml}
+    </div>`;
+}
+
+// ==========================================
+// 4.4.10. قائمة المتصدرين
+// ==========================================
+
+async function LeaderboardViewComponent() {
+    try {
+        const baseUrl = '/api/leaderboard';
+        const params = new URLSearchParams();
+        if (state.leaderboardTab === 'monthly') params.set('period', 'monthly');
+        if (state.leaderboardTab === 'weekly') params.set('period', 'weekly');
+        params.set('limit', '100');
+        const qs = params.toString();
+        const res = await fetch(baseUrl + (qs ? '?' + qs : ''));
+        const data = await res.json();
+        if (!data || data.length === 0) return '<div class="empty-state"><p>لا يوجد متصدرين بعد</p></div>';
+
+        // معرفة موقع المستخدم الحالي
+        let myRankHtml = '';
+        if (state.sessionToken && state.userEmail) {
+            const myUsername = getUserHandle(state.userEmail);
+            const myData = data.find(u => u.username === myUsername);
+            const inTop100 = myData && myData.rank <= 100;
+            if (inTop100) {
+                const myRank = myData.rank;
+                myRankHtml = `
+                <div class="my-rank-card" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));padding:16px 20px;border-radius:12px;margin:20px 0;text-align:center;color:#fff;">
+                    <div style="font-size:1.5rem;font-weight:800;">#${myRank}</div>
+                    <div style="font-size:0.85rem;opacity:0.9;">ترتيبك الحالي — ${myData.points.toLocaleString()} نقطة</div>
+                </div>`;
+            } else if (state.userProfile && state.userProfile.points != null) {
+                const userPoints = state.userProfile.points;
+                const lastRank = data.length;
+                const lastUser = data[data.length - 1];
+                const pointsNeeded = lastUser ? (lastUser.points - userPoints + 1) : 0;
+                const myTrueRank = myData ? myData.rank : '?';
+                myRankHtml = `
+                <div class="my-rank-card" style="background:var(--bg-surface);border:2px dashed var(--color-primary);padding:16px 20px;border-radius:12px;margin:20px 0;text-align:center;">
+                    <div style="font-size:0.9rem;color:var(--text-muted);">ترتيبك الحالي: #${myTrueRank}</div>
+                    <div style="font-size:1rem;margin:6px 0;color:var(--text-main);">
+                        رصيدك: <strong>${userPoints.toLocaleString()}</strong> نقطة
+                    </div>
+                    ${pointsNeeded > 0 ? `<div style="font-size:0.85rem;color:var(--color-secondary);">
+                        ينقصك <strong>${pointsNeeded.toLocaleString()}</strong> نقطة لدخول قائمة المائة
+                    </div>` : ''}
+                    ${lastUser ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
+                        صاحب المركز #${lastRank} لديه ${lastUser.points.toLocaleString()} نقطة
+                    </div>` : ''}
+                </div>`;
+            }
+        }
+        
+        const displayData = data.slice(0, 100);
+        const top3 = displayData.slice(0, 3);
+        const rest = displayData.slice(3);
+        
+        const medalEmojis = ['🥇', '🥈', '🥉'];
+        const stickers = ['✦', '✧', '⭐', '💫', '✨'];
+        const tabs = [
+            { key: 'all', label: 'كل الوقت' },
+            { key: 'monthly', label: 'شهري' },
+            { key: 'weekly', label: 'أسبوعي' }
+        ];
+        const activeTab = state.leaderboardTab || 'all';
+        
+        const flt = (s) => `<span style="position:absolute;font-size:${1.5 + Math.random() * 1.5}rem;opacity:${0.2 + Math.random() * 0.3};color:var(--color-primary);pointer-events:none;user-select:none;${s}">${['★','✦','✧','⭐','💫','✨','⚡','🔥','💎','🎯'][Math.floor(Math.random()*10)]}</span>`;
+        return `
+        <div class="leaderboard-page" style="position:relative;overflow:hidden;">
+            ${flt('top:5%;left:3%;')}${flt('top:12%;right:5%;')}${flt('top:25%;left:6%;')}${flt('top:40%;right:3%;')}${flt('top:55%;left:4%;')}${flt('top:70%;right:6%;')}${flt('top:85%;left:5%;')}${flt('top:15%;right:8%;')}${flt('top:30%;left:8%;')}${flt('top:50%;right:4%;')}
+            <div class="leaderboard-header">
+                <h1><i class="fa-solid fa-trophy" style="color: #ffd700;"></i> قائمة المتصدرين</h1>
+                <p>أكثر المستخدمين نشاطاً على KAIRO/منهوا</p>
+            </div>
+            
+            <div class="bookmarks-tabs" style="justify-content:center;margin-bottom:20px;">
+                ${tabs.map(t => `
+                    <button class="bookmark-tab lb-tab ${activeTab === t.key ? 'active' : ''}" data-tab="${t.key}">${t.label}</button>
+                `).join('')}
+            </div>
+            
+            ${myRankHtml}
+            
+            <div class="leaderboard-podium">
+                ${top3.length > 1 ? `<div class="podium-item second">
+                    <div class="podium-avatar">${getUserInitial(data[1].username)}</div>
+                    <div class="podium-rank">${medalEmojis[1]}</div>
+                    <div class="podium-name">${data[1].username}</div>
+                    <div class="podium-points">${data[1].points.toLocaleString()}</div>
+                    <span class="podium-sticker">${stickers[1]}</span>
+                </div>` : ''}
+                ${top3.length > 0 ? `<div class="podium-item first">
+                    <div class="podium-avatar">${getUserInitial(data[0].username)}</div>
+                    <div class="podium-rank">${medalEmojis[0]}</div>
+                    <div class="podium-name">${data[0].username}</div>
+                    <div class="podium-points">${data[0].points.toLocaleString()}</div>
+                    <div class="podium-crown"><i class="fa-solid fa-crown"></i></div>
+                    <span class="podium-sticker">${stickers[0]}</span>
+                </div>` : ''}
+                ${top3.length > 2 ? `<div class="podium-item third">
+                    <div class="podium-avatar">${getUserInitial(data[2].username)}</div>
+                    <div class="podium-rank">${medalEmojis[2]}</div>
+                    <div class="podium-name">${data[2].username}</div>
+                    <div class="podium-points">${data[2].points.toLocaleString()}</div>
+                    <span class="podium-sticker">${stickers[2]}</span>
+                </div>` : ''}
+            </div>
+            
+            <div class="leaderboard-table">
+                ${rest.map(u => `
+                    <div class="leaderboard-row" data-username="${u.username}">
+                        <span class="lb-rank">#${u.rank}</span>
+                        <span class="lb-avatar" style="background:${getRankColor(u.level)}">${getUserInitial(u.username)}</span>
+                        <span class="lb-name">${u.username}</span>
+                        <span class="lb-rank-name">${u.rank_name}</span>
+                        <span class="lb-stats">${u.chapters_read} فصل</span>
+                        <span class="lb-points">${u.points.toLocaleString()} <i class="fa-solid fa-star" style="font-size:0.6rem;"></i></span>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="text-align:center;margin-top:24px;">
+                <button class="header-logo" id="lb-home-btn" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--color-secondary);">← العودة للرئيسية</button>
+            </div>
+        </div>
+        `;
+    } catch (e) {
+        console.error('Leaderboard error:', e);
+        return '<div class="empty-state"><p>حدث خطأ في تحميل المتصدرين</p></div>';
+    }
+}
+
+function formatNotificationTime(timestamp) {
+    if (!timestamp) return '';
+    const diff = Date.now() / 1000 - timestamp;
+    if (diff < 60) return 'الآن';
+    if (diff < 3600) return Math.floor(diff / 60) + ' دقيقة';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ساعة';
+    return Math.floor(diff / 86400) + ' يوم';
+}
+
+// Frontend safety: enforce admin only for the designated email
+function enforceAdminRole() {
+    if (state.userEmail !== 'sherifahmed2686@gmail.com') {
+        state.userRole = 'user';
+    }
 }
 
 // ==========================================
@@ -2742,12 +4690,15 @@ async function handleGoogleLogin(response) {
         if (res.ok) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
-            state.userRole = result.role;
+            state.userRole = result.role || 'user';
+            enforceAdminRole();
             if (result.points !== undefined) state.userProfile.points = result.points;
             if (result.level !== undefined) state.userProfile.level = result.level;
+            if (result.username) state.userProfile.username = result.username;
             state.saveUserProfile();
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
+            state.checkDailyReward();
             renderApp();
             alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
@@ -2770,12 +4721,15 @@ async function verifyGoogleAccessToken(accessToken) {
         if (res.ok) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
-            state.userRole = result.role;
+            state.userRole = result.role || 'user';
+            enforceAdminRole();
             if (result.points !== undefined) state.userProfile.points = result.points;
             if (result.level !== undefined) state.userProfile.level = result.level;
+            if (result.username) state.userProfile.username = result.username;
             state.saveUserProfile();
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
+            state.checkDailyReward();
             renderApp();
             alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
@@ -2798,7 +4752,8 @@ async function verifyFacebookAccessToken(accessToken) {
         if (res.ok) {
             state.sessionToken = result.token;
             state.userEmail = result.email;
-            state.userRole = result.role;
+            state.userRole = result.role || 'user';
+            enforceAdminRole();
             if (result.points !== undefined) state.userProfile.points = result.points;
             if (result.level !== undefined) state.userProfile.level = result.level;
             state.saveUserProfile();
@@ -2833,7 +4788,22 @@ function handleFacebookLoginClick() {
 function initSocialAuths() {
     // 1. تهيئة Google Sign-In & One Tap
     googleTokenClient = null;
-    if (isUsableGoogleClientId() && typeof google !== 'undefined') {
+    if (isUsableGoogleClientId()) {
+        if (typeof google === 'undefined') {
+            // Google library not yet loaded, retry after it loads
+            const checkGoogle = setInterval(() => {
+                if (typeof google !== 'undefined') {
+                    clearInterval(checkGoogle);
+                    initGoogleAuth();
+                }
+            }, 200);
+            setTimeout(() => clearInterval(checkGoogle), 15000);
+        } else {
+            initGoogleAuth();
+        }
+    }
+
+    function initGoogleAuth() {
         try {
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
@@ -2841,12 +4811,10 @@ function initSocialAuths() {
                 auto_select: false
             });
             
-            // تفعيل Google One Tap تلقائياً عند فتح الموقع إذا لم يكن مسجلاً
             if (!state.sessionToken) {
                 google.accounts.id.prompt();
             }
             
-            // تهيئة عميل التوكن للزر المخصص
             googleTokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: GOOGLE_CLIENT_ID,
                 scope: 'email profile',
@@ -2920,9 +4888,64 @@ function attachEventListeners() {
 
     const navProfileBtn = document.getElementById('nav-profile-btn');
     if (navProfileBtn) navProfileBtn.onclick = () => {
+        if (state.sessionToken && state.userEmail) navigate('profile', state.userEmail);
+    };
+
+    const navSettingsBtn = document.getElementById('nav-settings-btn');
+    if (navSettingsBtn) navSettingsBtn.onclick = () => {
         state.showSettingsModal = true;
         renderApp();
     };
+
+    const navCommunity = document.getElementById('nav-community');
+    const communityDropdown = document.getElementById('community-dropdown');
+    if (navCommunity && communityDropdown) {
+        navCommunity.onclick = (e) => {
+            e.stopPropagation();
+            const dd = document.getElementById('community-dropdown');
+            if (dd) dd.style.display = dd.style.display === 'flex' ? 'none' : 'flex';
+        };
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#nav-community') && !e.target.closest('#community-dropdown')) {
+                const dd = document.getElementById('community-dropdown');
+                if (dd) dd.style.display = 'none';
+            }
+        });
+    }
+
+    function closeCommunityDropdown() {
+        const dd = document.getElementById('community-dropdown');
+        if (dd) dd.style.display = 'none';
+    }
+
+    const navLeaderboard = document.getElementById('nav-leaderboard');
+    if (navLeaderboard) navLeaderboard.onclick = () => { closeCommunityDropdown(); navigate('leaderboard'); };
+
+    const navStore = document.getElementById('nav-store');
+    if (navStore) navStore.onclick = () => { closeCommunityDropdown(); navigate('store'); };
+
+    const navAnnouncements = document.getElementById('nav-announcements');
+    if (navAnnouncements) navAnnouncements.onclick = () => { closeCommunityDropdown(); navigate('announcements'); };
+
+    const navChat = document.getElementById('nav-chat');
+    if (navChat) navChat.onclick = () => { closeCommunityDropdown(); navigate('chat'); };
+
+    const chatSendBtn = document.getElementById('chat-send-btn');
+    const chatInput = document.getElementById('chat-input');
+    const doSendChat = () => {
+        if (!chatInput || !chatInput.value.trim()) return;
+        const msgs = document.getElementById('chat-messages');
+        if (msgs) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg mine';
+            div.innerHTML = `<div>${escapeHtml(chatInput.value.trim())}</div><div class="chat-time">${new Date().toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'})}</div>`;
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+        chatInput.value = '';
+    };
+    if (chatSendBtn) chatSendBtn.onclick = doSendChat;
+    if (chatInput) chatInput.onkeydown = (e) => { if (e.key === 'Enter') doSendChat(); };
 
     const closeAdminBtn = document.getElementById('close-admin-btn');
     if (closeAdminBtn) closeAdminBtn.onclick = () => navigate('home');
@@ -2932,51 +4955,66 @@ function attachEventListeners() {
 
     // شريط البحث ومقترحات البحث
     const searchInput = document.getElementById('search-input');
+    const searchBox = document.getElementById('search-box');
     if (searchInput) {
         searchInput.onfocus = () => {
-            if (state.searchQuery && state.searchQuery.trim() !== '' && !state.showSearchSuggestions) {
+            if (state.searchQuery && state.searchQuery.trim() !== '') {
                 state.showSearchSuggestions = true;
-                renderApp();
-                const newInput = document.getElementById('search-input');
-                if (newInput) {
-                    newInput.focus();
-                    newInput.setSelectionRange(newInput.value.length, newInput.value.length);
-                }
             }
         };
 
         searchInput.oninput = (e) => {
             state.searchQuery = e.target.value;
             state.showSearchSuggestions = e.target.value.trim() !== '';
-            if (state.currentView !== 'home') {
-                navigate('home');
-            }
-            renderApp();
-            
-            const newInput = document.getElementById('search-input');
-            if (newInput) {
-                newInput.focus();
-                newInput.setSelectionRange(newInput.value.length, newInput.value.length);
-            }
+            if (window._searchTimer) clearTimeout(window._searchTimer);
+            window._searchTimer = setTimeout(() => renderApp(), 250);
         };
 
         searchInput.onkeydown = (e) => {
             if (e.key === 'Enter') {
+                state.showSearchSuggestions = false;
+                state.searchPage = 1;
+                navigate('search', state.searchQuery, state.searchViewMode || 'grid');
+            } else if (e.key === 'Escape') {
                 state.showSearchSuggestions = false;
                 renderApp();
             }
         };
     }
 
+    // زر مسح البحث
+    const searchClearBtn = document.getElementById('search-clear-btn');
+    if (searchClearBtn) {
+        searchClearBtn.onclick = () => {
+            state.searchQuery = '';
+            state.showSearchSuggestions = false;
+            renderApp();
+            if (searchInput) searchInput.focus();
+        };
+    }
+
+    // إغلاق القائمة عند النقر خارجها
+    document.addEventListener('click', (e) => {
+        if (searchBox && !searchBox.contains(e.target) && state.showSearchSuggestions) {
+            state.showSearchSuggestions = false;
+        }
+    });
+
     // النقر على مقترح بحث
     const suggestionItems = document.querySelectorAll('.suggestion-item');
     suggestionItems.forEach(item => {
         item.onclick = (e) => {
             e.stopPropagation();
+            const action = e.currentTarget.dataset.action;
             const id = e.currentTarget.dataset.id;
-            state.searchQuery = '';
             state.showSearchSuggestions = false;
-            navigate('detail', id);
+            if (action === 'manga' && id) {
+                state.searchQuery = '';
+                navigate('detail', id);
+            } else if (action === 'search') {
+                state.searchPage = 1;
+                navigate('search', state.searchQuery, state.searchViewMode || 'grid');
+            }
         };
     });
 
@@ -2988,12 +5026,26 @@ function attachEventListeners() {
             const genre = e.target.dataset.genre || e.target.textContent.trim();
             if (genre) {
                 state.activeGenre = genre;
-                if (state.currentView !== 'home') {
-                    navigate('home');
+                const homeLayout = document.querySelector('.homepage-layout');
+                if (homeLayout) {
+                    const cards = homeLayout.querySelectorAll('.manga-card');
+                    cards.forEach(card => {
+                        const genres = card.dataset.genres || '';
+                        const match = genre === 'الكل' || genres.split(',').includes(genre);
+                        card.style.display = match ? '' : 'none';
+                    });
+                    // Update active genre visual
+                    document.querySelectorAll('.genre-tag').forEach(t => t.classList.remove('active'));
+                    e.currentTarget.classList.add('active');
+                    window.scrollTo(0, 0);
                 } else {
-                    renderApp();
+                    if (state.currentView !== 'home') {
+                        navigate('home');
+                    } else {
+                        renderApp();
+                    }
+                    window.scrollTo(0, 0);
                 }
-                window.scrollTo(0, 0);
             }
         };
     });
@@ -3168,13 +5220,43 @@ function attachEventListeners() {
     if (chaptersSearch) {
         chaptersSearch.oninput = (e) => {
             state.chapterSearchQuery = e.target.value;
-            renderApp();
-            
-            // استعادة التركيز وموضع المؤشر بعد إعادة الرندرة
-            const input = document.getElementById('chapters-search-input');
-            if (input) {
-                input.focus();
-                input.setSelectionRange(input.value.length, input.value.length);
+            const query = e.target.value.trim();
+            const container = document.querySelector('.chapters-list');
+            if (!container) return;
+            const items = container.querySelectorAll('.chapter-item');
+            const qNums = query.replace(/[^0-9]/g, '');
+            let visibleCount = 0;
+            items.forEach(item => {
+                const id = item.dataset.chapId || '';
+                const badge = item.querySelector('.chapter-item-badge');
+                const subtitle = item.querySelector('.chapter-item-subtitle');
+                const titleText = (badge ? badge.textContent.replace(/[^0-9]/g, '') : '');
+                const subtitleText = subtitle ? subtitle.textContent.toLowerCase() : '';
+                const fullText = id.toLowerCase() + ' ' + (badge ? badge.textContent.toLowerCase() : '') + ' ' + subtitleText;
+                let match = false;
+                if (!query) {
+                    match = true;
+                } else if (qNums) {
+                    const chNums = id.replace(/[^0-9]/g, '');
+                    match = chNums.includes(qNums);
+                    if (!match) match = fullText.includes(query.toLowerCase());
+                } else {
+                    match = fullText.includes(query.toLowerCase());
+                }
+                item.style.display = match ? '' : 'none';
+                if (match) visibleCount++;
+            });
+            let noResult = container.querySelector('.chapters-search-noresult');
+            if (visibleCount === 0 && query) {
+                if (!noResult) {
+                    noResult = document.createElement('p');
+                    noResult.className = 'chapters-search-noresult';
+                    noResult.style.cssText = 'padding: 20px; color: var(--text-dark); text-align: center;';
+                    noResult.textContent = 'لا توجد فصول تطابق البحث.';
+                    container.appendChild(noResult);
+                }
+            } else if (noResult) {
+                noResult.remove();
             }
         };
     }
@@ -3202,6 +5284,7 @@ function attachEventListeners() {
             state.downloadProgress[key] = 0;
             
             const mangaObj = state.mangas.find(m => m.id === mangaId);
+            if (!mangaObj) { btn.classList.remove('loading'); btn.disabled = false; return; }
             const chapterObj = mangaObj.chapters.find(c => normalizeChapterId(c.id) === normalizeChapterId(chapId));
 
             const interval = setInterval(async () => {
@@ -3296,6 +5379,122 @@ function attachEventListeners() {
         };
     });
 
+    // Fullscreen toggle
+    const fsBtn = document.getElementById('reader-fullscreen-btn');
+    if (fsBtn) {
+        fsBtn.onclick = () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen?.();
+                fsBtn.innerHTML = '<i class="fa-solid fa-compress"></i> إنهاء الملء';
+            } else {
+                document.exitFullscreen?.();
+                fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> ملء الشاشة';
+            }
+        };
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> ملء الشاشة';
+        });
+    }
+
+    // Strip mode toggle
+    const stripBtn = document.getElementById('reader-strip-toggle');
+    if (stripBtn) {
+        stripBtn.onclick = () => {
+            const wrapper = document.querySelector('.reader-wrapper');
+            if (wrapper) wrapper.classList.toggle('reader-strip-mode');
+            stripBtn.classList.toggle('active');
+        };
+    }
+
+    // Zoom controls for reader
+    const zoomInBtn = document.getElementById('reader-zoom-in');
+    const zoomOutBtn = document.getElementById('reader-zoom-out');
+    const zoomResetBtn = document.getElementById('reader-zoom-reset');
+    let currentZoom = 1;
+    const applyZoom = () => {
+        document.querySelectorAll('.reader-image-container img').forEach(img => {
+            img.style.transform = `scale(${currentZoom})`;
+            img.style.transformOrigin = 'center top';
+        });
+        document.querySelectorAll('.reader-image-container').forEach(c => {
+            if (currentZoom !== 1) c.classList.add('zoomed');
+            else c.classList.remove('zoomed');
+        });
+    };
+    if (zoomInBtn) zoomInBtn.onclick = () => { currentZoom = Math.min(3, currentZoom + 0.25); applyZoom(); };
+    if (zoomOutBtn) zoomOutBtn.onclick = () => { currentZoom = Math.max(0.5, currentZoom - 0.25); applyZoom(); };
+    if (zoomResetBtn) zoomResetBtn.onclick = () => { currentZoom = 1; applyZoom(); };
+
+    // Click-to-toggle zoom on images
+    document.querySelectorAll('.reader-image-container img').forEach(img => {
+        img.onclick = () => {
+            if (currentZoom !== 1) { currentZoom = 1; applyZoom(); return; }
+            currentZoom = 2;
+            applyZoom();
+        };
+    });
+
+    // Drag-to-pan when zoomed
+    let isPanning = false, startX, startY, scrollLeft, scrollTop;
+    const readerContent = document.querySelector('.reader-content-images');
+    if (readerContent) {
+        readerContent.addEventListener('mousedown', (e) => {
+            if (currentZoom === 1) return;
+            isPanning = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            scrollLeft = readerContent.scrollLeft;
+            scrollTop = readerContent.scrollTop;
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (!isPanning) return;
+            readerContent.scrollLeft = scrollLeft - (e.clientX - startX);
+            readerContent.scrollTop = scrollTop - (e.clientY - startY);
+        });
+        document.addEventListener('mouseup', () => { isPanning = false; });
+    }
+
+    // Pinch-to-zoom for reader images
+    const readerWrapper2 = document.querySelector('.reader-wrapper');
+    if (readerWrapper2) {
+        let lastDist = 0;
+        readerWrapper2.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        }, { passive: true });
+        readerWrapper2.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                currentZoom = Math.min(3, Math.max(0.5, currentZoom * (dist / lastDist)));
+                lastDist = dist;
+                applyZoom();
+            }
+        }, { passive: true });
+    }
+
+    // Keyboard shortcuts for reader
+    if (state.currentView === 'reader') {
+        document.onkeydown = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            const manga = state.mangas.find(m => m.id === state.activeMangaId);
+            if (!manga) return;
+            const idx = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+            if (idx === -1) return;
+            if (e.key === 'ArrowRight' || e.key === 'Escape') {
+                if (e.key === 'Escape') { navigate('detail', state.activeMangaId); return; }
+                e.preventDefault();
+                if (idx > 0) navigate('reader', state.activeMangaId, manga.chapters[idx - 1].id);
+            } else if (e.key === 'ArrowLeft' && idx < manga.chapters.length - 1) {
+                e.preventDefault();
+                navigate('reader', state.activeMangaId, manga.chapters[idx + 1].id);
+            } else if (e.key === 'f' || e.key === 'F') {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+                else document.exitFullscreen?.();
+            }
+        };
+    } else {
+        document.onkeydown = null;
+    }
+
     // القارئ: إدارة القائمة المنسدلة المخصصة للفصول
     const dropdown = document.getElementById('chapter-dropdown');
     const dropdownTrigger = document.querySelector('.dropdown-trigger');
@@ -3351,32 +5550,38 @@ function attachEventListeners() {
     const prevBtns = document.querySelectorAll('.prev-chapter-btn');
     prevBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
+        const manga = state.mangas.find(m => m.id === state.activeMangaId);
+        if (!manga) return;
+        const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+        if (chapterIndex < manga.chapters.length - 1) {
             btn.onclick = () => {
-                const manga = state.mangas.find(m => m.id === state.activeMangaId);
-                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-                if (chapterIndex < manga.chapters.length - 1) {
-                    const prevChapId = manga.chapters[chapterIndex + 1].id;
-                    navigate('reader', state.activeMangaId, prevChapId);
-                    window.scrollTo(0, 0);
-                }
+                const prevChapId = manga.chapters[chapterIndex + 1].id;
+                state.activeChapterId = prevChapId;
+                state.activePageIndex = 0;
+                renderReaderContent();
+                window.scrollTo(0, 0);
             };
         }
+    }
     });
 
     // القارئ: الفصل التالي
     const nextBtns = document.querySelectorAll('.next-chapter-btn');
     nextBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
+        const manga = state.mangas.find(m => m.id === state.activeMangaId);
+        if (!manga) return;
+        const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+        if (chapterIndex > 0) {
             btn.onclick = () => {
-                const manga = state.mangas.find(m => m.id === state.activeMangaId);
-                const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-                if (chapterIndex > 0) {
-                    const nextChapId = manga.chapters[chapterIndex - 1].id;
-                    navigate('reader', state.activeMangaId, nextChapId);
-                    window.scrollTo(0, 0);
-                }
+                const nextChapId = manga.chapters[chapterIndex - 1].id;
+                state.activeChapterId = nextChapId;
+                state.activePageIndex = 0;
+                renderReaderContent();
+                window.scrollTo(0, 0);
             };
         }
+    }
     });
 
     // القارئ: ترجمة الفصل
@@ -3465,7 +5670,9 @@ function attachEventListeners() {
     const hNextZone = document.getElementById('h-next-zone');
     if (hPrevZone && hNextZone) {
         const manga = state.mangas.find(m => m.id === state.activeMangaId);
+        if (!manga) return;
         const chapter = manga.chapters.find(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
+        if (!chapter) return;
         const totalPages = chapter.images.length;
 
         hPrevZone.onclick = (e) => {
@@ -3545,7 +5752,7 @@ function attachEventListeners() {
         if (panelSuggestions) panelSuggestions.style.display = 'none';
         if (panelSiteSettings) panelSiteSettings.style.display = 'none';
         if (panelAltSources) panelAltSources.style.display = 'none';
-        if (tabAddManga) tabAddManga.classList.remove('active');
+        
         if (tabAddChapter) tabAddChapter.classList.remove('active');
         if (tabEditManga) tabEditManga.classList.remove('active');
         if (tabSuggestions) tabSuggestions.classList.remove('active');
@@ -3553,13 +5760,7 @@ function attachEventListeners() {
         if (tabAltSources) tabAltSources.classList.remove('active');
     }
 
-    if (tabAddManga) {
-        tabAddManga.onclick = () => {
-            hideAllAdminPanels();
-            tabAddManga.classList.add('active');
-            if (panelManga) panelManga.style.display = 'block';
-        };
-    }
+    
 
     if (tabAddChapter) {
         tabAddChapter.onclick = () => {
@@ -3575,6 +5776,19 @@ function attachEventListeners() {
             tabEditManga.classList.add('active');
             if (panelEditManga) panelEditManga.style.display = 'block';
             loadEditMangaData();
+        };
+    }
+
+    
+    const tabLiveScraper = document.getElementById('tab-live-scraper');
+    const panelLiveScraper = document.getElementById('panel-live-scraper');
+
+    if (tabLiveScraper) {
+        tabLiveScraper.onclick = () => {
+            hideAllAdminPanels();
+            tabLiveScraper.classList.add('active');
+            if (panelLiveScraper) panelLiveScraper.style.display = 'block';
+            checkAutoUpdaterStatus();
         };
     }
 
@@ -3632,30 +5846,46 @@ function attachEventListeners() {
     }
     
     if (btnExportCsv) {
-        btnExportCsv.onclick = () => {
+        btnExportCsv.onclick = async () => {
             const token = state.sessionToken;
             if (!token) return;
-            const a = document.createElement('a');
-            a.href = '/api/admin/stats/export?format=csv';
-            a.download = 'kairo_stats_export.csv';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            try {
+                const res = await fetch('/api/admin/stats/export?format=csv', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'kairo_stats_export.csv';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch(e) {}
         };
     }
     
     if (btnExportJson) {
-        btnExportJson.onclick = () => {
+        btnExportJson.onclick = async () => {
             const token = state.sessionToken;
             if (!token) return;
-            const a = document.createElement('a');
-            a.href = '/api/admin/stats/export?format=json';
-            a.download = 'kairo_stats_export.json';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            try {
+                const res = await fetch('/api/admin/stats/export?format=json', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'kairo_stats_export.json';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch(e) {}
         };
     }
 
@@ -3710,7 +5940,12 @@ function attachEventListeners() {
                 state.showSuggestionsModal = true;
                 state.suggestionsError = '';
                 state.suggestionsSuccess = '';
-                renderApp();
+                const existingOverlay = document.getElementById('suggestions-modal-overlay');
+                if (existingOverlay) {
+                    existingOverlay.style.display = 'flex';
+                } else {
+                    renderApp();
+                }
             }
         };
     }
@@ -3719,7 +5954,8 @@ function attachEventListeners() {
     if (closeSuggestionsBtn) {
         closeSuggestionsBtn.onclick = () => {
             state.showSuggestionsModal = false;
-            renderApp();
+            const overlay = document.getElementById('suggestions-modal-overlay');
+            if (overlay) { overlay.style.display = 'none'; } else { renderApp(); }
         };
     }
 
@@ -3869,7 +6105,8 @@ function attachEventListeners() {
     if (closeSettingsBtn) {
         closeSettingsBtn.onclick = () => {
             state.showSettingsModal = false;
-            renderApp();
+            const overlay = document.getElementById('settings-modal-overlay');
+            if (overlay) { overlay.style.display = 'none'; } else { renderApp(); }
         };
     }
 
@@ -3882,6 +6119,13 @@ function attachEventListeners() {
             }
         };
     }
+
+    document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+        btn.onclick = () => {
+            state.settingsTab = btn.dataset.tab;
+            renderApp();
+        };
+    });
 
     const forgotTrigger = document.getElementById('forgot-password-trigger');
     if (forgotTrigger) {
@@ -4008,13 +6252,16 @@ function attachEventListeners() {
                     if (state.authModalTab === 'login') {
                         state.sessionToken = result.token;
                         state.userEmail = result.email;
-                        state.userRole = result.role;
+                        state.userRole = result.role || 'user';
+                        enforceAdminRole();
                         if (result.points !== undefined) state.userProfile.points = result.points;
                         if (result.level !== undefined) state.userProfile.level = result.level;
+                        if (result.username) state.userProfile.username = result.username;
                         state.saveUserProfile();
                         successMsg.innerText = 'تم تسجيل الدخول بنجاح!';
                         successMsg.style.display = 'block';
                         await state.fetchAndMergeSettings();
+                        state.checkDailyReward();
                         setTimeout(() => {
                             state.showAuthModal = false;
                             renderApp();
@@ -4023,14 +6270,17 @@ function attachEventListeners() {
                         if (result.token) {
                             state.sessionToken = result.token;
                             state.userEmail = result.email;
-                            state.userRole = result.role;
+                            state.userRole = result.role || 'user';
+                            enforceAdminRole();
                             if (result.points !== undefined) state.userProfile.points = result.points;
                             if (result.level !== undefined) state.userProfile.level = result.level;
+                            if (result.username) state.userProfile.username = result.username;
                             state.saveUserProfile();
                             successMsg.innerText = 'تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...';
                             successMsg.style.display = 'block';
                             setTimeout(async () => {
                                 await state.fetchAndMergeSettings();
+                                state.checkDailyReward();
                                 state.showAuthModal = false;
                                 renderApp();
                             }, 1200);
@@ -4156,7 +6406,36 @@ function attachEventListeners() {
                 const result = await response.json();
                 if (response.ok) {
                     document.getElementById('chapter-comment-text').value = '';
-                    renderApp();
+                    const badgeIcons = {
+                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="أول تعليق"></i>',
+                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="ثاني تعليق"></i>',
+                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="ثالث تعليق"></i>'
+                    };
+                    const badgeHtml = badgeIcons[result.badge] ? `<span class="comment-badge">${badgeIcons[result.badge]}</span>` : '';
+                    const userDisplay = state.userEmail.split('@')[0];
+                    const firstLetter = userDisplay.charAt(0).toUpperCase();
+                    const dateStr = new Date().toLocaleDateString('ar-EG');
+                    const newCommentHtml = `
+                    <div class="comment-item">
+                        <div class="comment-avatar">${firstLetter}</div>
+                        <div class="comment-body">
+                            <div class="comment-header">
+                                <span class="comment-username">${userDisplay} ${badgeHtml}</span>
+                                <span class="comment-time">${dateStr}</span>
+                            </div>
+                            <p class="comment-text">${text}</p>
+                        </div>
+                    </div>
+                    `;
+                    const emptyMsg = document.querySelector('.comments-section p');
+                    const commentsContainer = document.getElementById('chapter-comments-list');
+                    if (emptyMsg && emptyMsg.textContent.includes('كن أول من يترك')) {
+                        emptyMsg.outerHTML = newCommentHtml;
+                    } else if (commentsContainer) {
+                        commentsContainer.insertAdjacentHTML('afterbegin', newCommentHtml);
+                    } else {
+                        renderApp();
+                    }
                 } else {
                     alert(result.error);
                 }
@@ -4400,6 +6679,7 @@ function attachEventListeners() {
                 const statusSelect = document.getElementById('edit-manga-status');
                 const statusMapRev = { 'مستمر': 'Ongoing', 'مكتمل': 'Completed', 'متوقف': 'Hiatus' };
                 updated.status = statusMapRev[statusSelect.value] || manga.status;
+                updated.type = document.getElementById('edit-manga-type').value || manga.type;
 
                 const res = await fetch('/api/save_manga', {
                     method: 'POST',
@@ -4420,6 +6700,383 @@ function attachEventListeners() {
             }
         };
     }
+
+    // =================================
+    // SOCIAL FEATURES EVENT HANDLERS
+    // =================================
+
+    function updateUserSearchDropdown() {
+        const container = document.querySelector('.user-search-box');
+        if (!container) return;
+        let dropdown = document.getElementById('user-search-dropdown');
+        if (!state.showUserSearch || state.userSearchResults.length === 0 || !state.userSearchQuery) {
+            if (dropdown) dropdown.remove();
+            return;
+        }
+        if (!dropdown) {
+            dropdown = document.createElement('div');
+            dropdown.className = 'user-search-dropdown';
+            dropdown.id = 'user-search-dropdown';
+            container.appendChild(dropdown);
+        }
+        const q = state.userSearchQuery.toLowerCase().trim();
+        const matches = state.userSearchResults.filter(u => u.username !== getUserHandle(state.userEmail));
+        if (matches.length === 0 || q.length === 0) {
+            dropdown.remove();
+            return;
+        }
+        dropdown.innerHTML = matches.map(u => `
+            <div class="user-search-item" data-username="${u.username}">
+                <span class="user-search-avatar">${getUserInitial(u.email)}</span>
+                <div class="user-search-info">
+                    <span class="user-search-name">${u.username}</span>
+                    <span class="user-search-rank">${u.rank}</span>
+                </div>
+            </div>
+        `).join('');
+        dropdown.querySelectorAll('.user-search-item').forEach(item => {
+            item.onclick = (e) => {
+                e.stopPropagation();
+                const username = e.currentTarget.dataset.username;
+                state.userSearchQuery = '';
+                state.userSearchResults = [];
+                state.showUserSearch = false;
+                const input = document.getElementById('user-search-input');
+                if (input) input.value = '';
+                dropdown.remove();
+                navigate('profile', username);
+            };
+        });
+    }
+
+    // User search by username (debounced)
+    const userSearchInput = document.getElementById('user-search-input');
+    if (userSearchInput) {
+        userSearchInput.oninput = (e) => {
+            const q = e.target.value.trim();
+            state.userSearchQuery = q;
+            if (state.userSearchDebounce) clearTimeout(state.userSearchDebounce);
+            if (q.length > 0) {
+                state.showUserSearch = true;
+                state.userSearchDebounce = setTimeout(async () => {
+                    try {
+                        const res = await fetch('/api/user/search?q=' + encodeURIComponent(q));
+                        state.userSearchResults = await res.json();
+                        updateUserSearchDropdown();
+                    } catch (e) { console.error('User search error:', e); }
+                }, 300);
+            } else {
+                state.showUserSearch = false;
+                state.userSearchResults = [];
+                updateUserSearchDropdown();
+            }
+        };
+        userSearchInput.onfocus = () => {
+            if (state.userSearchQuery && state.userSearchResults.length > 0) {
+                state.showUserSearch = true;
+                updateUserSearchDropdown();
+            }
+        };
+        userSearchInput.onblur = () => {
+            setTimeout(() => { state.showUserSearch = false; updateUserSearchDropdown(); }, 200);
+        };
+    }
+
+    // Notification button toggle
+    const notifBtn = document.getElementById('notification-btn');
+    if (notifBtn) {
+        notifBtn.onclick = async (e) => {
+            e.stopPropagation();
+            state.showNotifications = !state.showNotifications;
+            if (state.showNotifications) {
+                await state.fetchNotifications();
+            }
+            renderApp();
+        };
+    }
+
+    // Notification item click (mark as read + navigate)
+    document.querySelectorAll('.notification-item').forEach(item => {
+        item.onclick = async (e) => {
+            e.stopPropagation();
+            const id = e.currentTarget.dataset.id;
+            try {
+                await fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.sessionToken },
+                    body: JSON.stringify({ id: parseInt(id) })
+                });
+                state.showNotifications = false;
+                await state.fetchUnreadCount();
+                renderApp();
+            } catch (e) { console.error(e); }
+        };
+    });
+
+    // Mark all notifications read
+    const markAllRead = document.getElementById('mark-all-notif-read');
+    if (markAllRead) {
+        markAllRead.onclick = async (e) => {
+            e.stopPropagation();
+            try {
+                await fetch('/api/notifications/mark-read', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.sessionToken },
+                    body: JSON.stringify({})
+                });
+                state.showNotifications = false;
+                state.notifications = state.notifications.map(n => { n.is_read = true; return n; });
+                state.unreadNotifications = 0;
+                renderApp();
+            } catch (e) { console.error(e); }
+        };
+    }
+
+    // Close notifications on outside click
+    document.addEventListener('click', (e) => {
+        if (state.showNotifications && !e.target.closest('.notification-btn') && !e.target.closest('.notifications-dropdown')) {
+            state.showNotifications = false;
+            renderApp();
+        }
+    });
+
+    // Follow button toggle
+    const followBtn = document.getElementById('profile-follow-btn');
+    if (followBtn) {
+        followBtn.onclick = async () => {
+            const username = followBtn.dataset.username;
+            followBtn.disabled = true;
+            try {
+                const res = await fetch('/api/follow/' + encodeURIComponent(username), {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + state.sessionToken }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    if (data.following) {
+                        followBtn.classList.add('following');
+                        followBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> متابَع';
+                    } else {
+                        followBtn.classList.remove('following');
+                        followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> متابعة';
+                    }
+                }
+            } catch (e) { console.error(e); }
+            followBtn.disabled = false;
+        };
+    }
+
+    // Profile tab switching
+    document.querySelectorAll('.profile-tab').forEach(tab => {
+        tab.onclick = () => {
+            document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
+            tab.classList.add('active');
+            const content = document.getElementById('profile-tab-' + tab.dataset.tab);
+            if (content) content.classList.add('active');
+        };
+    });
+
+    // Activity items → navigate to manga detail
+    document.querySelectorAll('.activity-item').forEach(item => {
+        item.onclick = () => {
+            const mangaId = item.dataset.manga;
+            if (mangaId) navigate('detail', mangaId);
+        };
+    });
+
+    // Library card → navigate to manga detail
+    document.querySelectorAll('.library-card').forEach(card => {
+        card.onclick = () => {
+            const mangaId = card.dataset.manga;
+            if (mangaId) navigate('detail', mangaId);
+        };
+    });
+
+    // Review card → navigate to manga detail
+    document.querySelectorAll('.review-card').forEach(card => {
+        card.onclick = () => {
+            const mangaId = card.dataset.manga;
+            if (mangaId) navigate('detail', mangaId);
+        };
+    });
+
+    // Leaderboard row → navigate to profile
+    document.querySelectorAll('.leaderboard-row').forEach(row => {
+        row.onclick = () => {
+            const username = row.dataset.username;
+            if (username) navigate('profile', username);
+        };
+    });
+
+    // Leaderboard back-to-home button
+    const lbHomeBtn = document.getElementById('lb-home-btn');
+    if (lbHomeBtn) lbHomeBtn.onclick = () => navigate('home');
+
+    // Podium items → navigate to profile
+    document.querySelectorAll('.podium-item .podium-name').forEach(el => {
+        el.onclick = (e) => {
+            e.stopPropagation();
+            const username = el.textContent.trim();
+            if (username) navigate('profile', username);
+        };
+    });
+
+    // =================================
+    // DAILY REWARD EVENT HANDLERS
+    // =================================
+
+    // Claim reward button
+    const claimBtn = document.getElementById('claim-reward-btn');
+    if (claimBtn) {
+        claimBtn.onclick = async () => {
+            claimBtn.disabled = true;
+            claimBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري...';
+            try {
+                const res = await fetch('/api/rewards/claim_daily', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + state.sessionToken }
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    triggerConfetti();
+                    state.userProfile.points = data.total_points;
+                    state.userProfile.level = data.level;
+                    state.saveUserProfile();
+                    state.showDailyReward = false;
+                    setTimeout(() => {
+                        renderApp();
+                        // update navbar points
+                        const badge = document.querySelector('.points-badge-text');
+                        if (badge) badge.innerHTML = data.total_points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>';
+                    }, 100);
+                } else {
+                    alert(data.error || 'حدث خطأ');
+                    claimBtn.disabled = false;
+                    claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
+                }
+            } catch (e) {
+                console.error('Claim reward error:', e);
+                alert('خطأ في الاتصال بالخادم');
+                claimBtn.disabled = false;
+                claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
+            }
+        };
+    }
+
+    // Close reward modal on overlay click
+    const rewardOverlay = document.getElementById('reward-modal-overlay');
+    if (rewardOverlay) {
+        rewardOverlay.onclick = (e) => {
+            if (e.target === rewardOverlay) {
+                state.showDailyReward = false;
+                renderApp();
+            }
+        };
+    }
+
+    const closeRewardBtn = document.getElementById('close-reward-modal');
+    if (closeRewardBtn) {
+        closeRewardBtn.onclick = () => {
+            state.showDailyReward = false;
+            const overlay = document.getElementById('reward-modal-overlay');
+            if (overlay) { overlay.style.display = 'none'; } else { renderApp(); }
+        };
+    }
+
+    // =================================
+    // GENRE TAG FILTER
+    // =================================
+    document.querySelectorAll('.genres-list .genre-tag').forEach(tag => {
+        tag.onclick = () => {
+            const genre = tag.dataset.genre;
+            if (genre) {
+                state.activeGenre = genre;
+                renderApp();
+            }
+        };
+    });
+
+    // =================================
+    // ADVANCED FILTER CONTROLS
+    // =================================
+    const filterMap = { 'status':'filterStatus', 'type':'filterType', 'year-min':'filterYearMin', 'year-max':'filterYearMax', 'rating-min':'filterRatingMin', 'rating-max':'filterRatingMax', 'chapters-min':'filterChaptersMin', 'chapters-max':'filterChaptersMax', 'sort':'filterSort', 'time':'filterTime' };
+    Object.keys(filterMap).forEach(key => {
+        const el = document.getElementById('filter-' + key);
+        if (el) {
+            el.onchange = (e) => {
+                state[filterMap[key]] = e.target.value;
+                if (state.currentView === 'home' && document.getElementById('manga-grid-container')) {
+                    updateGridOnly();
+                } else {
+                    renderApp();
+                }
+            };
+        }
+    });
+
+    // =================================
+    // LEADERBOARD TABS
+    // =================================
+    document.querySelectorAll('.lb-tab').forEach(tab => {
+        tab.onclick = () => {
+            const tabKey = tab.dataset.tab;
+            if (tabKey && tabKey !== state.leaderboardTab) {
+                state.leaderboardTab = tabKey;
+                renderApp();
+            }
+        };
+    });
+
+    // =================================
+    // CHAPTER SORT DROPDOWN
+    // =================================
+    const chapterSortSelect = document.getElementById('chapter-sort-select');
+    if (chapterSortSelect) {
+        chapterSortSelect.onchange = (e) => {
+            state.chapterSortOrder = e.target.value;
+            renderApp();
+        };
+    }
+
+    // =================================
+    // STORE BUY BUTTONS
+    // =================================
+    document.querySelectorAll('.store-buy-btn').forEach(btn => {
+        btn.onclick = async () => {
+            if (btn.disabled) return;
+            const itemId = btn.dataset.id;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+            try {
+                const res = await fetch('/api/store/buy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.sessionToken },
+                    body: JSON.stringify({ item_id: itemId })
+                });
+                const result = await res.json();
+                if (res.ok) {
+                    alert('تم الشراء بنجاح!');
+                    state.userProfile.points = result.points || state.userProfile.points;
+                    if (result.item_id) {
+                        state.userProfile.purchased = state.userProfile.purchased || [];
+                        state.userProfile.purchased.push(result.item_id);
+                    }
+                    state.saveUserProfile();
+                    renderApp();
+                } else {
+                    alert(result.error || 'فشل الشراء');
+                    btn.disabled = false;
+                    btn.innerHTML = 'شراء';
+                }
+            } catch (e) {
+                console.error('Buy error:', e);
+                alert('خطأ في الاتصال');
+                btn.disabled = false;
+                btn.innerHTML = 'شراء';
+            }
+        };
+    });
 }
 
 // ==========================================
@@ -4690,6 +7347,87 @@ document.addEventListener('click', (e) => {
             renderApp();
         }
     }
+
+    // View toggle (search + browse)
+    const viewToggle = e.target.closest('.view-toggle-btn');
+    if (viewToggle) {
+        const view = viewToggle.dataset.view;
+        if (view) {
+            state.searchViewMode = view;
+            state.searchPage = 1;
+            navigate('search', state.searchQuery, view);
+        }
+        return;
+    }
+
+    // Pagination
+    const pageBtn = e.target.closest('.page-btn');
+    if (pageBtn) {
+        const p = parseInt(pageBtn.dataset.page);
+        if (p && p !== state.searchPage) {
+            state.searchPage = p;
+            navigate('search', state.searchQuery, state.searchViewMode);
+        }
+        return;
+    }
+
+    // Browse card/item click
+    const browseItem = e.target.closest('.browse-card, .browse-list-item');
+    if (browseItem && browseItem.dataset.id) {
+        navigate('detail', browseItem.dataset.id);
+        return;
+    }
+
+    // Browse scope tab
+    const scopeBtn = e.target.closest('.browse-scope-btn');
+    if (scopeBtn) {
+        state.searchScope = scopeBtn.dataset.scope;
+        state.searchPage = 1;
+        navigate('search', state.searchQuery, state.searchViewMode);
+        return;
+    }
+
+    // Browse filter toggle
+    const filterToggle = e.target.closest('#browse-filter-toggle');
+    if (filterToggle) {
+        state.browseShowFilters = !state.browseShowFilters;
+        navigate('search', state.searchQuery, state.searchViewMode);
+        return;
+    }
+});
+document.addEventListener('change', (e) => {
+    // Browse sort dropdown
+    const sortSelect = e.target.closest('#browse-sort');
+    if (sortSelect) {
+        state.filterSort = sortSelect.value;
+        state.searchPage = 1;
+        navigate('search', state.searchQuery, state.searchViewMode);
+        return;
+    }
+    // Browse filter dropdowns
+    const filterSelect = e.target.closest('.browse-filter-select');
+    if (filterSelect) {
+        const id = filterSelect.id;
+        if (id === 'browse-filter-status') state.filterStatus = filterSelect.value;
+        else if (id === 'browse-filter-type') state.filterType = filterSelect.value;
+        else if (id === 'browse-filter-genre') state.activeGenre = filterSelect.value;
+        state.searchPage = 1;
+        navigate('search', state.searchQuery, state.searchViewMode);
+        return;
+    }
+    // Extra filter inputs
+    const filterInput = e.target.closest('.browse-filter-input');
+    if (filterInput) {
+        const id = filterInput.id;
+        const val = filterInput.value;
+        if (id === 'browse-filter-year-min') state.filterYearMin = val;
+        else if (id === 'browse-filter-year-max') state.filterYearMax = val;
+        else if (id === 'browse-filter-rating-min') state.filterRatingMin = val;
+        else if (id === 'browse-filter-rating-max') state.filterRatingMax = val;
+        else if (id === 'browse-filter-ch-min') state.filterChaptersMin = val;
+        else if (id === 'browse-filter-ch-max') state.filterChaptersMax = val;
+        return;
+    }
 });
 
 async function bootstrapConfig() {
@@ -4720,3 +7458,532 @@ if (document.readyState === 'loading') {
 } else {
     bootstrapConfig();
 }
+
+
+// =====================================
+// FULL PROFILE VIEW
+// =====================================
+async function ProfileViewComponent() {
+    const s = state;
+    const username = s.userEmail ? getUserHandle(s.userEmail) : 'Guest';
+    const initial = username.charAt(0).toUpperCase();
+
+    // The Rewards grid injected into profile
+    const rewardsHtml = `
+        <div class="settings-card">
+            <div class="flex-between" style="margin-bottom:15px;">
+                <div style="font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
+                <div style="font-size:0.85rem; color:var(--text-muted);">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
+            </div>
+            <div class="rewards-grid">
+                <div class="reward-card completed">
+                    <div class="reward-day">1</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-check"></i></div>
+                    <div class="reward-prizes">5 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card completed">
+                    <div class="reward-day">2</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-check"></i></div>
+                    <div class="reward-prizes">10 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">3</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes">15 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">4</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes">20 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">5</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes">25 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card locked">
+                    <div class="reward-day">6</div>
+                    <div class="reward-icon-box"><i class="fa-solid fa-lock"></i></div>
+                    <div class="reward-prizes">30 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                </div>
+                <div class="reward-card wide locked">
+                    <div>
+                        <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
+                        <div class="reward-prizes" style="margin-top:5px;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
+                    </div>
+                    <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    return `
+    <div style="max-width:1200px; margin:0 auto; padding-bottom:50px;">
+        <!-- Banner -->
+        <div style="height:300px; background:linear-gradient(to right, #1a1c23, #000), url('https://via.placeholder.com/1200x300/1a1a2e/ffffff?text=Banner') center/cover; position:relative; border-bottom:1px solid rgba(255,255,255,0.05);">
+            <div style="position:absolute; bottom:-50px; right:40px; display:flex; align-items:flex-end; gap:20px;">
+                <div style="width:120px; height:120px; border-radius:50%; border:4px solid var(--bg-color); background:var(--bg-card); display:flex; align-items:center; justify-content:center; font-size:3rem; color:var(--primary-color);">
+                    ${initial}
+                </div>
+                <div style="padding-bottom:10px;">
+                    <h1 style="margin:0; font-size:2rem;">${username}</h1>
+                    <span style="color:var(--text-muted);">@${username}</span>
+                </div>
+            </div>
+            <div style="position:absolute; bottom:20px; left:40px;">
+                <button class="btn-primary" onclick="navigate('settings')"><i class="fa-solid fa-gear"></i> إعدادات الحساب</button>
+            </div>
+        </div>
+
+        <!-- Stats Row -->
+        <div style="display:flex; justify-content:center; gap:50px; padding:30px 0; background:rgba(255,255,255,0.02); margin-top:50px; border-radius:12px;">
+            <div style="text-align:center;">
+                <div style="font-size:1.5rem; font-weight:bold;">0</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">المتابعون</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.5rem; font-weight:bold;">0</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">يتابع</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.5rem; font-weight:bold;">0</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">أيام التسجيل</div>
+            </div>
+            <div style="text-align:center;">
+                <div style="font-size:1.5rem; font-weight:bold;">0</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">سجل القراءة</div>
+            </div>
+        </div>
+
+        <div class="settings-layout" style="margin-top:30px;">
+            <div class="settings-content" style="flex:2;">
+                <!-- Tabs -->
+                <div class="notif-tabs" style="margin-bottom:20px;">
+                    <div class="notif-tab active" onclick="window.switchProfileViewTab(this, 'activity')">نشاط الحساب</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'library')">المكتبة</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'reviews')">المراجعات</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'chapters')">الفصول</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'ratings')">التقييم</div>
+                </div>
+                
+                <div class="notif-empty" id="profile-content-box">
+                    <i class="fa-solid fa-ghost"></i>
+                    <div>لا يوجد أي نشاط حتى الآن</div>
+                </div>
+            </div>
+            
+            <div class="settings-sidebar" style="flex:1; padding:0; background:transparent; border:none;">
+                <!-- Level System Card -->
+                <div class="settings-card">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+                        <div>
+                            <div style="font-size:0.85rem; color:var(--text-muted);">معلومات العضو</div>
+                            <div style="font-weight:bold; font-size:1.1rem;">مستخدم 1</div>
+                        </div>
+                        <i class="fa-solid fa-crown" style="font-size:2rem; color:var(--primary-color);"></i>
+                    </div>
+                    <div style="width:100%; background:rgba(255,255,255,0.1); height:8px; border-radius:4px; margin-bottom:5px; position:relative;">
+                        <div style="position:absolute; top:0; right:0; height:100%; width:10%; background:var(--primary-color); border-radius:4px;"></div>
+                    </div>
+                    <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">10% إلى مستوى 2</div>
+                    <p style="font-size:0.7rem; color:rgba(255,255,255,0.3); text-align:center; margin-top:10px;">وسام القراءة والمكافآت تعزز مستواك أعلى</p>
+                </div>
+
+                ${rewardsHtml}
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+// =====================================
+// SETTINGS VIEW
+// =====================================
+function SettingsViewComponent() {
+    const s = state;
+
+    const profileHtml = `
+        <div class="settings-tab-pane" id="settings-pane-profile" style="display:block;">
+            <div class="settings-section-title"><i class="fa-regular fa-user"></i> مظهر الملف الشخصي</div>
+            <div class="settings-card">
+                <div class="flex-between">
+                    <div>
+                        <div class="form-label">صورة الغلاف (Banner)</div>
+                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:400px; height:120px; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; margin-bottom:10px;"></i>
+                            <span>رفع صورة غلاف</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="form-label">الصورة الشخصية</div>
+                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:100px; height:100px; border-radius:50%; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                            <i class="fa-solid fa-camera"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">الاسم المستعار</label>
+                <input type="text" class="form-control" value="${s.userEmail ? getUserHandle(s.userEmail) : ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">النبذة التعريفية (Bio)</label>
+                <textarea class="form-control" placeholder="تحدث عن نفسك..."></textarea>
+                <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px; text-align:left;">0/500</div>
+            </div>
+        </div>
+    `;
+
+    const securityHtml = `
+        <div class="settings-tab-pane" id="settings-pane-security" style="display:none;">
+            <div class="settings-section-title"><i class="fa-solid fa-lock"></i> الأمان وتغيير كلمة المرور</div>
+            <div class="settings-card">
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور الحالية</label>
+                    <input type="password" class="form-control" value="........................">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">كلمة المرور الجديدة</label>
+                    <input type="password" class="form-control" placeholder="........">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">تأكيد كلمة المرور الجديدة</label>
+                    <input type="password" class="form-control" placeholder="........">
+                </div>
+                <div style="text-align:left;">
+                    <button class="btn-primary" onclick="alert('تم تحديث الأمان بنجاح')">تغيير كلمة المرور</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const notifHtml = `
+        <div class="settings-tab-pane" id="settings-pane-notifications" style="display:none;">
+            <div class="settings-section-title"><i class="fa-regular fa-bell"></i> إعدادات الإشعارات</div>
+            <div class="settings-card">
+                <div class="flex-between" style="margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
+                    <div>
+                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات الفصول الجديدة</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">تلقي إشعارات فورية عند صدور فصول للمانجا في مكتبتك.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="flex-between">
+                    <div>
+                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات النظام</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">إشعارات تخص التحديثات والهدايا والمكافآت.</div>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const privacyHtml = `
+        <div class="settings-tab-pane" id="settings-pane-privacy" style="display:none;">
+            <div class="settings-section-title"><i class="fa-solid fa-shield-halved"></i> الخصوصية والبيانات</div>
+            <div class="settings-card flex-between">
+                <div>
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">إخفاء قائمة القراءة</div>
+                    <div style="color:var(--text-muted); font-size:0.85rem;">السماح للآخرين بمشاهدة قائمة الأعمال التي تقرأها.</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" checked>
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+    `;
+
+    return `
+    <div class="settings-container">
+        <div style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;">الإعدادات</div>
+        <div style="color:var(--text-muted); margin-bottom:30px;">إدارة إعدادات حسابك وتفضيلاتك.</div>
+        
+        <div class="settings-layout">
+            <div class="settings-sidebar">
+                <div class="settings-sidebar-title"><i class="fa-regular fa-user"></i> الإعدادات العامة</div>
+                <div class="settings-sidebar-subtitle">تحكم بملفك الشخصي والأمان</div>
+                <div class="settings-nav-item active" onclick="window.switchSettingsTab(this, 'profile')">
+                    <i class="fa-regular fa-user"></i> مظهر الملف الشخصي
+                </div>
+                <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'security')">
+                    <i class="fa-solid fa-lock"></i> الأمان
+                </div>
+                <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'notifications')">
+                    <i class="fa-regular fa-bell"></i> الإشعارات
+                </div>
+                <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'privacy')">
+                    <i class="fa-solid fa-shield-halved"></i> الخصوصية والبيانات
+                </div>
+            </div>
+            
+            <div class="settings-content">
+                ${profileHtml}
+                ${securityHtml}
+                ${notifHtml}
+                ${privacyHtml}
+            </div>
+        </div>
+    </div>
+    `;
+}
+window.navigateView = function(view) {
+    state.currentView = view;
+    if (view === 'settings') state.settingsTab = 'profile';
+    renderApp();
+};
+window.toggleTopDropdown = function(id) {
+    document.querySelectorAll('.top-dropdown').forEach(d => {
+        if (d.id !== id) d.classList.remove('show');
+    });
+    const el = document.getElementById(id);
+    if(el) el.classList.toggle('show');
+};
+window.applyTheme = function(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+};
+
+// GLOBAL HELPERS
+if (typeof window.navigateSettings === 'undefined') {
+    window.navigateSettings = function(tab) {
+        state.settingsTab = tab;
+        state.currentView = 'settings';
+        renderApp();
+    };
+}
+
+// GLOBAL PROFILE TAB SWITCHER
+if (typeof window.switchProfileViewTab === 'undefined') {
+    window.switchProfileViewTab = function(element, tabName) {
+        if (!element || !element.parentElement) return;
+        const tabs = element.parentElement.children;
+        for(let i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
+        element.classList.add('active');
+        
+        const contentBox = document.getElementById('profile-content-box');
+        if (!contentBox) return;
+        
+        if(tabName === 'activity') {
+            contentBox.innerHTML = '<i class="fa-solid fa-ghost"></i><div>لا يوجد أي نشاط حتى الآن</div>';
+        } else if(tabName === 'library') {
+            contentBox.innerHTML = '<i class="fa-solid fa-book-open"></i><div>المكتبة فارغة</div>';
+        } else if(tabName === 'reviews') {
+            contentBox.innerHTML = '<i class="fa-solid fa-star"></i><div>لا توجد مراجعات</div>';
+        } else if(tabName === 'chapters') {
+            contentBox.innerHTML = '<i class="fa-solid fa-file-lines"></i><div>لم تقم بقراءة أي فصول بعد</div>';
+        } else if(tabName === 'ratings') {
+            contentBox.innerHTML = '<i class="fa-solid fa-thumbs-up"></i><div>لم تقم بتقييم أي مانجا</div>';
+        }
+    };
+}
+
+if (typeof window.switchSettingsTab === 'undefined') {
+    window.switchSettingsTab = function(element, tabId) {
+        if (!element || !element.parentElement) return;
+        const tabs = element.parentElement.children;
+        for(let i=0; i<tabs.length; i++) {
+            if (tabs[i].classList.contains('settings-nav-item')) {
+                tabs[i].classList.remove('active');
+            }
+        }
+        element.classList.add('active');
+        
+        const contents = document.querySelectorAll('.settings-tab-pane');
+        contents.forEach(c => c.style.display = 'none');
+        
+        const activeTab = document.getElementById('settings-pane-' + tabId);
+        if (activeTab) activeTab.style.display = 'block';
+    };
+}
+
+
+async function fetchMangaDetails(mangaId) {
+    const manga = state.mangas.find(m => String(m.id) === String(mangaId));
+    if (!manga) return;
+    if (manga.chapters && manga.chapters.length > 0) return;
+    if (manga.isFetching) return;
+    manga.isFetching = true;
+    try {
+        const response = await fetch('./mangas_data/' + mangaId + '.json');
+        if (response.ok) {
+            const data = await response.json();
+            Object.assign(manga, data);
+        }
+    } catch (e) { console.error(e); }
+    manga.isFetching = false;
+}
+
+
+
+function SuggestionsViewComponent() {
+    if (!state.userEmail) {
+        return `
+        <div class="container" style="text-align:center; padding:100px 20px;">
+            <h2><i class="fa-solid fa-lock" style="color:var(--primary-color);"></i> يجب تسجيل الدخول</h2>
+            <p style="color:var(--text-muted); margin-top:15px;">عذراً، يجب عليك تسجيل الدخول لتتمكن من إرسال الاقتراحات أو الشكاوي.</p>
+            <button class="primary-btn" style="margin-top:20px;" onclick="document.getElementById('login-modal-overlay').style.display='flex'">تسجيل الدخول</button>
+        </div>
+        `;
+    }
+    return `
+    <div class="container" style="max-width:800px; padding-top:40px; padding-bottom:60px;">
+        <div style="text-align:center; margin-bottom:40px;">
+            <h1 style="font-size:2.5rem; margin-bottom:15px; color:var(--primary-color);">
+                <i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي
+            </h1>
+            <p style="color:var(--text-muted); font-size:1.1rem;">نحن نستمع إليك! أرسل لنا أفكارك لتطوير الموقع، أو أي مشكلة تواجهك وسنقوم بحلها فوراً.</p>
+        </div>
+        
+        <div style="background:var(--secondary-color); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
+            <div class="form-group" style="margin-bottom:20px;">
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">نوع الرسالة</label>
+                <select id="sug-type" style="width:100%; padding:15px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none;">
+                    <option value="suggestion" style="background:var(--secondary-color);">💡 اقتراح لتطوير الموقع</option>
+                    <option value="complaint" style="background:var(--secondary-color);">⚠️ شكوى أو مشكلة فنية</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom:25px;">
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">نص الرسالة</label>
+                <textarea id="sug-content" rows="6" placeholder="اكتب رسالتك هنا بالتفصيل..." style="width:100%; padding:15px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none; resize:vertical;"></textarea>
+            </div>
+            
+            <button id="sug-submit-btn" class="primary-btn" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;" onclick="submitSuggestion()">
+                <i class="fa-solid fa-paper-plane"></i> إرسال الرسالة
+            </button>
+        </div>
+    </div>
+    `;
+}
+
+window.submitSuggestion = async function() {
+    const type = document.getElementById('sug-type').value;
+    const content = document.getElementById('sug-content').value.trim();
+    const btn = document.getElementById('sug-submit-btn');
+    
+    if (!content) {
+        alert('الرجاء كتابة نص الرسالة أولاً!');
+        return;
+    }
+    
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
+    
+    try {
+        const response = await fetch('/api/suggestions', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: type, content: content})
+        });
+        
+        const data = await response.json();
+        if (response.ok) {
+            alert('تم إرسال رسالتك بنجاح! شكراً لتواصلك معنا.');
+            document.getElementById('sug-content').value = '';
+            navigate('home');
+        } else {
+            alert(data.error || 'حدث خطأ أثناء الإرسال');
+        }
+    } catch (e) {
+        alert('خطأ في الاتصال بالخادم');
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الرسالة';
+};
+
+
+window.startLiveScrape = function() {
+    const url = document.getElementById('live-scrape-url').value.trim();
+    if (!url) return alert('يرجى إدخال الرابط أولاً!');
+    
+    const terminal = document.getElementById('terminal-output');
+    const btn = document.getElementById('live-scrape-btn');
+    
+    terminal.innerHTML = '<span style="color:#0f0;">$ Starting scrape for: ' + url + '</span>\n';
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري السحب...';
+    
+    // Connect to SSE Endpoint
+    const eventSource = new EventSource(`/api/admin/scrape_stream?url=${encodeURIComponent(url)}&token=${state.sessionToken}`);
+    
+    eventSource.onmessage = function(event) {
+        const data = event.data;
+        if (data === '[DONE]') {
+            terminal.innerHTML += '\n<span style="color:#0f0;">$ Process Finished!</span>\n';
+            eventSource.close();
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> ابدأ السحب';
+            return;
+        }
+        
+        // Auto scroll to bottom
+        terminal.innerHTML += data + '\n';
+        terminal.scrollTop = terminal.scrollHeight;
+    };
+    
+    eventSource.onerror = function(e) {
+        terminal.innerHTML += '\n<span style="color:red;">$ Connection Error or Process Terminated.</span>\n';
+        eventSource.close();
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> ابدأ السحب';
+    };
+};
+
+window.checkAutoUpdaterStatus = async function() {
+    try {
+        const res = await fetch('/api/admin/updater_status');
+        const data = await res.json();
+        const toggle = document.getElementById('auto-updater-toggle');
+        const statusText = document.getElementById('auto-updater-status');
+        
+        if (data.enabled) {
+            toggle.checked = true;
+            statusText.textContent = 'يعمل الآن (Active)';
+            statusText.style.color = '#00E676';
+        } else {
+            toggle.checked = false;
+            statusText.textContent = 'متوقف (Paused)';
+            statusText.style.color = '#ff4444';
+        }
+    } catch(e) {}
+};
+
+window.toggleAutoUpdater = async function() {
+    const toggle = document.getElementById('auto-updater-toggle');
+    const newState = toggle.checked;
+    const statusText = document.getElementById('auto-updater-status');
+    
+    statusText.textContent = 'جاري الحفظ...';
+    
+    try {
+        const res = await fetch('/api/admin/updater_toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${state.sessionToken}`
+            },
+            body: JSON.stringify({enabled: newState})
+        });
+        const data = await res.json();
+        
+        if (data.enabled) {
+            statusText.textContent = 'يعمل الآن (Active)';
+            statusText.style.color = '#00E676';
+        } else {
+            statusText.textContent = 'متوقف (Paused)';
+            statusText.style.color = '#ff4444';
+        }
+    } catch (e) {
+        alert('حدث خطأ');
+        toggle.checked = !newState;
+    }
+};
