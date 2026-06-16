@@ -1586,6 +1586,7 @@ function HeaderComponent() {
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.toggleTopDropdown('notifications-dropdown');"><i class="fa-regular fa-bell"></i> الإشعارات</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-award"></i> إنجازاتي</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-crown" style="color:#f1c40f;"></i> اشتراكي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text" style="color:#ff007f;"></i> الاقتراحات والشكاوي</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('settings');"><i class="fa-solid fa-gear"></i> الإعدادات</a>
             </div>
             <div style="border-top:1px solid rgba(255,255,255,0.05); padding:10px 0;">
