@@ -131,18 +131,27 @@ def get_scraper(url: str) -> BaseScraper:
     if "mangatuk.com" in url:
         from scrapers.mangatuk_scraper import MangatukScraper
         return MangatukScraper()
-    elif "asuracomic" in url or "mangaclash" in url or "manga-starz" in url or "lekmanga" in url or "lek-manga" in url:
+    elif "asuracomic" in url or "mangaclash" in url or "manga-starz" in url or "lekmanga" in url or "lek-manga" in url or "3asq.org" in url:
         from scrapers.madara_scraper import MadaraScraper
         return MadaraScraper()
     elif "olympusstaff" in url or "olympustaff" in url:
         from scrapers.olympus_scraper import OlympusScraper
         return OlympusScraper()
+    elif "geetmark" in url:
+        from scrapers.geetmark_scraper import GeetmarkScraper
+        return GeetmarkScraper()
     elif "mgeko.cc" in url:
         from scrapers.mgeko_scraper import MgekoScraper
         return MgekoScraper()
     elif "3asq.org" in url:
         from scrapers.madara_scraper import MadaraScraper
         return MadaraScraper()
+    elif "mangatime.org" in url:
+        from scrapers.mangatime_scraper import MangatimeScraper
+        return MangatimeScraper()
+    elif "hijala.com" in url:
+        from scrapers.hijala_scraper import HijalaScraper
+        return HijalaScraper()
     
     # Fallback to Generic
     return GenericScraper()
