@@ -50,8 +50,10 @@ class GenericScraper(BaseScraper):
                 # Avoid duplicates and non-chapter paths
                 if any(x in href for x in ["tag", "category", "author", "page"]):
                     continue
-                if not any(ch['url'] == href for ch in chapters):
-                    chapters.append({"url": href, "title": text or f"Chapter {len(chapters)+1}"})
+                from urllib.parse import urljoin
+                absolute_url = urljoin(url, href)
+                if not any(ch['url'] == absolute_url for ch in chapters):
+                    chapters.append({"url": absolute_url, "title": text or f"Chapter {len(chapters)+1}"})
         return {
             "title": title, 
             "cover_url": cover_url, 
@@ -137,6 +139,9 @@ def get_scraper(url: str) -> BaseScraper:
     elif "olympusstaff" in url or "olympustaff" in url:
         from scrapers.olympus_scraper import OlympusScraper
         return OlympusScraper()
+    elif "mangagm.geetmark" in url:
+        from scrapers.mangagm_scraper import MangaGMScraper
+        return MangaGMScraper()
     elif "geetmark" in url:
         from scrapers.geetmark_scraper import GeetmarkScraper
         return GeetmarkScraper()
