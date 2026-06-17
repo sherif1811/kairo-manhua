@@ -5630,7 +5630,10 @@ function attachEventListeners() {
             try {
                 const res = await fetch('/api/admin/auto-translate', {
                     method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + state.sessionToken
+                    },
                     body: JSON.stringify({url, manga_id: mangaId, chapter_id: chapterId})
                 });
                 const data = await res.json();
