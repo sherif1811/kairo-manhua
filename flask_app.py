@@ -2343,8 +2343,13 @@ def _close_pw_browser():
             pass
         _playwright = None
 
-def _pw_fetch_image(image_url, timeout=30000):
+PW_SEMAPHORE = threading.Semaphore(4) # Limit concurrent Playwright pages
+
+def _pw_fetch_image(image_url, timeout=10000):
     """Fetch a single image using the persistent Playwright browser (passes Cloudflare)"""
+    if not PW_SEMAPHORE.acquire(blocking=False):
+        return None # Return early if server is overloaded with Playwright requests
+
     try:
         browser = _get_pw_browser()
         page = browser.new_page()
@@ -2361,6 +2366,8 @@ def _pw_fetch_image(image_url, timeout=30000):
             return None
     except Exception:
         return None
+    finally:
+        PW_SEMAPHORE.release()
 
 # ============================================================
 # Smart image preloader â€” progressive chapter caching

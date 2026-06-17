@@ -2755,18 +2755,16 @@ async function ReaderViewComponent() {
     if (settings.mode === 'horizontal') {
         pages.forEach((pageUrl, index) => {
             const isActivePage = index === state.activePageIndex;
-            const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
             <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${proxiedUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async">
+                <img src="${pageUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
             </div>
             `;
         });
     } else {
         pages.forEach((pageUrl, index) => {
-            const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container lazy-load-container" data-src="${proxiedUrl}">
+            <div class="reader-image-container lazy-load-container" data-src="${pageUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
                     <span>جاري تحميل الصفحة ${index + 1}...</span>
@@ -7121,27 +7119,58 @@ function loadEditMangaData() {
 // 6. تشغيل القارئ والتحميل الكسول
 // ==========================================
 
-function loadSingleImage(container, src) {
+window.readerImageQueue = [];
+window.readerActiveImageLoads = 0;
+const MAX_CONCURRENT_IMAGES = 3;
+
+function processReaderImageQueue() {
+    if (window.readerActiveImageLoads >= MAX_CONCURRENT_IMAGES || window.readerImageQueue.length === 0) return;
+    
+    window.readerActiveImageLoads++;
+    var task = window.readerImageQueue.shift();
+    var container = task.container;
+    var src = task.src;
+    var isProxyFallback = task.isProxyFallback;
+
     var retries = parseInt(container.dataset.retries || '0', 10);
     if (retries >= 2) {
+        window.readerActiveImageLoads--;
         showImageError(container, src, true);
+        processReaderImageQueue();
         return;
     }
+
     var img = document.createElement('img');
+    img.referrerPolicy = "no-referrer"; // Bypass basic hotlink protection
     img.src = src;
+
     img.onload = function() {
         container.innerHTML = '';
         container.appendChild(img);
+        window.readerActiveImageLoads--;
+        processReaderImageQueue();
     };
+
     img.onerror = function() {
         container.dataset.retries = String(retries + 1);
-        if (src && src.startsWith('/proxy-image?url=')) {
-            var originalUrl = decodeURIComponent(src.split('?url=')[1]);
-            loadSingleImage(container, originalUrl);
+        window.readerActiveImageLoads--;
+        
+        // If the direct link failed and we haven't tried the proxy yet
+        if (!isProxyFallback && src.startsWith('http')) {
+            var proxyUrl = '/proxy-image?url=' + encodeURIComponent(src);
+            window.readerImageQueue.unshift({ container: container, src: proxyUrl, isProxyFallback: true });
         } else {
             showImageError(container, src, false);
         }
+        processReaderImageQueue();
     };
+}
+
+function loadSingleImage(container, src) {
+    // Determine if the URL is already a proxy URL (e.g. from retry button)
+    var isProxy = src && src.startsWith('/proxy-image');
+    window.readerImageQueue.push({ container: container, src: src, isProxyFallback: isProxy });
+    processReaderImageQueue();
 }
 
 function showImageError(container, src, exhausted) {
