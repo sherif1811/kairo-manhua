@@ -2557,13 +2557,13 @@ def proxy_image():
     if PIL_AVAILABLE:
         try:
             img = Image.open(io.BytesIO(img_data))
-            # Try to remove olympustaff watermarks too
-            try:
-                wm_removed = image_processor.process_image_watermark(img)
-                if wm_removed > 0:
-                    print(f"[proxy-image] Removed {wm_removed} olympustaff watermark(s)")
-            except Exception:
-                pass
+            # تم تعطيل خاصية مسح الحقوق التلقائية لأنها تقوم بمسح نصوص المحادثات بالخطأ
+            # try:
+            #     wm_removed = image_processor.process_image_watermark(img)
+            #     if wm_removed > 0:
+            #         print(f"[proxy-image] Removed {wm_removed} olympustaff watermark(s)")
+            # except Exception:
+            #     pass
             img = _apply_watermark(img)
             if img.mode != 'RGB':
                 img = img.convert('RGB')
