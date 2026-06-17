@@ -473,7 +473,7 @@ def award_reading_points(email, manga_id, chapter_id):
         leveled_up = new_level > current_level
         
         c.execute('UPDATE users SET points = ?, level = ? WHERE email = ?', (new_points, new_level, email))
-        c.execute('INSERT OR IGNORE INTO reader_points_log VALUES (?, ?, ?, ?)',
+        c.execute('INSERT OR IGNORE INTO reader_points_log (email, manga_id, chapter_id, earned_at) VALUES (?, ?, ?, ?)',
                   (email, manga_id, chapter_id, time.time()))
         conn.commit()
         
