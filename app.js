@@ -1427,9 +1427,16 @@ function getProxiedImageUrl(url) {
     return url;
 }
 
+window._hasPrefetchedNextChapter = false;
+window._nextChapterImages = null;
+
 function prefetchNextChapter(images) {
-    if (!images || !Array.isArray(images)) return;
-    images.forEach(url => {
+    if (!images || !Array.isArray(images) || window._hasPrefetchedNextChapter) return;
+    window._hasPrefetchedNextChapter = true;
+    
+    // Only prefetch the first 5 images to avoid slowing down the current chapter
+    const toPrefetch = images.slice(0, 5);
+    toPrefetch.forEach(url => {
         const img = new Image();
         img.src = getProxiedImageUrl(url);
     });
@@ -2730,10 +2737,12 @@ async function ReaderViewComponent() {
         }
     }
 
-    // التحميل المسبق للفصل التالي
+    // إعداد التحميل المسبق الذكي (هيتفعل لما القارئ ينزل لتحت)
+    window._hasPrefetchedNextChapter = false;
+    window._nextChapterImages = null;
     const nextChapter = manga.chapters[chapterIndex - 1];
     if (nextChapter) {
-        prefetchNextChapter(nextChapter.images);
+        window._nextChapterImages = nextChapter.images;
     }
 
     // خيارات الفصول
@@ -7263,6 +7272,11 @@ function initProgressTracker() {
         
         if (state.activeMangaId && state.activeChapterId) {
             state.saveReadingProgress(state.activeMangaId, state.activeChapterId, winScroll, scrolled);
+        }
+        
+        // التحميل الاستباقي الذكي للفصل القادم
+        if (scrolled > 70 && !window._hasPrefetchedNextChapter && window._nextChapterImages) {
+            prefetchNextChapter(window._nextChapterImages);
         }
     };
 }

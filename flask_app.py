@@ -2437,8 +2437,8 @@ def preload_chapter_images_bg(manga_id, chapter_id, quality=90):
             PRELOAD_SEMAPHORE.release()
             time.sleep(0.5)  # Ù†ØµÙ Ø«Ø§Ù†ÙŠØ© Ø¨ÙŠÙ† Ø§Ù„ØµÙˆØ± â€” ÙŠÙ…Ù†Ø¹ Ø­Ø¸Ø± Ø§Ù„Ù…ØµØ¯Ø±
 
-def preload_first_chapters(manga_id, count=5):
-    """Preload first N chapters of a manga in background"""
+def preload_smart_chapters(manga_id, first_count=5, latest_count=3):
+    """Preload first N and latest M chapters of a manga in background"""
     import json
     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
     try:
@@ -2450,9 +2450,26 @@ def preload_first_chapters(manga_id, count=5):
     if not manga or not manga.get('chapters'):
         return
     chapters = manga['chapters']
-    # Sort chapters by numeric id ascending
-    chapters_sorted = sorted(chapters, key=lambda ch: float(ch.get('id', '0')))
-    for ch in chapters_sorted[:count]:
+    
+    def get_ch_num(ch):
+        try:
+            return float(ch.get('number', 0))
+        except (ValueError, TypeError):
+            num_str = ''.join(c for c in str(ch.get('id', '')) if c.isdigit() or c == '.')
+            try:
+                return float(num_str) if num_str else 0.0
+            except ValueError:
+                return 0.0
+
+    chapters_sorted = sorted(chapters, key=get_ch_num)
+    
+    chapters_to_preload = chapters_sorted[:first_count]
+    if len(chapters_sorted) > first_count:
+        remaining = chapters_sorted[first_count:]
+        latest_chapters = remaining[-latest_count:] if len(remaining) > latest_count else remaining
+        chapters_to_preload.extend(latest_chapters)
+        
+    for ch in chapters_to_preload:
         if _is_preloaded(manga_id, ch.get('id')):
             continue
         t = threading.Thread(target=preload_chapter_images_bg, args=(manga_id, ch.get('id')), daemon=True)
@@ -3027,7 +3044,7 @@ def fetch_chapter_images():
             json.dump(scraped_db, f, ensure_ascii=False, indent=2)
 
         # Smart preload: first 5 chapters in background
-        threading.Thread(target=preload_first_chapters, args=(manga_id,), daemon=True).start()
+        threading.Thread(target=preload_smart_chapters, args=(manga_id,), daemon=True).start()
 
         return jsonify({"images": images, "cached": False})
 
@@ -3127,3 +3144,23 @@ def updater_toggle():
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
     run_simple('0.0.0.0', 8000, app, threaded=True, use_reloader=False)
+
+def auto_clean_cache():
+    import time, glob, os
+    while True:
+        try:
+            now = time.time()
+            cutoff = now - (7 * 24 * 60 * 60) # 7 days
+            files = glob.glob(os.path.join(CACHE_DIR, '*'))
+            count = 0
+            for f in files:
+                if os.path.isfile(f) and os.path.getmtime(f) < cutoff:
+                    os.remove(f)
+                    count += 1
+            if count > 0:
+                print(f"[Cache Cleaner] Removed {count} old images from cache.")
+        except Exception as e:
+            print(f"[Cache Cleaner] Error: {e}")
+        time.sleep(12 * 60 * 60) # Run twice a day
+
+threading.Thread(target=auto_clean_cache, daemon=True).start()
