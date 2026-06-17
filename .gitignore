@@ -7,3 +7,13 @@ scratch_out/
 __pycache__/
 *.db
 .env
+blob.txt
+*.zip
+*.backup
+kairo-deploy.zip
+cloudflared.exe
+cloudflared_log.txt
+temp_chapters/
+static/drafts/
+kairo_drafts.db
+fetch_errors.log
