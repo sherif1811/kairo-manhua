@@ -2753,6 +2753,19 @@ async function ReaderViewComponent() {
         window._nextChapterImages = nextChapter.images;
     }
 
+    // التحميل المسبق الذكي على السيرفر للفصول القادمة
+    const prefetchCount = 2; 
+    for (let i = 1; i <= prefetchCount; i++) {
+        const futureChapter = manga.chapters[chapterIndex - i];
+        if (futureChapter && futureChapter.id) {
+            fetch('/api/preload-chapter', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ manga_id: manga.id, chapter_id: futureChapter.id })
+            }).catch(e => console.log('Preload background error:', e));
+        }
+    }
+
     // خيارات الفصول
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
