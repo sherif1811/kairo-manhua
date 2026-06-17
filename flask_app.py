@@ -2633,12 +2633,18 @@ def auto_translate():
     except Exception:
         pass
 
-    task = process_chapter.delay(manga_id, chapter_id, source_url, image_urls=image_urls)
-    return jsonify({
-        "status": "queued",
-        "task_id": task.id,
-        "message": "ØªÙ… ÙˆØ¶Ø¹ Ø§Ù„ÙØµÙ„ ÙÙŠ Ø·Ø§Ø¨ÙˆØ± Ø§Ù„Ù…Ø¹Ø§Ù„Ø¬Ø©"
-    }), 202
+    try:
+        from tasks import process_chapter
+        task = process_chapter.delay(manga_id, chapter_id, source_url, image_urls=image_urls)
+        return jsonify({
+            'status': 'queued',
+            'task_id': task.id,
+            'message': 'Queued successfully'
+        }), 202
+    except Exception as e:
+        import traceback
+        err = f'Server Error: {str(e)} | {traceback.format_exc()}'
+        return jsonify({'error': err}), 500
 
 @app.route('/api/admin/notifications/broadcast', methods=['POST'])
 @require_admin
