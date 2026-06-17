@@ -35,28 +35,28 @@ class OlympusScraper(BaseScraper):
             if cover_el:
                 cover = cover_el.get("src", "") or cover_el.get("data-src", "")
         
-        # Extract description — try meta tags first, then body containers
+        # Extract description — try body containers first, then fallback to meta tags
         description = ""
-        for meta_sel in ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']:
-            m = soup.select_one(meta_sel)
-            if m and m.get("content"):
-                desc = m["content"].strip()
-                if len(desc) > 20:
+        for sel in [".review-content", ".description", ".summary", ".manga-description", ".serie-description",
+                    ".panel-body", ".comic-description", ".entry-content"]:
+            el = soup.select_one(sel)
+            if el:
+                desc = el.text.strip()
+                if len(desc) > 30:
                     description = desc
                     break
         if not description:
-            for sel in [".description", ".summary", ".manga-description", ".serie-description",
-                        ".panel-body", ".comic-description", ".entry-content"]:
-                el = soup.select_one(sel)
-                if el:
-                    desc = el.text.strip()
-                    if len(desc) > 30:
+            for meta_sel in ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']:
+                m = soup.select_one(meta_sel)
+                if m and m.get("content"):
+                    desc = m["content"].strip()
+                    if len(desc) > 20 and not desc.startswith("مانجا") and not "مترجمة" in desc:
                         description = desc
                         break
         
         # Extract genres — look for genre/category links or tags
         genres = []
-        for a in soup.select('a[href*="/genre/"], a[href*="/categoria/"], a[href*="/category/"], a[href*="/tag/"]'):
+        for a in soup.select('a.subtitle, a[href*="/genre/"], a[href*="/categoria/"], a[href*="/category/"], a[href*="/tag/"]'):
             t = a.text.strip()
             if t and len(t) < 30 and t not in genres:
                 genres.append(t)

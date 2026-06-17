@@ -53,7 +53,6 @@ class MadaraScraper(BaseScraper):
         genres = []
         for g in soup.select(".genres-content a"):
             genres.append(g.text.strip())
-        genres_str = ", ".join(genres)
 
         description = ""
         desc_el = soup.select_one(".description-summary .summary__content") or soup.select_one(".summary__content")
@@ -224,7 +223,7 @@ class MadaraScraper(BaseScraper):
             "status": status, 
             "author": author,
             "artist": artist,
-            "genres": genres_str,
+            "genres": genres,
             "description": description,
             "chapters": chapters
         }
