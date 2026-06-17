@@ -57,11 +57,13 @@ def preload_chapter_images(manga_id, chapter_id, quality=90):
     if key in _preload_cache:
         return
     _preload_cache[key] = True
-    if not os.path.exists(OUTPUT_FILE):
+
+    detail_file = os.path.join(BASE_DIR, "mangas_data", f"{manga_id}.json")
+    if not os.path.exists(detail_file):
         return
-    with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-        scraped_db = json.load(f)
-    manga = next((m for m in scraped_db if str(m.get('id')) == str(manga_id)), None)
+    with open(detail_file, "r", encoding="utf-8") as f:
+        manga = json.load(f)
+
     if not manga:
         return
     chapter = next((ch for ch in (manga.get('chapters') or []) if str(ch.get('id')) == str(chapter_id)), None)
@@ -105,198 +107,6 @@ def extract_num(text):
     m = re.search(r'(\d+(?:\.\d+)?)', text)
     return float(m.group(1)) if m else 0.0
 
-# ---- Olympus scraper (direct requests, no Playwright) ----
-def scrape_olympus_metadata(url):
-    html = fetch_html(url)
-    soup = BeautifulSoup(html, "html.parser")
-    title_el = soup.find("h1") or soup.find("title")
-    title = title_el.text.strip() if title_el else ""
-    if " - " in title:
-        title = title.split(" - ")[0].strip()
-    og_img = soup.select_one('meta[property="og:image"]')
-    cover = og_img.get("content", "") if og_img else ""
-    desc = ""
-    for sel in ['meta[name="description"]', 'meta[property="og:description"]']:
-        m = soup.select_one(sel)
-        if m and m.get("content"):
-            desc = m["content"].strip()
-            if len(desc) > 20:
-                break
-    genres = []
-    for a in soup.select('a[href*="/genre/"], a[href*="/categoria/"], a[href*="/tag/"]'):
-        t = a.text.strip()
-        if t and t not in genres:
-            genres.append(t)
-    author = ""
-    author_el = soup.select_one("a[href*='/author/']")
-    if author_el:
-        author = author_el.text.strip()
-    chapters = []
-    seen = set()
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        if "/series/" in href and href.split("/")[-1].replace(".", "").isdigit():
-            if href in seen:
-                continue
-            seen.add(href)
-            num = href.split("/")[-1]
-            chapters.append({"title": f"الفصل {num}", "url": urllib.parse.urljoin(url, href)})
-    # Generate missing chapters
-    nums = set()
-    for ch in chapters:
-        try:
-            nums.add(int(ch["url"].rstrip("/").split("/")[-1]))
-        except ValueError:
-            pass
-    if nums:
-        for n in range(1, max(nums)):
-            if n not in nums:
-                chapters.append({"title": f"الفصل {n}", "url": url.rstrip("/") + "/" + str(n)})
-    chapters.sort(key=lambda c: int(c["url"].rstrip("/").split("/")[-1]))
-    return {"title": title, "cover_url": cover, "description": desc, "author": author, "artist": "", "genres": ", ".join(genres), "status": "Ongoing", "chapters": chapters}
-
-def scrape_olympus_chapter_pages(chapter_url):
-    html = fetch_html(chapter_url)
-    soup = BeautifulSoup(html, "html.parser")
-    images = []
-    for img in soup.find_all("img"):
-        src = img.get("data-src") or img.get("data-lazy-src") or img.get("src") or ""
-        src = src.strip().replace(" ", "%20")
-        if "uploads/manga_" in src or "images/manga/" in src:
-            images.append(urllib.parse.urljoin(chapter_url, src))
-    if not images:
-        imgs = re.findall(r'https?://[^"\'\s]+(?:uploads/manga_|images/manga/)[^"\'\s]+', html)
-        images = list(dict.fromkeys(imgs))
-    return images
-
-# ---- Madara scraper (direct requests) ----
-def scrape_madara_metadata(url):
-    html = fetch_html(url)
-    soup = BeautifulSoup(html, "html.parser")
-    title_el = soup.select_one(".post-title h1") or soup.find("h1")
-    title = title_el.text.strip() if title_el else ""
-    if not title:
-        og = soup.select_one('meta[property="og:title"]')
-        title = og.get("content", "").strip() if og else ""
-    cover_el = soup.select_one(".summary_image img")
-    cover = ""
-    if cover_el:
-        cover = (cover_el.get("data-src") or cover_el.get("src") or "")
-        cover = urllib.parse.urljoin(url, cover)
-    if not cover:
-        og_img = soup.select_one('meta[property="og:image"]')
-        if og_img:
-            cover = og_img.get("content", "")
-    desc = ""
-    desc_el = soup.select_one(".description-summary .summary__content, .summary__content")
-    if desc_el:
-        desc = desc_el.text.strip()
-    genres_l = []
-    for g in soup.select(".genres-content a"):
-        genres_l.append(g.text.strip())
-    author = ""
-    author_el = soup.select_one(".author-content a")
-    if author_el:
-        author = author_el.text.strip()
-    chapters = []
-    for li in soup.select("li.wp-manga-chapter"):
-        a = li.select_one("a")
-        if a and a.get("href"):
-            ch_url = a["href"].strip()
-            if ch_url.startswith("#") or ch_url.startswith("javascript"):
-                continue
-            ch_title = a.text.strip()
-            ch_title = re.sub(r'\s+', ' ', ch_title)
-            chapters.append({"title": ch_title, "url": urllib.parse.urljoin(url, ch_url)})
-    return {"title": title, "cover_url": cover, "description": desc, "author": author, "artist": "", "genres": ", ".join(genres_l), "status": "Ongoing", "chapters": chapters}
-
-def scrape_madara_chapter_pages(chapter_url):
-    html = fetch_html(chapter_url)
-    soup = BeautifulSoup(html, "html.parser")
-    images = []
-    for img in soup.select(".reading-content img, .page-break img, .wp-manga-chapter-img"):
-        src = (img.get("data-src") or img.get("data-lazy-src") or img.get("src") or "").strip()
-        if src and "placeholder" not in src.lower():
-            images.append(urllib.parse.urljoin(chapter_url, src))
-    return images
-
-# ---- Generic scraper (fallback) ----
-def scrape_generic_metadata(url):
-    html = fetch_html(url)
-    soup = BeautifulSoup(html, "html.parser")
-    title_el = soup.find("h1") or soup.find("title")
-    title = title_el.text.strip() if title_el else ""
-    if " - " in title:
-        title = title.split(" - ")[0].strip()
-    og_img = soup.select_one('meta[property="og:image"]')
-    cover = og_img.get("content", "") if og_img else ""
-    desc = ""
-    for sel in ['meta[name="description"]', 'meta[property="og:description"]']:
-        m = soup.select_one(sel)
-        if m and m.get("content"):
-            desc = m["content"].strip()
-            if len(desc) > 20:
-                break
-    chapters = []
-    for a in soup.find_all("a", href=True):
-        href = a["href"]
-        text = a.text.strip()
-        if "chapter" in href.lower() or "ch-" in href.lower() or "الفصل" in text or re.search(r'(?:chapter|ch|الفصل)\s*\d', text, re.I):
-            if any(x in href for x in ["tag", "category", "author"]):
-                continue
-            ch_title = re.sub(r'\s+', ' ', text)
-            chapters.append({"title": ch_title, "url": urllib.parse.urljoin(url, href)})
-    return {"title": title, "cover_url": cover, "description": desc, "author": "", "artist": "", "genres": "", "status": "Ongoing", "chapters": chapters}
-
-def scrape_generic_chapter_pages(chapter_url):
-    html = fetch_html(chapter_url)
-    soup = BeautifulSoup(html, "html.parser")
-    images = []
-    for container_sel in [".reading-content", ".page-break", ".chapter-content", "#reader-area", ".comic-page", ".manga-page", ".entry-content"]:
-        container = soup.select_one(container_sel)
-        if container:
-            for img in container.find_all("img"):
-                src = (img.get("data-src") or img.get("data-lazy-src") or img.get("src") or "").strip()
-                if src and ".gif" not in src.lower():
-                    images.append(urllib.parse.urljoin(chapter_url, src))
-            if images:
-                break
-    if not images:
-        for img in soup.find_all("img"):
-            src = (img.get("data-src") or img.get("data-lazy-src") or img.get("src") or "").strip()
-            if not src:
-                continue
-            w = img.get("width")
-            h = img.get("height")
-            if w and h:
-                try:
-                    if int(w) < 100 or int(h) < 100:
-                        continue
-                except ValueError:
-                    pass
-            skip_kw = [".gif", "icon", "logo", "banner", "avatar", "advertisement", "sponsor", "button"]
-            if any(k in src.lower() for k in skip_kw):
-                continue
-            images.append(urllib.parse.urljoin(chapter_url, src))
-    return images
-
-# ---- Router ----
-def get_scraper_for_url(url):
-    if "olympustaff" in url or "olympusstaff" in url:
-        return "olympus"
-    elif any(x in url for x in ["lekmanga", "lek-manga", "asuracomic", "mangaclash", "manga-starz", "3asq.org"]):
-        return "madara"
-    elif "mangatuk.com" in url:
-        return "madara"
-    else:
-        return "generic"
-
-SCRAPERS = {
-    "olympus": (scrape_olympus_metadata, scrape_olympus_chapter_pages),
-    "madara": (scrape_madara_metadata, scrape_madara_chapter_pages),
-    "generic": (scrape_generic_metadata, scrape_generic_chapter_pages),
-}
-
 def main():
     if len(sys.argv) < 2:
         print("الاستخدام: python add_manga.py <link_manhua>")
@@ -307,12 +117,12 @@ def main():
     print(f"جاري سحب المانهوا من: {url}")
     print()
 
-    name = get_scraper_for_url(url)
-    meta_fn, pages_fn = SCRAPERS[name]
-    print(f"المصدر: {name}")
+    from scrapers.factory import get_scraper
+    scraper = get_scraper(url)
+    print(f"المصدر: {scraper.__class__.__name__}")
     print()
 
-    meta = meta_fn(url)
+    meta = scraper.scrape_metadata(url)
     title = meta.get("title", "") or "Unknown"
     chapters_raw = meta.get("chapters", [])
 
@@ -341,7 +151,7 @@ def main():
         ch_title = ch.get("title", f"Chapter {ch_num}")
 
         try:
-            img_urls = pages_fn(ch["url"])
+            img_urls = scraper.scrape_chapter_pages(ch["url"])
             if not img_urls:
                 print(f"  ❌ {ch_title}: لم يتم العثور على صور")
                 continue
@@ -363,20 +173,36 @@ def main():
         print("❌ فشل في سحب أي فصل")
         sys.exit(1)
 
+    genres_raw = meta.get("genres", [])
+    if isinstance(genres_raw, str):
+        genres_list = [g.strip() for g in genres_raw.split(',') if g.strip()]
+    else:
+        genres_list = genres_raw
+        
     entry = {
         "id": manga_id,
         "title": title,
         "alternative": "",
         "status": meta.get("status", "Ongoing"),
-        "cover": meta.get("cover_url", ""),
+        "cover": meta.get("cover_url", "") or meta.get("cover", ""),
         "synopsis": meta.get("description", ""),
         "author": meta.get("author", ""),
         "artist": meta.get("artist", ""),
-        "genres": meta.get("genres", ""),
+        "genres": genres_list,
         "url": url,
         "chapters": chapters_out
     }
 
+
+    # Smart Database Splitting:
+    # 1. Save full detailed data to mangas_data/<manga_id>.json
+    data_dir = os.path.join(BASE_DIR, "mangas_data")
+    os.makedirs(data_dir, exist_ok=True)
+    detail_file = os.path.join(data_dir, f"{manga_id}.json")
+    with open(detail_file, "w", encoding="utf-8") as f:
+        json.dump(entry, f, ensure_ascii=False, indent=2)
+
+    # 2. Save lightweight index data to scraped_mangas.json
     existing = []
     if os.path.exists(OUTPUT_FILE):
         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
@@ -386,10 +212,28 @@ def main():
                 existing = []
 
     existing = [m for m in existing if m.get("url") != url]
-    existing.append(entry)
+    
+    # Create index entry
+    index_entry = {
+        "id": entry["id"],
+        "title": entry["title"],
+        "alternative": entry.get("alternative", ""),
+        "status": entry.get("status", "Ongoing"),
+        "cover": entry.get("cover", ""),
+        "synopsis": entry.get("synopsis", ""),
+        "author": entry.get("author", ""),
+        "artist": entry.get("artist", ""),
+        "genres": entry.get("genres", []),
+        "url": entry["url"],
+        "chaptersCount": len(entry.get("chapters", [])),
+        "latestChapter": entry["chapters"][0] if entry.get("chapters") else None
+    }
+    
+    existing.append(index_entry)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(existing, f, ensure_ascii=False, indent=2)
+
 
     print()
     print(f"✅ تمت إضافة \"{title}\" بنجاح!")

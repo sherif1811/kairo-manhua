@@ -5632,7 +5632,7 @@ function attachEventListeners() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + state.sessionToken
+                        'Authorization': 'Bearer ' + window.app.sessionToken
                     },
                     body: JSON.stringify({url, manga_id: mangaId, chapter_id: chapterId})
                 });
