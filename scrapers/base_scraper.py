@@ -2,7 +2,7 @@ import time
 import random
 import logging
 from bs4 import BeautifulSoup
-import cloudscraper
+from curl_cffi import requests as curl_requests
 from playwright.sync_api import sync_playwright
 
 logger = logging.getLogger("scrapers.base")
@@ -24,20 +24,20 @@ class BaseScraper:
         return random.choice(USER_AGENTS)
 
     def fetch_html(self, url: str) -> str:
-        """Fetch HTML content with Cloudscraper, falling back to Playwright on failure."""
+        """Fetch HTML content with curl_cffi, falling back to Playwright on failure."""
         user_agent = self._get_random_user_agent()
-        logger.info(f"Fetching {url} with cloudscraper (UA: {user_agent})")
+        logger.info(f"Fetching {url} with curl_cffi (UA: {user_agent})")
         
         try:
-            scraper = cloudscraper.create_scraper()
+            scraper = curl_requests.Session(impersonate="chrome110")
             response = scraper.get(url, headers={"User-Agent": user_agent}, timeout=15)
             
             if response.status_code in (200, 201, 304):
                 return response.text
             else:
-                logger.warning(f"Cloudscraper returned status {response.status_code}. Engaging Playwright fallback.")
+                logger.warning(f"curl_cffi returned status {response.status_code}. Engaging Playwright fallback.")
         except Exception as e:
-            logger.warning(f"Cloudscraper failed: {e}. Engaging Playwright fallback.")
+            logger.warning(f"curl_cffi failed: {e}. Engaging Playwright fallback.")
         
         return self._fetch_with_playwright(url, user_agent)
 

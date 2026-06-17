@@ -28,8 +28,18 @@ class MadaraScraper(BaseScraper):
             cover_url = og_img.get("content", "").strip() if og_img else ""
             if cover_url: cover_url = urljoin(url, cover_url)
         
-        status_el = soup.select_one(".post-status .summary-content")
-        status = status_el.text.strip() if status_el else "Unknown"
+        status = "Unknown"
+        status_items = soup.select(".post-status .summary-content")
+        if len(status_items) >= 2:
+            for item in status_items:
+                txt = item.text.strip().lower()
+                if txt in ("مستمرة", "مستمر", "ongoing", "completed", "مكتملة", "متوقف", "hiatus", "dropped", "cancelled"):
+                    status = item.text.strip()
+                    break
+            if status == "Unknown":
+                status = status_items[-1].text.strip()
+        elif status_items:
+            status = status_items[0].text.strip()
 
         # Extract extra metadata
         author = ""
@@ -148,8 +158,8 @@ class MadaraScraper(BaseScraper):
                     ajax_url = f"{parsed.scheme}://{parsed.netloc}/wp-admin/admin-ajax.php"
                     
                 try:
-                    import cloudscraper
-                    scraper = cloudscraper.create_scraper()
+                    from curl_cffi import requests as curl_requests
+                    scraper = curl_requests.Session(impersonate="chrome110")
                     ajax_data = {"action": "manga_get_chapters", "manga": post_id}
                     ajax_resp = scraper.post(ajax_url, data=ajax_data, timeout=15)
                     if ajax_resp.status_code == 200:
@@ -174,8 +184,8 @@ class MadaraScraper(BaseScraper):
             if not chapters:
                 logger.info("Attempting alternative AJAX route (url/ajax/chapters/)...")
                 try:
-                    import cloudscraper
-                    scraper = cloudscraper.create_scraper()
+                    from curl_cffi import requests as curl_requests
+                    scraper = curl_requests.Session(impersonate="chrome110")
                     ajax_new_url = url.rstrip('/') + '/ajax/chapters/'
                     ajax_resp = scraper.post(ajax_new_url, timeout=15)
                     if ajax_resp.status_code == 200:

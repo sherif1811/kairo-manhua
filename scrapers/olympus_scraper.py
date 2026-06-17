@@ -105,32 +105,7 @@ class OlympusScraper(BaseScraper):
         if count_match:
             total_chapters = int(count_match.group(1))
         
-        # If visible chapters are fewer than stated total, generate missing ones
-        if total_chapters and len(chapters) < total_chapters:
-            existing_nums = set()
-            for c in chapters:
-                try:
-                    n = float(c["url"].split("/")[-1].replace(".", ""))
-                    existing_nums.add(int(n))
-                except ValueError:
-                    pass
-            
-            if existing_nums:
-                max_num = max(existing_nums)
-                min_num = min(existing_nums)
-                # Generate all missing numbers from 1 to max_num
-                generated = 0
-                for n in range(1, max_num):
-                    if n not in existing_nums:
-                        ch_url = url.rstrip('/') + '/' + str(n)
-                        chapters.append({
-                            "title": f"الفصل {n}",
-                            "url": ch_url
-                        })
-                        generated += 1
-                if generated:
-                    logger.info(f"Generated {generated} missing chapter URLs ({len(chapters)} total)")
-                    chapters.sort(key=lambda c: float(c["url"].split("/")[-1].replace(".", "")))
+
         
         return {
             "title": title,
@@ -143,10 +118,10 @@ class OlympusScraper(BaseScraper):
         }
 
     def scrape_chapter_pages(self, url: str) -> list[str]:
-        # Try cloudscraper first (much faster than Playwright)
+        # Try curl_cffi first (much faster than Playwright)
         try:
-            import cloudscraper
-            cs = cloudscraper.create_scraper()
+            from curl_cffi import requests as curl_requests
+            cs = curl_requests.Session(impersonate="chrome110")
             resp = cs.get(url, timeout=10)
             if resp.status_code == 200:
                 html = resp.text
