@@ -2405,9 +2405,11 @@ async function DetailViewComponent() {
         .map(d => d.chapterId);
 
     let genresHtml = '';
-    manga.genres.forEach(g => {
-        const escapedG = g.replace(/'/g, "\\'");
-        genresHtml += `<span class="genre-tag clickable-genre" style="cursor: pointer;" onclick="event.stopPropagation(); state.activeGenre='${escapedG}'; navigate('home'); window.scrollTo(0, 0);">${g}</span>`;
+    (manga.genres || []).forEach(g => {
+        if (!g) return;
+        const gStr = String(g);
+        const escapedG = gStr.replace(/'/g, "\\'");
+        genresHtml += `<span class="genre-tag clickable-genre" style="cursor: pointer;" onclick="event.stopPropagation(); state.activeGenre='${escapedG}'; navigate('home'); window.scrollTo(0, 0);">${gStr}</span>`;
     });
 
     const searchQ = (state.chapterSearchQuery || '').trim();
