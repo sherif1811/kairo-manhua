@@ -97,18 +97,20 @@ window.generateHomeGridHtml = async function() {
 
         if (s.searchQuery) {
             const q = s.searchQuery.toLowerCase();
+            // safeStr: safely converts any value to a lowercase string for comparison
+            const safeStr = v => (v == null ? '' : Array.isArray(v) ? v.join(' ') : String(v)).toLowerCase();
             filtered = filtered.filter(m => {
-                const inTitle = (m.title && m.title.toLowerCase().includes(q)) || (m.alternative && m.alternative.toLowerCase().includes(q));
-                const inAuthor = m.author && m.author.toLowerCase().includes(q);
-                const inTags = m.genres && m.genres.some(g => g.toLowerCase().includes(q));
-                const inType = m.type && m.type.toLowerCase().includes(q);
-                const inDesc = m.description && m.description.toLowerCase().includes(q);
-                
-                if (s.searchType === 'title') return inTitle;
+                const inTitle  = safeStr(m.title).includes(q) || safeStr(m.alternative).includes(q);
+                const inAuthor = safeStr(m.author).includes(q);
+                const inTags   = Array.isArray(m.genres) && m.genres.some(g => safeStr(g).includes(q));
+                const inType   = safeStr(m.type).includes(q);
+                const inDesc   = safeStr(m.description).includes(q);
+
+                if (s.searchType === 'title')  return inTitle;
                 if (s.searchType === 'author') return inAuthor;
-                if (s.searchType === 'tags') return inTags || inType;
-                if (s.searchType === 'desc') return inDesc;
-                
+                if (s.searchType === 'tags')   return inTags || inType;
+                if (s.searchType === 'desc')   return inDesc;
+
                 return inTitle || inAuthor || inTags || inType || inDesc;
             });
         }
