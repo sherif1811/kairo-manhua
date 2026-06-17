@@ -1,0 +1,26 @@
+s = state;
+    if (!s.limit) s.limit = 48;
+    if (!s.activeTab) s.activeTab = 'series';
+    if (!s.searchType) s.searchType = 'all';
+
+    const allGenres = ['الكل'];
+    s.mangas.forEach(m => m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }));
+
+    const searchTypes = [
+        {id:'all', label:'الكل'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+        {id:'tags', label:'الوسوم'}, {id:'desc', label:'الوصف'}, {id:'isbn', label:'ISBN'}
+    ];
+
+    const searchTypeHtml = searchTypes.map(t => 
+        `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
+    ).join('');
+
+    return `
+    <div class="mangatime-browse-container">
+        
+        <div class="mangatime-hero-section">
+            <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+            <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+        </div>
+
+        <div cla

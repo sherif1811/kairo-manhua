@@ -1,0 +1,34 @@
+                <option value="كوميك" ${s.filterType==='كوميك'?'selected':''}>كوميك</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-circle-check glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('status', this.value)">
+                            <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                            <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                            <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                            <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('sort', this.value)">
+                            <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                            <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                            <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                            <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                            <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                            <option value="عدد الفصول" ${s.filterSort==='عدد الفصول'?'selected':''}>عدد الفصول</option>
+                        </select>
+                    </div>
+                    <div class="glass-input-group">
+                        <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
+                        <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                        <span class="glass-separator">-</span>
+                        <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+                    </div>
+                    <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
+                        <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
+                            <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
+                                <option value="12" ${s.limit===12?'selec

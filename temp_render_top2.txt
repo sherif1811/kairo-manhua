@@ -1,0 +1,19 @@
+   if (s.filterYearMin) {
+            const yearMin = parseFloat(s.filterYearMin);
+            if (!isNaN(yearMin)) filteredMangas = filteredMangas.filter(m => (m.year || 0) >= yearMin);
+        }
+        if (s.filterYearMax) {
+            const yearMax = parseFloat(s.filterYearMax);
+            if (!isNaN(yearMax)) filteredMangas = filteredMangas.filter(m => (m.year || 9999) <= yearMax);
+        }
+        if (s.filterRatingMin) {
+            const ratingMin = parseFloat(s.filterRatingMin);
+            if (!isNaN(ratingMin)) filteredMangas = filteredMangas.filter(m => (m.rating || 0) >= ratingMin);
+        }
+        if (s.filterRatingMax) {
+            const ratingMax = parseFloat(s.filterRatingMax);
+            if (!isNaN(ratingMax)) filteredMangas = filteredMangas.filter(m => (m.rating || 5) <= ratingMax);
+        }
+        if (s.filterChaptersMin) {
+            const chMin = parseInt(s.filterChaptersMin);
+            if (!isNaN(chMin)) filteredMangas = filteredMangas.filter(m => (m.

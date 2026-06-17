@@ -1,0 +1,29 @@
+    
+    // SEO: تحديث meta tags ديناميكياً حسب المسار
+    var seoTitle = 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
+    var seoDesc = 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.';
+    var seoImg = '';
+    
+    if (state.currentView === 'detail' && state.activeMangaId) {
+        var manga = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
+        if (manga) {
+            seoTitle = manga.title + ' | KAIRO / منهوا';
+            seoDesc = manga.synopsis ? manga.synopsis.substring(0, 200) : seoDesc;
+            seoImg = getDisplayCover(manga);
+        }
+    } else if (state.currentView === 'reader' && state.activeMangaId && state.activeChapterId) {
+        var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
+        if (mangaR) {
+            var chapter = mangaR.chapters.find(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
+            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
+            seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
+            seoImg = getDisplayCover(mangaR);
+        }
+    } else if (state.currentView === 'bookmarks') {
+        seoTitle = 'المفضلة | KAIRO / منهوا';
+        seoDesc = 'قائمة المانجا والمنهوا المفضلة لديك على KAIRO/منهوا';
+    } else if (state.currentView === 'history') {
+        seoTitle = 'سجل القراءة | KAIRO / منهوا';
+        seoDesc = 'سجل قراءة المانجا والمنهوا على KAIRO/منهوا';
+    } else if (state.currentView === 'downloads') {
+        seoTitle = 'الفصول المحملة | KAIRO / منهوا';

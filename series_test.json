@@ -1,0 +1,59 @@
+{
+  "id": "697df7820c5d340ac154519f",
+  "title": "Blue Lock",
+  "slug": "blue-lock",
+  "alternativeTitles": [],
+  "description": "مانجا Blue Lock بجودة عالية, تبدأ قصة هذه المانجا الرياضية عندما يتم إقصاء اليابان من نهائيات كأس العالم لـعام 2018، ولذلك قرر الإتحاد الياباني لكُرة القدم أن ينشؤوا برنامجًا يكتشف مهارات لاعبي كرة القدم في المدارس الثانوية، والذين سيبدؤون التدريبات استعدادًا لكأس العالم 2022، يَتَلقى المُهاجم \"إيساجي يوييتشي\" دعوة للمشاركة في هذا البرنامج، بعد أن خسِر فريقُه فرصة التأهل للدروي الوطني بسبب تمريرة \"إيساجي\" لزميله في المباراة، تابعوا أحداث المانجا الرائعة...",
+  "type": "manga",
+  "status": "ongoing",
+  "demographic": null,
+  "contentRating": "safe",
+  "genres": [
+    {
+      "id": "697df7980c5d340ac1545f32",
+      "name": "رياضة",
+      "slug": "رياضة",
+      "description": "Genre رياضة",
+      "icon": null,
+      "color": "#000000",
+      "seriesCount": 16
+    }
+  ],
+  "tags": [],
+  "author": "MangaTime Team",
+  "artist": "Unknown",
+  "artistUser": null,
+  "year": null,
+  "originalLanguage": "ja",
+  "coverUrl": "/uploads/series/697df7820c5d340ac154519f/cover.jpg",
+  "bannerUrl": null,
+  "team": {
+    "id": "697dfada0beab4b6d67687e9",
+    "name": "MangaTime",
+    "slug": "mangatime",
+    "logo": "https://mangatime.org/uploads/team/697df75c0c5d340ac1541f88/2026/03/1kmaq6k3.webp",
+    "isVerified": true
+  },
+  "stats": {
+    "views": 2337279,
+    "favorites": 75,
+    "rating": 9.076923076923077,
+    "ratingCount": 13,
+    "commentCount": 15,
+    "chapterCount": 356
+  },
+  "relatedSeries": [],
+  "releaseSchedule": null,
+  "lastChapterAt": "2026-06-10T06:34:24.521Z",
+  "publishedAt": "2026-01-31T13:28:11.627Z",
+  "createdAt": "2026-01-31T12:37:22.610Z",
+  "updatedAt": "2026-06-16T09:30:25.503Z",
+  "isHidden": false,
+  "hiddenUntil": null,
+  "isInLibrary": null,
+  "isFavorite": false,
+  "libraryStatus": null,
+  "userRating": null,
+  "readProgress": null,
+  "isBlocked": false
+}

@@ -1,0 +1,222 @@
+const _originalRenderApp = renderApp;
+renderApp = async function() {
+    // Basic setup from original renderApp...
+    if (!state.sessionToken) {
+        const storedToken = localStorage.getItem('session_token');
+        if (storedToken) {
+            state.sessionToken = storedToken;
+            state.userEmail = localStorage.getItem('user_email');
+            state.userRole = localStorage.getItem('user_role');
+            if (typeof state.fetchUserProfile === 'function') await state.fetchUserProfile();
+        }
+    }
+    
+    let root = document.getElementById('app');
+    if (!root) return;
+
+    if (state.currentView === 'reader') {
+        let readerHtml = await ReaderViewComponent();
+        root.innerHTML = `<div id="app-root">${readerHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()} ${DailyRewardModalComponent()}</div>`;
+        if (state.readerSettings && state.readerSettings.mode !== 'horizontal') {
+            if (typeof initLazyLoading === 'function') initLazyLoading();
+            if (typeof initProgressTracker === 'function') initProgressTracker();
+            if (typeof updateReaderBackground === 'function') updateReaderBackground();
+        }
+        return; // Reader view completely replaces everything else
+    }
+
+    if (!document.getElementById('app-header')) {
+        root.innerHTML = `
+            <div id="app-header"></div>
+            <div id="app-container" class="fade-in"></div>
+            ${typeof FooterComponent === 'function' ? FooterComponent() : ''}
+            ${typeof AuthModalComponent === 'function' ? AuthModalComponent() : ''}
+            ${typeof SuggestionsModalComponent === 'function' ? SuggestionsModalComponent() : ''}
+            ${typeof SettingsModalComponent === 'function' ? SettingsModalComponent() : ''}
+            ${typeof DailyRewardModalComponent === 'function' ? DailyRewardModalComponent() : ''}
+            ${typeof SearchOverlayComponent === 'function' ? SearchOverlayComponent() : ''}
+        `;
+    }
+    
+    document.getElementById('app-header').innerHTML = HeaderComponent();
+    
+    const container = document.getElementById('app-container');
+    container.innerHTML = '<div class="loader"></div>';
+
+    state.currentView = state.currentView || 'home';
+
+    // Route handling
+    if (state.currentView === 'home') {
+        if (!state.mangas || state.mangas.length === 0) {
+            await fetchMangas();
+        }
+        // inject advanced filters inside homeView wrapper manually
+        const filtered = applyFilters ? applyFilters(state.mangas) : state.mangas;
+        
+        let homeHtml = `<div class="home-container">`;
+        homeHtml += (typeof HeroSliderComponent === 'function' ? HeroSliderComponent() : '');
+        homeHtml += (typeof ReadingHistoryComponent === 'function' ? ReadingHistoryComponent() : '');
+        if (typeof renderFilters === 'function') {
+            homeHtml += renderFilters();
+        }
+        homeHtml += `<div class="manga-grid">`;
+        if (filtered && filtered.length > 0) {
+            homeHtml += filtered.map(m => MangaCardComponent(m)).join('');
+        } else {
+            homeHtml += '<div class="empty-state" style="grid-column: 1/-1"><p>لا توجد نتائج مطابقة للبحث/الفلاتر.</p></div>';
+        }
+        homeHtml += `</div></div>`;
+        container.innerHTML = homeHtml;
+        
+        // bind filter events
+        setTimeout(() => {
+            const selects = document.querySelectorAll('.advanced-filters-bar select');
+            selects.forEach(sel => {
+                sel.addEventListener('change', (e) => {
+                    const id = e.target.id.replace('filter-', '');
+                    state.filters = state.filters || {};
+                    state.filters[id] = e.target.value;
+                    renderApp(); // re-render to apply
+                });
+                // restore values
+                if (state.filters && state.filters[sel.id.replace('filter-', '')]) {
+                    sel.value = state.filters[sel.id.replace('filter-', '')];
+                }
+            });
+        }, 50);
+        
+    } else if (state.currentView === 'profile') {
+        container.innerHTML = await ProfileViewComponent();
+        
+        // Setup profile tabs
+        setTimeout(() => {
+            document.querySelectorAll('.profile-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    document.querySelectorAll('.profile-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.profile-tab-content').forEach(c => c.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.getElementById('profile-tab-' + e.target.dataset.tab).classList.add('active');
+                });
+            });
+        }, 50);
+        
+    } else if (state.currentView === 'settings') {
+        container.innerHTML = await SettingsViewComponent();
+        
+        // Setup settings tabs
+        setTimeout(() => {
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    document.querySelectorAll('.settings-tab-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+                    e.target.classList.add('active');
+                    document.getElementById(e.target.dataset.target).classList.add('active');
+                });
+            });
+            
+            // Profile Save Button Event
+            const saveBtn = document.getElementById('save-profile-settings-btn');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', async () => {
+                    saveBtn.disabled = true;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحفظ...';
+                    
+                    const payload = {
+                        username: document.getElementById('settings-username').value,
+                        bio: document.getElementById('settings-bio').value,
+                        avatar_url: document.getElementById('settings-avatar').value,
+                        cover_url: document.getElementById('settings-cover').value
+                    };
+                    
+                    try {
+                        const res = await fetch('/api/user/update-profile', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.sessionToken}` },
+                            body: JSON.stringify(payload)
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            if (typeof showToast === 'function') showToast('تم تحديث الملف الشخصي بنجاح!');
+                            // Update local state
+                            state.userProfile.username = data.username;
+                            state.userProfile.bio = data.bio;
+                            state.userProfile.avatar_url = data.avatar_url;
+                            state.userProfile.cover_url = data.cover_url;
+                            renderApp(); // re-render header
+                        } else {
+                            if (typeof showToast === 'function') showToast(data.error || 'فشل التحديث', 'error');
+                        }
+                    } catch (e) {
+                        if (typeof showToast === 'function') showToast('حدث خطأ بالاتصال.', 'error');
+                    }
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات';
+                });
+            }
+        }, 50);
+        
+    } else if (state.currentView === 'announcements') {
+        container.innerHTML = await AnnouncementsViewComponent();
+    } else if (state.currentView === 'store') {
+        container.innerHTML = StoreViewComponent();
+    } else {
+        // Use original logic for bookmarks, history, leaderboard, etc.
+        state.currentView = state.currentView || 'home';
+        // Need to duplicate basic rendering for other views since we fully replaced renderApp
+        if (state.currentView === 'leaderboard') {
+            container.innerHTML = await LeaderboardViewComponent();
+        } else if (state.currentView === 'bookmarks') {
+            if (!state.sessionToken) {
+                container.innerHTML = '<div class="empty-state"><p>يجب تسجيل الدخول لعرض المفضلة.</p></div>';
+            } else {
+                const bks = state.mangas ? state.mangas.filter(m => state.bookmarks.includes(m.id)) : [];
+                container.innerHTML = '<div class="manga-grid">' + bks.map(m => MangaCardComponent(m)).join('') + '</div>';
+            }
+        } else if (state.currentView === 'history') {
+             if (!state.sessionToken) {
+                container.innerHTML = '<div class="empty-state"><p>يجب تسجيل الدخول لعرض السجل.</p></div>';
+             } else {
+                 container.innerHTML = HistoryViewComponent();
+             }
+        } else if (state.currentView === 'detail') {
+             container.innerHTML = await DetailViewComponent();
+             // setTimeout(() => bindMangaDetailEvents(), 100); no need, detail sets it up if implemented properly
+        } else if (state.currentView === 'admin') {
+             container.innerHTML = AdminPanelViewComponent();
+        } else {
+             container.innerHTML = '<div class="empty-state"><p>تحت الإنشاء</p></div>';
+        }
+    }
+    
+    // Bind search
+    setTimeout(() => {
+        document.getElementById('search-input')?.addEventListener('input', e => {
+            state.searchQuery = e.target.value;
+            state.showSearchSuggestions = true;
+            renderApp();
+            document.getElementById('search-input').focus();
+        });
+        
+        // Setup User Search functionality
+        const userSearch = document.getElementById('user-search-input');
+        if (userSearch) {
+            userSearch.addEventListener('keypress', async (e) => {
+                if (e.key === 'Enter') {
+                    const q = userSearch.value.trim();
+                    if (q) {
+                        try {
+                            const res = await fetch('/api/user/search?q=' + encodeURIComponent(q));
+                            const users = await res.json();
+                            if (users.length > 0) {
+                                // Jump to the first matched user's profile
+                                navigate('profile', users[0].username);
+                            } else {
+                                if (typeof showToast === 'function') showToast('لم يتم العثور على مستخدمين بهذا الاسم', 'warning');
+                            }
+                        } catch(err) {}
+                    }
+                }
+            });
+        }
+    }, 100);
+}

@@ -1,0 +1,30 @@
+              <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
+                        <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
+                            <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
+                                <option value="12" ${s.limit===12?'selected':''}>12</option>
+                                <option value="24" ${s.limit===24?'selected':''}>24</option>
+                                <option value="48" ${s.limit===48?'selected':''}>48</option>
+                            </select>
+                        </div>
+                        <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                        <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض قائمة" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                ${contentHtml}
+            </div>
+            `;
+        startSliderTimer();
+    } else if (state.currentView === 'profile') {
+        viewHtml = await ProfileViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'settings') {
+        viewHtml = SettingsViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'detail') {
+        viewHtml = await DetailViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'reader') {
+        viewHtml = await ReaderViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.

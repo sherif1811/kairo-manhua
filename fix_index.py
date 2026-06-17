@@ -1,0 +1,12 @@
+﻿import io
+import re
+
+with io.open('index.html', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+content = re.sub(r'app\.js\?v=\d+\.\d+', 'app.js?v=2.6', content)
+content = re.sub(r'style\.css\?v=\d+\.\d+', 'style.css?v=2.6', content)
+
+with io.open('index.html', 'w', encoding='utf-8') as f:
+    f.write(content)
+print("done")

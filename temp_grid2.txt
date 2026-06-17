@@ -1,0 +1,54 @@
+      <div>
+                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
+                    <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
+                </div>
+                <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
+                    ${u.points || 0} XP
+                </div>
+            </div>
+        `).join('');
+
+        usersContainer.innerHTML = `
+            <div class="mangatime-toolbar" style="margin-bottom:20px;">
+                <div class="mangatime-toolbar-left">${totalUsers} مستخدم</div>
+            </div>
+            ${filteredUsers.length === 0 ? '<div class="empty-state"><h3>لا يوجد مستخدمين</h3></div>' : `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">${usersCards}</div>`}
+        `;
+        return;
+    }
+
+    const gridContainer = document.getElementById('manga-grid-container');
+    if (!gridContainer) { renderApp(); return; }
+
+    const s = state;
+    let filtered = [...s.mangas];
+
+    if (s.activeGenre && s.activeGenre !== 'الكل') {
+        filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
+    }
+    if (s.filterStatus && s.filterStatus !== 'الكل') {
+        filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+    }
+    if (s.filterType && s.filterType !== 'الكل') {
+        filtered = filtered.filter(m => m.type === s.filterType);
+    }
+    if (s.filterYearMin) {
+        filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+    }
+    if (s.filterYearMax) {
+        filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+    }
+    if (s.filterRatingMin) {
+        filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+    }
+    if (s.filterRatingMax) {
+        filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+    }
+    if (s.filterChaptersMin) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+    }
+    if (s.filterChaptersMax) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+    }
+
+    if (s.

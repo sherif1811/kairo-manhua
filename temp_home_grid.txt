@@ -1,0 +1,157 @@
+window.generateHomeGridHtml = async function() {
+    const s = state;
+    
+    // 1. Fetch users if needed
+    if (!s.browseUsers) {
+        try {
+            const res = await fetch('/api/leaderboard?limit=1000');
+            s.browseUsers = await res.json();
+        } catch(e) {
+            console.error('Failed to load users', e);
+            s.browseUsers = [];
+        }
+    }
+
+    let showUsers = (s.searchType === 'username' || s.searchType === 'all');
+    let showMangas = (s.searchType !== 'username');
+
+    let usersHtml = '';
+    let mangasHtml = '';
+
+    // -- USERS --
+    if (showUsers) {
+        let filteredUsers = s.browseUsers || [];
+        if (s.searchQuery) {
+            const q = s.searchQuery.toLowerCase();
+            filteredUsers = filteredUsers.filter(u => u.username.toLowerCase().includes(q));
+        }
+        
+        // If 'all' and no search query, maybe don't show all 1000 users. Only show if searched, or show top 5.
+        if (s.searchType === 'all') {
+             if (!s.searchQuery) {
+                 filteredUsers = []; // Don't show users by default in 'all' unless searching
+             } else {
+                 filteredUsers = filteredUsers.slice(0, 8); // Max 8 users in 'all' search
+             }
+        }
+
+        if (filteredUsers.length > 0) {
+            const usersCards = filteredUsers.map(u => `
+                <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+                    <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+                    <div>
+                        <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
+                        <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
+                    </div>
+                    <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
+                        ${u.points || 0} XP
+                    </div>
+                </div>
+            `).join('');
+            
+            usersHtml = `
+            <div style="margin-bottom: 30px;">
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem;"><i class="fa-solid fa-user-group" style="color:var(--primary-color);"></i> المستخدمون</h2>
+                <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
+                    ${usersCards}
+                </div>
+            </div>
+            `;
+        } else if (s.searchType === 'username') {
+             usersHtml = '<div class="empty-state"><h3>لا يوجد مستخدمين بهذا الاسم</h3></div>';
+        }
+    }
+
+    // -- MANGAS --
+    if (showMangas) {
+        let filtered = [...s.mangas];
+
+        if (s.activeGenre && s.activeGenre !== 'الكل') {
+            filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
+        }
+        if (s.filterStatus && s.filterStatus !== 'الكل') {
+            filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+        }
+        if (s.filterType && s.filterType !== 'الكل') {
+            filtered = filtered.filter(m => m.type === s.filterType);
+        }
+        if (s.filterYearMin) {
+            filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+        }
+        if (s.filterYearMax) {
+            filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+        }
+        if (s.filterRatingMin) {
+            filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+        }
+        if (s.filterRatingMax) {
+            filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+        }
+        if (s.filterChaptersMin) {
+            filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+        }
+        if (s.filterChaptersMax) {
+            filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+        }
+
+        if (s.searchQuery) {
+            const q = s.searchQuery.toLowerCase();
+            filtered = filtered.filter(m => {
+                const inTitle = (m.title && m.title.toLowerCase().includes(q)) || (m.alternative && m.alternative.toLowerCase().includes(q));
+                const inAuthor = m.author && m.author.toLowerCase().includes(q);
+                const inTags = m.genres && m.genres.some(g => g.toLowerCase().includes(q));
+                const inType = m.type && m.type.toLowerCase().includes(q);
+                const inDesc = m.description && m.description.toLowerCase().includes(q);
+                
+                if (s.searchType === 'title') return inTitle;
+                if (s.searchType === 'author') return inAuthor;
+                if (s.searchType === 'tags') return inTags || inType;
+                if (s.searchType === 'desc') return inDesc;
+                
+                return inTitle || inAuthor || inTags || inType || inDesc;
+            });
+        }
+
+        if (s.filterSort === 'الأحدث' || !s.filterSort) {
+            filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        } else if (s.filterSort === 'أحدث التحديثات') {
+            filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+        } else if (s.filterSort === 'أ-ي') {
+            filtered.sort((a,b) => a.title.localeCompare(b.title));
+        } else if (s.filterSort === 'الأعلى تقييماً') {
+            filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
+        } else if (s.filterSort === 'الأكثر شعبية') {
+            filtered.sort((a,b) => (b.views||0) - (a.views||0));
+        }
+
+        const limit = s.limit || 48;
+        filtered = filtered.slice(0, limit);
+
+        if (filtered.length > 0) {
+            const isList = s.viewMode === 'list';
+            const cardsHtml = filtered.map(m => generateMangaCard(m)).join('');
+            mangasHtml = `
+            <div style="margin-bottom: 20px;">
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem; display:${s.searchType==='all' && usersHtml ? 'block' : 'none'};"><i class="fa-solid fa-layer-group" style="color:var(--primary-color);"></i> السلاسل</h2>
+                <div class="${isList ? 'manga-list-view' : 'manga-grid'}">
+                    ${cardsHtml}
+                </div>
+            </div>`;
+        } else if (s.searchType !== 'username') {
+            mangasHtml = '<div class="empty-state"><h3>لم يتم العثور على نتائج</h3></div>';
+        }
+    }
+    
+    // Ensure dropdowns visibility based on search type
+    const dropdowns = document.querySelector('.mangatime-dropdowns-row');
+    if (dropdowns) {
+        dropdowns.style.display = s.searchType === 'username' ? 'none' : 'flex';
+    }
+
+    return `
+    <div id="unified-grid-container" style="max-width:1200px; margin:0 auto; padding:0 20px;">
+        ${usersHtml}
+        ${mangasHtml}
+    </div>
+    `;
+};

@@ -1,0 +1,20 @@
+3694:         } else if (s.filterSort === 'عدد الفصول') {
+3695:             filteredMangas = [...filteredMangas].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+3696:         }
+3697:     }
+3698: 
+3699:     // 2. تجميع محتوى الواجهة المعنية
+3700:     let viewHtml = '';
+3701:     
+3702:         if (state.currentView === 'home') {
+3703:             const contentHtml = await window.generateHomeGridHtml();
+3704:         startSliderTimer();
+3705:     } else if (state.currentView === 'profile') {
+3706:         viewHtml = await ProfileViewComponent();
+3707:         if (sliderInterval) clearInterval(sliderInterval);
+3708:     } else if (state.currentView === 'settings') {
+3709:         viewHtml = SettingsViewComponent();
+3710:         if (sliderInterval) clearInterval(sliderInterval);
+3711:     } else if (state.currentView === 'detail') {
+3712:         viewHtml = await DetailViewComponent();
+3713:         if (sliderInterval) clearInterval(sliderInterval);

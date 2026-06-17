@@ -1,0 +1,33 @@
+[
+  {
+    "title": "Gachiakuta",
+    "slug": "gachiakuta",
+    "id": "697df8150c5d340ac154b338",
+    "type": "manga",
+    "chapter_count": 172,
+    "genres": [
+      "اكشن",
+      "تراجيدي",
+      "خيال",
+      "وحوش",
+      "نفسي"
+    ],
+    "match_count": 2
+  },
+  {
+    "title": "Solo Leveling Ragnarok",
+    "slug": "solo-leveling-ragnarok",
+    "id": "697df7af0c5d340ac1547225",
+    "type": "manhwa",
+    "chapter_count": 45,
+    "genres": [
+      "إثارة",
+      "خيال",
+      "نظام",
+      "وحوش",
+      "اكشن",
+      "دموي"
+    ],
+    "match_count": 2
+  }
+]

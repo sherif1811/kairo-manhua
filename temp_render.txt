@@ -1,0 +1,26 @@
+if (state.currentView === 'home') {
+        const s = state;
+        let contentHtml = '';
+
+        if (s.activeTab === 'users') {
+            // Fetch users if not loaded or if we just switched
+            if (!s.browseUsers) {
+                try {
+                    const res = await fetch('/api/leaderboard?limit=1000');
+                    s.browseUsers = await res.json();
+                } catch(e) {
+                    console.error('Failed to load users', e);
+                    s.browseUsers = [];
+                }
+            }
+
+            let filteredUsers = s.browseUsers || [];
+            if (s.searchQuery) {
+                const q = s.searchQuery.toLowerCase();
+                filteredUsers = filteredUsers.filter(u => u.username.toLowerCase().includes(q));
+            }
+
+            const totalUsers = filteredUsers.length;
+            const usersCards = filteredUsers.map(u => `
+                <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+                    <div class="

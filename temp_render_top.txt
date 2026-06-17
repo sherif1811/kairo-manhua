@@ -1,0 +1,26 @@
+async function renderApp() {
+    const root = document.getElementById('app');
+    
+    const loader = document.getElementById('initial-loader');
+    if (loader) loader.remove();
+
+    // 1. تصفية المانجا
+    let filteredMangas = getFilteredMangas();
+    const s = state;
+    if (s.searchQuery) {
+        filteredMangas = filteredMangas.filter(m => 
+            m.title.toLowerCase().includes(s.searchQuery.toLowerCase()) ||
+            (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
+        );
+    }
+    if (s.activeGenre !== 'الكل' && s.currentView === 'home') {
+        filteredMangas = filteredMangas.filter(m => m.genres.includes(s.activeGenre));
+    }
+    if (s.currentView === 'home') {
+        if (s.filterStatus !== 'الكل') {
+            filteredMangas = filteredMangas.filter(m => m.status === s.filterStatus);
+        }
+        if (s.filterType !== 'الكل') {
+            filteredMangas = filteredMangas.filter(m => (m.type || '') === s.filterType);
+        }
+     

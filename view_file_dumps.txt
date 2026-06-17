@@ -1,0 +1,1062 @@
+Created At: 2026-06-15T09:00:21Z
+Completed At: 2026-06-15T09:00:21Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 1 to 200
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: import os
+2: import io
+3: import sys
+4: import re
+5: import json
+6: import hashlib
+7: import math
+8: import xml.etree.ElementTree as ET
+9: import urllib.parse
+10: import urllib.request
+11: import sqlite3
+12: import secrets
+13: import time
+14: import threading
+15: 
+16: # Reconfigure stdout/stderr to utf-8 for Windows console support
+17: try:
+18:     sys.stdout.reconfigure(encoding='utf-8')
+19:     sys.stderr.reconfigure(encoding='utf-8')
+20: except AttributeError:
+21:     pass
+22: 
+23: # Set working directory to project folder
+24: BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+25: os.chdir(BASE_DIR)
+26: 
+27: DB_FILE = os.path.join(BASE_DIR, "kairo.db")
+28: 
+29: # Site name for watermark
+30: SITE_NAME = None
+31: def get_site_name():
+32:     global SITE_NAME
+33:     if SITE_NAME is not None:
+34:         return SITE_NAME
+35:     try:
+36:         conn = sqlite3.connect(DB_FILE, timeout=5)
+37:         c = conn.cursor()
+38:         c.execute("SELECT value FROM system_settings WHERE key = 'site_name'")
+39:         row = c.fetchone()
+40:         conn.close()
+41:         if row and row[0]:
+42:             SITE_NAME = row[0]
+43:             return SITE_NAME
+44:     except Exception:
+45:         pass
+46:     SITE_NAME = "KAIRO / منهوا"
+47:     return SITE_NAME
+48: 
+49: from flask import Flask, request, jsonify, send_from_directory, send_file, redirect, make_response
+50: 
+51: try:
+52:     from PIL import Image
+53:     PIL_AVAILABLE = True
+54: except ImportError:
+55:     PIL_AVAILABLE = False
+56: 
+57: import functools
+58: import image_processor
+59: 
+60: app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
+61: 
+62: from routes.alternative_sources import alt_sources_bp
+63: app.register_blueprint(alt_sources_bp)
+64: 
+65: PORT = 8000
+66: CACHE_DIR = os.path.join(BASE_DIR, "image_cache")
+67: DB_FILE = os.path.join(BASE_DIR, "kairo.db")
+68: 
+69: # ============================================================
+70: # SEO / Crawler Middleware Helpers
+71: # ============================================================
+72: CRAWLER_PATTERN = re.compile(r'(googlebot|bingbot|facebookexternalhit|twitterbot|discordbot|slackbot|whatsapp|telegrambot|yandexbot|baiduspider|applebot|duckduckbot|semrushbot|ahrefsbot|dotbot)', re.IGNORECASE)
+73: 
+74: def is_crawler(user_agent):
+75:     return bool(user_agent and CRAWLER_PATTERN.search(user_agent))
+76: 
+77: def load_scraped_mangas():
+78:     path = os.path.join(BASE_DIR, 'scraped_mangas.json')
+79:     if os.path.exists(path):
+80:         try:
+81:             with open(path, 'r', encoding='utf-8') as f:
+82:                 return json.load(f)
+83:         except Exception:
+84:             pass
+85:     return []
+86: 
+87: def find_manga_for_seo(manga_id):
+88:     scraped = load_scraped_mangas()
+89:     for m in scraped:
+90:         if str(m.get('id')) == str(manga_id):
+91:             return m
+92:     return None
+93: 
+94: def _escape_html(s):
+95:     if not s:
+96:         return ''
+97:     return str(s).replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&#39;')
+98: 
+99: def inject_seo_meta(html, title, description, image_url=''):
+100:     title = title or 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى'
+101:     desc = description or 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.'
+102:     
+103:     html = re.sub(r'<title>[^<]*</title>', '<title>' + _escape_html(title) + '</title>', html)
+104:     html = re.sub(r'<meta name="description"[^>]*>', '<meta name="description" content="' + _escape_html(desc) + '">', html)
+105:     
+106:     og_tags = {
+107:         'og:title': title,
+108:         'og:description': desc,
+109:         'og:image': image_url,
+110:         'og:type': 'website',
+111:         'twitter:card': 'summary_large_image',
+112:         'twitter:title': title,
+113:         'twitter:description': desc,
+114:         'twitter:image': image_url
+115:     }
+116:     for prop, content in og_tags.items():
+117:         if content:
+118:             pattern = r'<meta[^>]*' + re.escape(prop) + r'[^>]*>'
+119:             replacement = '<meta property="' + _escape_html(prop) + '" content="' + _escape_html(content) + '">'
+120:             if re.search(pattern, html):
+121:                 html = re.sub(pattern, replacement, html)
+122:             else:
+123:                 html = html.replace('</head>', replacement + '\n</head>')
+124:     return html
+125: 
+126: def get_seo_for_path(path):
+127:     clean = path
+128:     manga_match = re.match(r'^/manga/([^/]+)', clean)
+129:     reader_match = re.match(r'^/reader/([^/]+)/([^/]+)', clean)
+130:     
+131:     if reader_match:
+132:         manga_id = reader_match.group(1)
+133:         chapter_id = reader_match.group(2)
+134:         manga = find_manga_for_seo(manga_id)
+135:         if manga:
+136:             chapters = manga.get('chapters', [])
+137:             chapter_title = 'فصل ' + chapter_id
+138:             for ch in chapters:
+139:                 if str(ch.get('id')) == str(chapter_id):
+140:                     chapter_title = ch.get('title', chapter_title)
+141:                     break
+142:             title = manga.get('title', '') + ' - ' + chapter_title + ' | KAIRO / منهوا'
+143:             desc = 'اقرأ ' + manga.get('title', '') + ' ' + chapter_title + ' على KAIRO/منهوا'
+144:             cover = manga.get('cover', '')
+145:             return title, desc, cover
+146:     elif manga_match:
+147:         manga_id = manga_match.group(1)
+148:         manga = find_manga_for_seo(manga_id)
+149:         if manga:
+150:             title = manga.get('title', '') + ' | KAIRO / منهوا'
+151:             desc = (manga.get('synopsis', '') or '')[:200]
+152:             cover = manga.get('cover', '')
+153:             return title, desc, cover
+154:     
+155:     return None, None, None
+156: 
+157: def render_index_with_seo(path):
+158:     index_path = os.path.join(BASE_DIR, 'index.html')
+159:     try:
+160:         with open(index_path, 'r', encoding='utf-8') as f:
+161:             html = f.read()
+162:     except (IOError, OSError) as e:
+163:         print(f"Error reading index.html: {e}")
+164:         return 'index.html not found', 500
+165:     user_agent = request.headers.get('User-Agent', '')
+166:     if is_crawler(user_agent):
+167:         seo_title, seo_desc, seo_img = get_seo_for_path(path)
+168:         if seo_title:
+169:             html = inject_seo_meta(html, seo_title, seo_desc, seo_img)
+170:     return html
+171: 
+172: def generate_sitemap_xml():
+173:     SITE_URL = 'https://kairo-manhua.com'
+174:     urlset = ET.Element('urlset', xmlns='http://www.sitemaps.org/schemas/sitemap/0.9')
+175: 
+176:     def add_url(loc, priority='0.5', changefreq='weekly'):
+177:         url_elem = ET.SubElement(urlset, 'url')
+178:         loc_elem = ET.SubElement(url_elem, 'loc')
+179:         loc_elem.text = SITE_URL + loc
+180:         prio_elem = ET.SubElement(url_elem, 'priority')
+181:         prio_elem.text = priority
+182:         freq_elem = ET.SubElement(url_elem, 'changefreq')
+183:         freq_elem.text = changefreq
+184: 
+185:     add_url('/', '1.0', 'daily')
+186: 
+187:     mangas = load_scraped_mangas()
+188:     for m in mangas:
+189:         manga_id = str(m.get('id', ''))
+190:         if not manga_id:
+191:             continue
+192:         add_url('/manga/' + manga_id, '0.9', 'weekly')
+193:         chapters = m.get('chapters', [])
+194:         for ch in chapters:
+195:             ch_id = str(ch.get('id', ''))
+196:             if ch_id:
+197:                 add_url('/reader/' + manga_id + '/' + ch_id, '0.6', 'monthly')
+198: 
+199:     return ET.tostring(urlset, encoding='unicode', xml_declaration=True)
+200: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:00:28Z
+Completed At: 2026-06-15T09:00:28Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 201 to 400
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+201: def ping_google_sitemap():
+202:     SITEMAP_URL = 'https://kairomanha.pythonanywhere.com/sitemap.xml'
+203:     ping_url = 'https://www.google.com/ping?sitemap=' + urllib.parse.quote(SITEMAP_URL, safe='')
+204:     try:
+205:         req = urllib.request.Request(ping_url, headers={'User-Agent': 'Mozilla/5.0'})
+206:         with urllib.request.urlopen(req, timeout=10) as resp:
+207:             print("[Google Ping] Sitemap submitted successfully, status:", resp.status)
+208:     except Exception as e:
+209:         print("[Google Ping] Failed to ping Google:", e)
+210: 
+211: # Create cache directory if it doesn't exist
+212: if not os.path.exists(CACHE_DIR):
+213:     os.makedirs(CACHE_DIR)
+214: 
+215: # ============================================================
+216: # Database Init
+217: # ============================================================
+218: def init_db():
+219:     conn = sqlite3.connect(DB_FILE, timeout=30)
+220:     try:
+221:         c = conn.cursor()
+222:         c.execute('''CREATE TABLE IF NOT EXISTS users (
+223:                         email TEXT PRIMARY KEY,
+224:                         password_hash TEXT,
+225:                         role TEXT DEFAULT 'user',
+226:                         points INTEGER DEFAULT 20,
+227:                         level INTEGER DEFAULT 1,
+228:                         username TEXT DEFAULT ''
+229:                      )''')
+230:         try:
+231:             c.execute('ALTER TABLE users ADD COLUMN username TEXT DEFAULT \'\'')
+232:         except sqlite3.OperationalError:
+233:             pass
+234:         c.execute('''CREATE TABLE IF NOT EXISTS sessions (
+235:                         token TEXT PRIMARY KEY,
+236:                         email TEXT,
+237:                         expires_at REAL
+238:                      )''')
+239:         c.execute('''CREATE TABLE IF NOT EXISTS user_settings (
+240:                         email TEXT PRIMARY KEY,
+241:                         settings_json TEXT
+242:                      )''')
+243:         c.execute('''CREATE TABLE IF NOT EXISTS reading_progress (
+244:                         email TEXT,
+245:                         manga_id TEXT,
+246:                         chapter_id TEXT,
+247:                         page INTEGER,
+248:                         updated_at REAL,
+249:                         PRIMARY KEY (email, manga_id)
+250:                      )''')
+251:         c.execute('''CREATE TABLE IF NOT EXISTS suggestions (
+252:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+253:                         email TEXT,
+254:                         type TEXT,
+255:                         content TEXT,
+256:                         created_at REAL
+257:                      )''')
+258:         c.execute('''CREATE TABLE IF NOT EXISTS manga_reviews (
+259:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+260:                         manga_id TEXT,
+261:                         email TEXT,
+262:                         rating INTEGER,
+263:                         review_text TEXT,
+264:                         created_at REAL,
+265:                         UNIQUE(manga_id, email)
+266:                      )''')
+267:         c.execute('''CREATE TABLE IF NOT EXISTS chapter_comments (
+268:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+269:                         manga_id TEXT,
+270:                         chapter_id TEXT,
+271:                         email TEXT,
+272:                         comment_text TEXT,
+273:                         created_at REAL,
+274:                         badge TEXT DEFAULT ''
+275:                      )''')
+276:         try:
+277:             c.execute("ALTER TABLE chapter_comments ADD COLUMN badge TEXT DEFAULT ''")
+278:         except:
+279:             pass
+280:         # Fix existing users that were wrongly set to admin
+281:         c.execute("UPDATE users SET role = 'user' WHERE role = 'admin' AND email != 'sherifahmed2686@gmail.com'")
+282:         c.execute('''CREATE TABLE IF NOT EXISTS site_stats (
+283:                         key TEXT PRIMARY KEY,
+284:                         value INTEGER DEFAULT 0
+285:                      )''')
+286:         c.execute("INSERT OR IGNORE INTO site_stats VALUES ('visits', 0)")
+287:         c.execute('''CREATE TABLE IF NOT EXISTS system_settings (
+288:                         key TEXT PRIMARY KEY,
+289:                         value TEXT
+290:                      )''')
+291:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('google_client_id', '')")
+292:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('facebook_app_id', '')")
+293:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_host', 'smtp.gmail.com')")
+294:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_port', '587')")
+295:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_user', '')")
+296:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_pass', '')")
+297:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('smtp_sender', 'KAIRO/منهوا <noreply@kairo-manhua.com>')")
+298:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_enabled', 'false')")
+299:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_text', 'KAIRO / منهوا')")
+300:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_opacity', '25')")
+301:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_font_size', '32')")
+302:         c.execute("INSERT OR IGNORE INTO system_settings VALUES ('watermark_position', 'bottom-right')")
+303:         
+304:         c.execute('''CREATE TABLE IF NOT EXISTS password_resets (
+305:                         email TEXT,
+306:                         token TEXT PRIMARY KEY,
+307:                         expires_at REAL
+308:                      )''')
+309:                      
+310:         try:
+311:             c.execute("ALTER TABLE users ADD COLUMN provider TEXT DEFAULT 'email'")
+312:         except sqlite3.OperationalError:
+313:             pass
+314:         try:
+315:             c.execute("ALTER TABLE users ADD COLUMN points INTEGER DEFAULT 20")
+316:         except sqlite3.OperationalError:
+317:             pass
+318:         try:
+319:             c.execute("ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1")
+320:         except sqlite3.OperationalError:
+321:             pass
+322:         c.execute('''CREATE TABLE IF NOT EXISTS reader_points_log (
+323:                         email TEXT,
+324:                         manga_id TEXT,
+325:                         chapter_id TEXT,
+326:                         earned_at REAL,
+327:                         PRIMARY KEY (email, manga_id, chapter_id)
+328:                      )''')
+329:         c.execute('''CREATE TABLE IF NOT EXISTS notifications (
+330:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+331:                         email TEXT,
+332:                         type TEXT,
+333:                         title TEXT,
+334:                         message TEXT,
+335:                         manga_id TEXT,
+336:                         chapter_id TEXT,
+337:                         actor_email TEXT DEFAULT '',
+338:                         is_read INTEGER DEFAULT 0,
+339:                         created_at REAL
+340:                      )''')
+341:         c.execute('''CREATE TABLE IF NOT EXISTS follows (
+342:                         follower_email TEXT,
+343:                         following_email TEXT,
+344:                         created_at REAL,
+345:                         PRIMARY KEY (follower_email, following_email)
+346:                      )''')
+347:         c.execute('''CREATE TABLE IF NOT EXISTS user_lists (
+348:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+349:                         email TEXT,
+350:                         name TEXT,
+351:                         description TEXT DEFAULT '',
+352:                         is_public INTEGER DEFAULT 1,
+353:                         created_at REAL
+354:                      )''')
+355:         c.execute('''CREATE TABLE IF NOT EXISTS user_list_items (
+356:                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+357:                         list_id INTEGER,
+358:                         manga_id TEXT,
+359:                         manga_title TEXT,
+360:                         manga_cover TEXT,
+361:                         added_at REAL
+362:                      )''')
+363:         try:
+364:             c.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT DEFAULT ''")
+365:         except sqlite3.OperationalError:
+366:             pass
+367:         try:
+368:             c.execute("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT ''")
+369:         except sqlite3.OperationalError:
+370:             pass
+371:         try:
+372:             c.execute("ALTER TABLE users ADD COLUMN streak_days INTEGER DEFAULT 0")
+373:         except sqlite3.OperationalError:
+374:             pass
+375:         try:
+376:             c.execute("ALTER TABLE users ADD COLUMN last_read_date TEXT DEFAULT ''")
+377:         except sqlite3.OperationalError:
+378:             pass
+379:         try:
+380:             c.execute("ALTER TABLE notifications ADD COLUMN actor_email TEXT DEFAULT ''")
+381:         except sqlite3.OperationalError:
+382:             pass
+383:         try:
+384:             c.execute("ALTER TABLE users ADD COLUMN last_claim_date TEXT DEFAULT ''")
+385:         except sqlite3.OperationalError:
+386:             pass
+387:         conn.commit()
+388:     finally:
+389:         conn.close()
+390: 
+391: init_db()
+392: 
+393: # ============================================================
+394: # Helpers
+395: # ============================================================
+396: from werkzeug.security import generate_password_hash, check_password_hash
+397: 
+398: def hash_password(password):
+399:     return generate_password_hash(password)
+400: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:00:36Z
+Completed At: 2026-06-15T09:00:36Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 2300 to 2500
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+2300:     'lekmanga.site', 'lek-manga.com', 'cdn.lekmanga.site',
+2301:     'mangazuki.site', 'img.mangazuki.com',
+2302:     'comick.io', 'uploads.comick.io',
+2303:     'manga-zukui.com',
+2304:     'olympustaff.com', 'cdn.olympustaff.com',
+2305:     'imgsrv4.com',
+2306:     'mgeko.cc', 'www.mgeko.cc',
+2307:     'uploads.mangadex.org', 'mangadex.org',
+2308:     'mangatime.org', 'www.mangatime.org',
+2309:     'hijala.com',
+2310: }
+2311: 
+2312: # Persistent Playwright browser for proxy-image (avoids Cloudflare re-challenge)
+2313: _playwright = None
+2314: _pw_browser = None
+2315: _pw_lock = threading.Lock()
+2316: 
+2317: def _get_pw_browser():
+2318:     global _playwright, _pw_browser
+2319:     if _pw_browser is None:
+2320:         with _pw_lock:
+2321:             if _pw_browser is None:  # Double-checked locking
+2322:                 from playwright.sync_api import sync_playwright
+2323:                 _playwright = sync_playwright()
+2324:                 _playwright.__enter__()
+2325:                 _pw_browser = _playwright.chromium.launch(headless=True)
+2326:                 import atexit
+2327:                 atexit.register(_close_pw_browser)
+2328:     return _pw_browser
+2329: 
+2330: def _close_pw_browser():
+2331:     global _playwright, _pw_browser
+2332:     if _pw_browser:
+2333:         try:
+2334:             _pw_browser.close()
+2335:         except Exception:
+2336:             pass
+2337:         _pw_browser = None
+2338:     if _playwright:
+2339:         try:
+2340:             _playwright.__exit__(None, None, None)
+2341:         except Exception:
+2342:             pass
+2343:         _playwright = None
+2344: 
+2345: def _pw_fetch_image(image_url, timeout=30000):
+2346:     """Fetch a single image using the persistent Playwright browser (passes Cloudflare)"""
+2347:     try:
+2348:         browser = _get_pw_browser()
+2349:         page = browser.new_page()
+2350:         try:
+2351:             resp = page.goto(image_url, wait_until='load', timeout=timeout)
+2352:             if resp and resp.ok:
+2353:                 data = resp.body()
+2354:                 page.close()
+2355:                 return data
+2356:             page.close()
+2357:             return None
+2358:         except Exception:
+2359:             page.close()
+2360:             return None
+2361:     except Exception:
+2362:         return None
+2363: 
+2364: # ============================================================
+2365: # Smart image preloader — progressive chapter caching
+2366: # ============================================================
+2367: PRELOAD_SEMAPHORE = threading.Semaphore(3)
+2368: _preload_cache = {}
+2369: _preload_cache_lock = threading.Lock()
+2370: 
+2371: def _is_preloaded(manga_id, chapter_id):
+2372:     with _preload_cache_lock:
+2373:         return _preload_cache.get(f"{manga_id}_{chapter_id}", False)
+2374: 
+2375: def _mark_preloaded(manga_id, chapter_id):
+2376:     with _preload_cache_lock:
+2377:         _preload_cache[f"{manga_id}_{chapter_id}"] = True
+2378: 
+2379: def preload_chapter_images_bg(manga_id, chapter_id, quality=90):
+2380:     """Download all images of a chapter into cache, with rate limiting"""
+2381:     key = f"{manga_id}_{chapter_id}"
+2382:     if _is_preloaded(manga_id, chapter_id):
+2383:         return
+2384:     import json
+2385:     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+2386:     try:
+2387:         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+2388:             scraped_db = json.load(f)
+2389:     except Exception:
+2390:         return
+2391:     manga = next((m for m in scraped_db if str(m.get('id')) == str(manga_id)), None)
+2392:     if not manga:
+2393:         return
+2394:     chapter = next((ch for ch in (manga.get('chapters') or []) if str(ch.get('id')) == str(chapter_id)), None)
+2395:     if not chapter:
+2396:         return
+2397:     images = chapter.get('images', [])
+2398:     if not images:
+2399:         return
+2400:     _mark_preloaded(manga_id, chapter_id)
+2401:     for url in images:
+2402:         PRELOAD_SEMAPHORE.acquire()
+2403:         try:
+2404:             url_hash = hashlib.md5(url.encode('utf-8')).hexdigest()
+2405:             cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
+2406:             if os.path.exists(cache_jpeg):
+2407:                 continue
+2408:             req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'})
+2409:             with urllib.request.urlopen(req, timeout=30) as resp:
+2410:                 img_data = resp.read()
+2411:             if PIL_AVAILABLE:
+2412:                 try:
+2413:                     img = Image.open(io.BytesIO(img_data))
+2414:                     img = _apply_watermark(img)
+2415:                     if img.mode != 'RGB':
+2416:                         img = img.convert('RGB')
+2417:                     webp_q = int(quality * 0.85)
+2418:                     img.save(cache_jpeg, "JPEG", quality=quality)
+2419:                     cache_webp = os.path.join(CACHE_DIR, f"{url_hash}.webp")
+2420:                     try:
+2421:                         img.save(cache_webp, "WEBP", quality=webp_q)
+2422:                     except Exception:
+2423:                         pass
+2424:                 except Exception:
+2425:                     pass
+2426:         except Exception:
+2427:             pass
+2428:         finally:
+2429:             PRELOAD_SEMAPHORE.release()
+2430:             time.sleep(0.5)  # نصف ثانية بين الصور — يمنع حظر المصدر
+2431: 
+2432: def preload_first_chapters(manga_id, count=5):
+2433:     """Preload first N chapters of a manga in background"""
+2434:     import json
+2435:     OUTPUT_FILE = os.path.join(BASE_DIR, "scraped_mangas.json")
+2436:     try:
+2437:         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
+2438:             scraped_db = json.load(f)
+2439:     except Exception:
+2440:         return
+2441:     manga = next((m for m in scraped_db if str(m.get('id')) == str(manga_id)), None)
+2442:     if not manga or not manga.get('chapters'):
+2443:         return
+2444:     chapters = manga['chapters']
+2445:     # Sort chapters by numeric id ascending
+2446:     chapters_sorted = sorted(chapters, key=lambda ch: float(ch.get('id', '0')))
+2447:     for ch in chapters_sorted[:count]:
+2448:         if _is_preloaded(manga_id, ch.get('id')):
+2449:             continue
+2450:         t = threading.Thread(target=preload_chapter_images_bg, args=(manga_id, ch.get('id')), daemon=True)
+2451:         t.start()
+2452: 
+2453: @app.route('/api/preload-chapter', methods=['POST'])
+2454: def api_preload_chapter():
+2455:     """API: preload a specific chapter's images in background"""
+2456:     data = request.get_json(silent=True) or {}
+2457:     manga_id = str(data.get('manga_id', '')).strip()
+2458:     chapter_id = str(data.get('chapter_id', '')).strip()
+2459:     if not manga_id or not chapter_id:
+2460:         return jsonify({"error": "manga_id and chapter_id required"}), 400
+2461:     thread = threading.Thread(target=preload_chapter_images_bg, args=(manga_id, chapter_id), daemon=True)
+2462:     thread.start()
+2463:     return jsonify({"status": "preloading", "manga_id": manga_id, "chapter_id": chapter_id})
+2464: 
+2465: @app.route('/proxy-image')
+2466: def proxy_image():
+2467:     image_url = request.args.get('url')
+2468:     quality = request.args.get('q', '90')
+2469:     try:
+2470:         quality = max(10, min(100, int(quality)))
+2471:     except (ValueError, TypeError):
+2472:         quality = 90
+2473:     if not image_url:
+2474:         return jsonify({"error": "Missing url parameter"}), 400
+2475: 
+2476:     # منع SSRF — السماح فقط بنطاقات الصور المعروفة
+2477:     try:
+2478:         parsed = urllib.parse.urlparse(image_url)
+2479:         if parsed.hostname not in ALLOWED_IMAGE_DOMAINS:
+2480:             return jsonify({"error": "مصدر الصورة غير مسموح به"}), 403
+2481:     except Exception:
+2482:         return jsonify({"error": "رابط غير صالح"}), 400
+2483: 
+2484:     if not re.search(r'\.(jpg|jpeg|png|webp)(\?|$)', image_url, re.I):
+2485:         return jsonify({"error": "الرابط لا يشير إلى صورة"}), 400
+2486: 
+2487:     url_hash = hashlib.md5(f"{image_url}:q={quality}".encode('utf-8')).hexdigest()
+2488:     cache_jpeg = os.path.join(CACHE_DIR, f"{url_hash}.jpg")
+2489:     cache_webp = os.path.join(CACHE_DIR, f"{url_hash}.webp")
+2490: 
+2491:     accept = request.headers.get('Accept', '')
+2492:     wants_webp = 'image/webp' in accept
+2493: 
+2494:     if wants_webp and os.path.exists(cache_webp):
+2495:         return send_file(cache_webp, mimetype='image/webp', max_age=86400)
+2496:     if os.path.exists(cache_jpeg):
+2497:         return send_file(cache_jpeg, mimetype='image/jpeg', max_age=86400)
+2498: 
+2499:     # Try cloudscraper first (fastest)
+2500:     img_data = None
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:00:44Z
+Completed At: 2026-06-15T09:00:44Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 800 to 1000
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+800:                     print(f"Google token aud mismatch: {data.get('aud')} != {expected_aud}")
+801:                     return None
+802:             
+803:             return data
+804:     except Exception as e:
+805:         print("Google token verification error:", e)
+806:         return None
+807: 
+808: def verify_facebook_token(access_token):
+809:     try:
+810:         url = f"https://graph.facebook.com/me?fields=email,name&access_token={urllib.parse.quote(access_token)}"
+811:         req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+812:         with urllib.request.urlopen(req, timeout=10) as response:
+813:             data = json.loads(response.read().decode('utf-8'))
+814:             return data
+815:     except Exception as e:
+816:         print("Facebook token verification error:", e)
+817:         return None
+818: 
+819: @app.route('/api/auth/google', methods=['POST'])
+820: def auth_google():
+821:     data = request.get_json() or {}
+822:     credential = data.get('credential')
+823:     access_token = data.get('access_token')
+824:     
+825:     if not credential and not access_token:
+826:         return jsonify({"error": "بيانات التوثيق مفقودة"}), 400
+827:         
+828:     user_info = verify_google_token(credential=credential, access_token=access_token)
+829:     if not user_info:
+830:         return jsonify({"error": "فشل التحقق من حساب Google"}), 401
+831:         
+832:     email = (user_info.get('email') or '').strip().lower()
+833:     if not email:
+834:         return jsonify({"error": "فشل استخراج البريد الإلكتروني من حساب Google"}), 400
+835:         
+836:     conn = sqlite3.connect(DB_FILE, timeout=30)
+837:     try:
+838:         c = conn.cursor()
+839:         c.execute('SELECT email, role, username FROM users WHERE email = ?', (email,))
+840:         row = c.fetchone()
+841:         
+842:         if not row:
+843:             random_pass = secrets.token_hex(16)
+844:             password_hash = hash_password(random_pass)
+845:             role = 'admin' if email == 'sherifahmed2686@gmail.com' else 'user'
+846:             default_username = email.split('@')[0]
+847:             c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'google'))
+848:             conn.commit()
+849:             user_role = role
+850:             username = default_username
+851:         else:
+852:             user_role = row[1]
+853:             username = row[2] if row[2] else email.split('@')[0]
+854:             if email == 'sherifahmed2686@gmail.com' and user_role != 'admin':
+855:                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
+856:                 conn.commit()
+857:                 user_role = 'admin'
+858:                 
+859:         token = secrets.token_hex(32)
+860:         expires_at = time.time() + 86400 * 30
+861:         c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
+862:         conn.commit()
+863:         c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+864:         pu = c.fetchone()
+865:         points = pu[0] if pu else 20
+866:         level = pu[1] if pu else 1
+867:     finally:
+868:         conn.close()
+869:     
+870:     return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level, "username": username}), 200
+871: 
+872: @app.route('/api/auth/facebook', methods=['POST'])
+873: def auth_facebook():
+874:     data = request.get_json() or {}
+875:     access_token = data.get('access_token')
+876:     
+877:     if not access_token:
+878:         return jsonify({"error": "توكن الفيسبوك مفقود"}), 400
+879:         
+880:     user_info = verify_facebook_token(access_token)
+881:     if not user_info:
+882:         return jsonify({"error": "فشل التحقق من حساب Facebook"}), 401
+883:         
+884:     email = (user_info.get('email') or '').strip().lower()
+885:     # إذا لم يكن الحساب يحتوي على بريد إلكتروني مفعل (نادر الحدوث)، نستخدم معرف الفيسبوك لتوليد بريد وهمي فريد
+886:     if not email:
+887:         fb_id = user_info.get('id')
+888:         if fb_id:
+889:             email = f"fb_{fb_id}@kairo-facebook.com"
+890:         else:
+891:             return jsonify({"error": "فشل استخراج بيانات الحساب من Facebook"}), 400
+892:             
+893:     conn = sqlite3.connect(DB_FILE, timeout=30)
+894:     try:
+895:         c = conn.cursor()
+896:         c.execute('SELECT email, role, username FROM users WHERE email = ?', (email,))
+897:         row = c.fetchone()
+898:         
+899:         if not row:
+900:             random_pass = secrets.token_hex(16)
+901:             password_hash = hash_password(random_pass)
+902:             role = 'admin' if email == 'sherifahmed2686@gmail.com' else 'user'
+903:             default_username = email.split('@')[0]
+904:             c.execute('INSERT INTO users (email, password_hash, role, username, provider, points, level) VALUES (?, ?, ?, ?, ?, 20, 1)', (email, password_hash, role, default_username, 'facebook'))
+905:             conn.commit()
+906:             user_role = role
+907:             username = default_username
+908:         else:
+909:             user_role = row[1]
+910:             username = row[2] if row[2] else email.split('@')[0]
+911:             if email == 'sherifahmed2686@gmail.com' and user_role != 'admin':
+912:                 c.execute('UPDATE users SET role = ? WHERE email = ?', ('admin', email))
+913:                 conn.commit()
+914:                 user_role = 'admin'
+915:                 
+916:         token = secrets.token_hex(32)
+917:         expires_at = time.time() + 86400 * 30
+918:         c.execute('INSERT INTO sessions VALUES (?, ?, ?)', (token, email, expires_at))
+919:         conn.commit()
+920:         c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+921:         pu = c.fetchone()
+922:         points = pu[0] if pu else 20
+923:         level = pu[1] if pu else 1
+924:     finally:
+925:         conn.close()
+926:     
+927:     return jsonify({"status": "success", "token": token, "email": email, "role": user_role, "points": points, "level": level, "username": username}), 200
+928: 
+929: @app.route('/api/admin/stats', methods=['GET'])
+930: def get_admin_stats():
+931:     user = get_session_user()
+932:     if not user or user['role'] != 'admin':
+933:         return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+934:     
+935:     from_ts = request.args.get('from')
+936:     to_ts = request.args.get('to')
+937:     try:
+938:         from_ts = float(from_ts) if from_ts else None
+939:     except (ValueError, TypeError):
+940:         from_ts = None
+941:     try:
+942:         to_ts = float(to_ts) if to_ts else None
+943:     except (ValueError, TypeError):
+944:         to_ts = None
+945:         
+946:     conn = sqlite3.connect(DB_FILE, timeout=30)
+947:     try:
+948:         c = conn.cursor()
+949:         
+950:         # Visits
+951:         c.execute("SELECT value FROM site_stats WHERE key = 'visits'")
+952:         visits_row = c.fetchone()
+953:         visits = visits_row[0] if visits_row else 0
+954:         
+955:         # User counts by provider
+956:         c.execute("SELECT provider, COUNT(*) FROM users GROUP BY provider")
+957:         rows = c.fetchall()
+958:         
+959:         stats = {
+960:             "visits": visits,
+961:             "total_users": 0,
+962:             "email": 0,
+963:             "google": 0,
+964:             "facebook": 0
+965:         }
+966:         
+967:         for provider, count in rows:
+968:             if provider in stats:
+969:                 stats[provider] = count
+970:                 
+971:         # Calculate total users
+972:         c.execute("SELECT COUNT(*) FROM users")
+973:         stats["total_users"] = c.fetchone()[0]
+974:         
+975:         # Filtered suggestion count if date range provided
+976:         if from_ts and to_ts:
+977:             c.execute("SELECT COUNT(*) FROM suggestions WHERE created_at >= ? AND created_at <= ?", (float(from_ts), float(to_ts)))
+978:             stats["suggestions_in_range"] = c.fetchone()[0]
+979:         else:
+980:             c.execute("SELECT COUNT(*) FROM suggestions")
+981:             stats["total_suggestions"] = c.fetchone()[0]
+982:         
+983:     finally:
+984:         conn.close()
+985:     return jsonify(stats), 200
+986: 
+987: @app.route('/api/admin/stats/export', methods=['GET'])
+988: def get_admin_stats_export():
+989:     user = get_session_user()
+990:     if not user or user['role'] != 'admin':
+991:         return jsonify({"error": "غير مصرح، للمدير فقط"}), 403
+992:     
+993:     fmt = request.args.get('format', 'json')
+994:     export_data = {}
+995:     conn = sqlite3.connect(DB_FILE, timeout=30)
+996:     try:
+997:         c = conn.cursor()
+998:         c.execute("SELECT email, role, provider FROM users")
+999:         export_data['users'] = [{"email": r[0], "role": r[1], "provider": r[2]} for r in c.fetchall()]
+1000:         c.execute("SELECT email, type, content, created_at FROM suggestions ORDER BY created_at DESC")
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:04:23Z
+Completed At: 2026-06-15T09:04:24Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 1660 to 1700
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1660:             return jsonify([]), 200
+1661:         email = row[0]
+1662:         c.execute("""SELECT u.username, u.points, u.level FROM follows f
+1663:                      JOIN users u ON f.following_email = u.email
+1664:                      WHERE f.follower_email = ? ORDER BY f.created_at DESC LIMIT 50""", (email,))
+1665:         results = [{"username": r[0], "points": r[1], "level": r[2], "rank": get_rank_name(r[2])} for r in c.fetchall()]
+1666:     finally:
+1667:         conn.close()
+1668:     return jsonify(results), 200
+1669: 
+1670: @app.route('/api/leaderboard', methods=['GET'])
+1671: def leaderboard():
+1672:     conn = sqlite3.connect(DB_FILE, timeout=10)
+1673:     try:
+1674:         c = conn.cursor()
+1675:         c.execute("""
+1676:             SELECT username, points, level,
+1677:                    (SELECT COUNT(DISTINCT manga_id) FROM reader_points_log WHERE email = u.email) as chapters_read,
+1678:                    (SELECT COUNT(*) FROM follows WHERE following_email = u.email) as followers
+1679:             FROM users u WHERE role != 'admin' ORDER BY points DESC LIMIT 100
+1680:         """)
+1681:         rows = c.fetchall()
+1682:         results = []
+1683:         for i, (username, points, level, chapters_read, followers) in enumerate(rows, 1):
+1684:             results.append({"rank": i, "username": username, "points": points, "level": level, "rank_name": get_rank_name(level), "chapters_read": chapters_read, "followers": followers})
+1685:     finally:
+1686:         conn.close()
+1687:     return jsonify(results), 200
+1688: 
+1689: @app.route('/api/notifications', methods=['GET'])
+1690: def get_notifications():
+1691:     user = get_session_user()
+1692:     if not user:
+1693:         return jsonify([]), 200
+1694:     conn = sqlite3.connect(DB_FILE, timeout=10)
+1695:     try:
+1696:         c = conn.cursor()
+1697:         c.execute("""
+1698:             SELECT n.id, n.type, n.title, n.message, n.manga_id, n.chapter_id, n.is_read, n.created_at, n.actor_email,
+1699:                    (SELECT username FROM users WHERE email = n.actor_email) as actor_username
+1700:             FROM notifications n WHERE n.email = ? ORDER BY n.created_at DESC LIMIT 50
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:04:37Z
+Completed At: 2026-06-15T09:04:37Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 430 to 450
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+430:     n = math.floor((-1 + math.sqrt(1 + 4 * points / 50)) / 2)
+431:     return max(1, n)
+432: 
+433: def get_rank_name(level):
+434:     if level <= 5:
+435:         return 'مبتدئ'
+436:     elif level <= 15:
+437:         return 'قارئ نهم'
+438:     elif level <= 30:
+439:         return 'قارئ ممتاز'
+440:     elif level <= 50:
+441:         return 'ناقد أدبي'
+442:     elif level <= 70:
+443:         return 'خبير منهوا'
+444:     elif level <= 99:
+445:         return 'قارئ أسطوري'
+446:     elif level <= 149:
+447:         return 'ملك الترفيه'
+448:     elif level <= 199:
+449:         return 'عملاق القراءة'
+450:     elif level <= 299:
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:04:45Z
+Completed At: 2026-06-15T09:04:45Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126544
+Showing lines 430 to 460
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+430:     n = math.floor((-1 + math.sqrt(1 + 4 * points / 50)) / 2)
+431:     return max(1, n)
+432: 
+433: def get_rank_name(level):
+434:     if level <= 5:
+435:         return 'مبتدئ'
+436:     elif level <= 15:
+437:         return 'قارئ نهم'
+438:     elif level <= 30:
+439:         return 'قارئ ممتاز'
+440:     elif level <= 50:
+441:         return 'ناقد أدبي'
+442:     elif level <= 70:
+443:         return 'خبير منهوا'
+444:     elif level <= 99:
+445:         return 'قارئ أسطوري'
+446:     elif level <= 149:
+447:         return 'ملك الترفيه'
+448:     elif level <= 199:
+449:         return 'عملاق القراءة'
+450:     elif level <= 299:
+451:         return 'أسطورة حية'
+452:     else:
+453:         return 'مدير المشروع'
+454: 
+455: def award_reading_points(email, manga_id, chapter_id):
+456:     conn = sqlite3.connect(DB_FILE, timeout=30)
+457:     try:
+458:         c = conn.cursor()
+459:         c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+460:         user = c.fetchone()
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:05:12Z
+Completed At: 2026-06-15T09:05:12Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126553
+Showing lines 1669 to 1690
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1669: 
+1670: @app.route('/api/leaderboard', methods=['GET'])
+1671: def leaderboard():
+1672:     conn = sqlite3.connect(DB_FILE, timeout=10)
+1673:     try:
+1674:         c = conn.cursor()
+1675:         c.execute("""
+1676:             SELECT username, points, level,
+1677:                    (SELECT COUNT(DISTINCT manga_id) FROM reader_points_log WHERE email = u.email) as chapters_read,
+1678:                    (SELECT COUNT(*) FROM follows WHERE following_email = u.email) as followers
+1679:             FROM users u WHERE role != 'admin' ORDER BY points DESC LIMIT 100
+1680:         """)
+1681:         rows = c.fetchall()
+1682:         results = []
+1683:         for i, (username, points, level, chapters_read, followers) in enumerate(rows, 1):
+1684:             results.append({"rank": i, "username": username, "points": points, "level": level, "rank_name": get_rank_name(level), "chapters_read": chapters_read, "followers": followers})
+1685:     finally:
+1686:         conn.close()
+1687:     return jsonify(results), 200
+1688: 
+1689: @app.route('/api/notifications', methods=['GET'])
+1690: def get_notifications():
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+Created At: 2026-06-15T09:05:20Z
+Completed At: 2026-06-15T09:05:21Z
+File Path: `file:///C:/Users/mahmoud/.gemini/antigravity/scratch/kairo-manhua/flask_app.py`
+Total Lines: 3029
+Total Bytes: 126553
+Showing lines 450 to 500
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+450:     elif level <= 299:
+451:         return 'نصف إله'
+452:     else:
+453:         return 'مدير المشروع'
+454: 
+455: def award_reading_points(email, manga_id, chapter_id):
+456:     conn = sqlite3.connect(DB_FILE, timeout=30)
+457:     try:
+458:         c = conn.cursor()
+459:         c.execute('SELECT points, level FROM users WHERE email = ?', (email,))
+460:         user = c.fetchone()
+461:         if not user:
+462:             return None
+463:         current_points, current_level = user
+464:         
+465:         c.execute('SELECT 1 FROM reader_points_log WHERE email = ? AND manga_id = ? AND chapter_id = ?',
+466:                   (email, manga_id, chapter_id))
+467:         if c.fetchone():
+468:             return {'points': current_points, 'level': current_level, 'new_points': 0, 'leveled_up': False}
+469:         
+470:         new_points = current_points + 1
+471:         new_level = calculate_level(new_points)
+472:         leveled_up = new_level > current_level
+473:         
+474:         c.execute('UPDATE users SET points = ?, level = ? WHERE email = ?', (new_points, new_level, email))
+475:         c.execute('INSERT OR IGNORE INTO reader_points_log VALUES (?, ?, ?, ?)',
+476:                   (email, manga_id, chapter_id, time.time()))
+477:         conn.commit()
+478:         
+479:         return {
+480:             'points': new_points,
+481:             'level': new_level,
+482:             'new_points': 1,
+483:             'leveled_up': leveled_up,
+484:             'rank_name': get_rank_name(new_level)
+485:         }
+486:     finally:
+487:         conn.close()
+488: 
+489: def send_reset_email(email, token, host):
+490:     import smtplib
+491:     from email.mime.text import MIMEText
+492:     
+493:     if not validate_reset_host(host):
+494:         host = 'kairo-manhua.com'
+495:     
+496:     conn = sqlite3.connect(DB_FILE, timeout=30)
+497:     smtp_host = 'localhost'
+498:     smtp_port = 587
+499:     smtp_user = ''
+500:     smtp_pass = ''
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
+
+---
+
+---
+
+---

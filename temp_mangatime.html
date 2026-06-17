@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <script>
+    (function () {
+      try {
+        var isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+          || location.origin === 'https://localhost'
+          || location.protocol === 'capacitor:';
+        if (!isNative) return;
+        // Native app: the OS splash (splash.png) is the single loader, so the
+        // web boot screen (#mt-boot) below is redundant in-app — mark <html>
+        // so the CSS hides it (avoids a second loading screen in the WebView).
+        document.documentElement.classList.add('mt-native');
+        var viewport = document.querySelector('meta[name="viewport"]');
+        if (viewport) {
+          viewport.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover');
+        }
+      } catch (e) {}
+    })();
+  </script>
+
+  <!--
+    F1 — pre-paint theme bootstrap. Reads the persisted theme mode from
+    localStorage (Zustand key `mangatime-theme-storage`) and stamps
+    `class="dark"` / `data-theme-mode="..."` onto <html> BEFORE the
+    browser paints. Eliminates the html.dark CLS=1.000 PageSpeed
+    flagged on 2026-05-20 — the React ThemeInjector used to add this
+    class AFTER hydration, so the document had a class swap visible
+    in the layout-shift budget.
+
+    The block is intentionally synchronous + small + try/catched so it
+    cannot delay or break the page if localStorage is unavailable
+    (private-mode Firefox, sandboxed iframes, server-side render).
+  -->
+  <script>
+    (function () {
+      try {
+        var root = document.documentElement;
+        var mode = 'dark'; // matches themeStore default
+        var raw = window.localStorage && localStorage.getItem('mangatime-theme-storage');
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          var stored = parsed && parsed.state && parsed.state.mode;
+          if (stored === 'light' || stored === 'dark') mode = stored;
+        }
+        root.setAttribute('data-theme-mode', mode);
+        if (mode === 'dark') root.classList.add('dark');
+      } catch (e) {
+        document.documentElement.setAttribute('data-theme-mode', 'dark');
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+
+  <!--
+    F1 — base CSS variables stamped synchronously so first paint matches
+    the active theme. ThemeInjector still runs after hydration and may
+    override these with the user's custom-theme DNA, but the values here
+    are correct for the two DEFAULT themes — Signature Light (light) and
+    Comix (dark, the 2026-06-13 site default) — so 90%+ of users see zero
+    color flicker. Keep these in lockstep with DEFAULT_THEME /
+    DEFAULT_DARK_THEME in apps/web/src/features/theme/data/index.ts
+    (sources: collections/signature.ts and collections/comix.ts).
+  -->
+  <style id="mt-theme-defaults">
+    :root {
+      --colors-background-main: #f3efe8;
+      --colors-background-main-rgb: 243 239 232;
+      --colors-background-paper: #ffffff;
+      --colors-background-paper-rgb: 255 255 255;
+      --colors-background-surface: #ffffff;
+      --colors-background-accent: #fff1ec;
+      --colors-text-primary: #1f1c1a;
+      --colors-text-primary-rgb: 31 28 26;
+      --colors-text-secondary: #3f3936;
+      --colors-text-muted: #6b6058;
+      --colors-text-inverse: #ffffff;
+    }
+    html.dark {
+      /* Comix (default dark) — cool charcoal, flat (no body gradient). */
+      --colors-background-main: #22282a;
+      --colors-background-main-rgb: 34 40 42;
+      --colors-background-paper: #292f32;
+      --colors-background-paper-rgb: 41 47 50;
+      --colors-background-surface: #2c3539;
+      --colors-background-accent: #394247;
+      --colors-text-primary: #d5e1e7;
+      --colors-text-primary-rgb: 213 225 231;
+      --colors-text-secondary: #b1c5ce;
+      --colors-text-muted: #8a9aa2;
+      --colors-text-inverse: #1b2021;
+      /* Comix flattens the ambient body gradient; mirror that pre-paint so
+         the first frame doesn't flash a Signature-style wash. */
+      background-image: none;
+      background-color: #22282a;
+    }
+  </style>
+
+  <title>MangaTime — اقرأ المانجا والمانهوا أونلاين مجانًا</title>
+  <link rel="icon" type="image/png" href="/images/logo-64.png" />
+  <link rel="apple-touch-icon" href="/images/logo-64.png" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="description"
+    content="اقرأ أفضل المانجا والمانهوا أونلاين مجانًا. انضم للمجتمع، تتبع تقدمك، وادعم المبدعين على مانجا تايم." />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  
+  <!-- Network Ad Optimization: Referrer policy allows ad networks to see where traffic comes from to pay higher rates -->
+  <meta name="referrer" content="no-referrer-when-downgrade" />
+
+  <!-- Yandex Webmaster ownership verification (2026-05-23). Backup for the
+       /yandex_<token>.html file route — Yandex accepts EITHER method,
+       and the meta tag is more reliable since it's present on every page
+       served from the SPA shell, not just one path. -->
+  <meta name="yandex-verification" content="36ef5f9390437976" />
+
+  <!-- Self-hosted fonts — eliminates Google Fonts render-blocking (saves ~750ms) -->
+  <!-- Preload the most critical Arabic WOFF2 files for fast first paint (prevents CLS from font swap) -->
+  <link rel="preload" href="/fonts/cairo-arabic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/tajawal-400-arabic.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/tajawal-500-arabic.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- W5.12 (audit P5.037, CM-P2-25): preload Tajawal 700 too — it's used by
+       bold body text and the previous baseline showed a faux-bold flash
+       on first paint while the file loaded. -->
+  <link rel="preload" href="/fonts/tajawal-700-arabic.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Changa ExtraBold — hero headline display face; above the fold on the homepage. -->
+  <link rel="preload" href="/fonts/changa-arabic.woff2" as="font" type="font/woff2" crossorigin>
+  <!-- Local @font-face declarations — same origin, no DNS lookup needed -->
+  <link rel="preload" href="/fonts/fonts.css" as="style" />
+    <link rel="stylesheet" href="/fonts/fonts.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="/fonts/fonts.css" /></noscript>
+
+  <!--
+    R-fix-lcp (2026-05-20): the previous `preconnect` to
+    challenges.cloudflare.com was global, but since R1.4 the
+    TurnstileProvider is route-scoped (mounts only on series + chapter
+    routes). Keeping a warm TLS connection from every page including
+    the homepage burned a connection slot for ~99% of pageviews that
+    never need Turnstile — PageSpeed flagged it as "Unused preconnect".
+    Turnstile warms its own connection when the widget actually loads.
+  -->
+
+  <!-- W5.26 (audit T-054, CM-P2-09): theme-color per prefers-color-scheme
+       so mobile address-bar matches the active theme. -->
+  <meta name="theme-color" content="#0ea5e9" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+
+  <!-- Open Graph (Facebook, Telegram, Discord, etc.) -->
+  <meta property="og:site_name" content="MangaTime" />
+  <meta property="og:type" content="website" />
+  <!-- W1.15 (audit CM-P1-01): "ar" (BCP-47) — "ar_AR" is invalid. -->
+  <meta property="og:locale" content="ar" />
+  <meta property="og:title" content="MangaTime — اقرأ المانجا والمانهوا والمانها أونلاين مجانًا" />
+  <meta property="og:description" content="اقرأ أفضل المانجا والمانهوا والمانها مجانًا. تحديثات يومية، صور عالية الجودة، ومجتمع رائع." />
+  <meta property="og:url" content="https://mangatime.org" />
+  <meta property="og:image" content="https://mangatime.org/og/default.webp" />
+  <!-- W1.13 (audit T-009, S-P0-03, H-P0.02): dimensions align with the
+       actual 1200×630 hero asset (the W1.13 unify shipped a single
+       canonical asset matching SSR). -->
+  <meta property="og:image:secure_url" content="https://mangatime.org/og/default.webp" />
+  <meta property="og:image:alt" content="MangaTime — اقرأ المانجا والمانهوا والمانها أونلاين مجانًا" />
+  <!-- C-1 fix: width/height dropped (actual asset is 128×128, NOT
+       1200×630). Scrapers measure the bytes; lying about dims breaks
+       Twitter card validation. Replace this asset with a real 1200×630
+       hero before claiming dims again. -->
+  <meta property="og:image:type" content="image/webp" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://mangatime.org/og/default.webp" />
+  <meta name="twitter:image:alt" content="MangaTime — اقرأ المانجا والمانهوا والمانها أونلاين مجانًا" />
+
+  <!-- Critical inline CSS for instant first paint -->
+  <style>
+    /* Prevent FOUC: set background + text color immediately */
+    html, body { margin: 0; padding: 0; }
+    body {
+      background-color: rgb(var(--colors-background-main-rgb, 15 23 42)); /* Theme variable with dark surface fallback */
+      color: rgb(var(--colors-text-primary-rgb, 226 232 240));
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+    #root { min-height: 100vh; }
+
+    /* ── Boot screen ─────────────────────────────────────────────────────────
+       Branded loading state painted at TTFB, BEFORE the JS bundle downloads +
+       executes (otherwise ~1.5–2s of blank screen on a cold mobile load — the
+       "it's hanging" feeling). Lives inside #root, so React's
+       createRoot().render() removes it the moment the app mounts. It is
+       position:fixed (an overlay, never reserving flow space), so its removal
+       cannot shift content (≈0 CLS). Self-contained CSS + the pre-stamped
+       theme vars only — the app's Tailwind sheet loads async and isn't
+       available this early. */
+    #mt-boot {
+      position: fixed; inset: 0; z-index: 1;
+      display: flex; align-items: center; justify-content: center;
+      background: rgb(var(--colors-background-main-rgb, 34 40 42));
+    }
+    #mt-boot .mt-boot-logo {
+      width: 64px; height: 64px; -o-object-fit: contain; object-fit: contain;
+      animation: mt-boot-pulse 1.4s ease-in-out infinite;
+    }
+    #mt-boot .mt-boot-bar {
+      position: fixed; top: 0; left: 0; height: 3px; width: 40%;
+      border-radius: 0 4px 4px 0;
+      background: var(--colors-action-primary, #3fb8cc);
+      animation: mt-boot-slide 1.15s ease-in-out infinite;
+    }
+    @keyframes mt-boot-pulse { 0%, 100% { opacity: .45; transform: scale(.92); } 50% { opacity: 1; transform: scale(1); } }
+    @keyframes mt-boot-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+    @media (prefers-reduced-motion: reduce) {
+      #mt-boot .mt-boot-logo { animation: none; }
+      #mt-boot .mt-boot-bar { display: none; }
+    }
+    /* Native app (Capacitor): the OS splash is the only loader; never paint the
+       web boot screen inside the WebView, so the app shows ONE loading screen
+       (OS splash) then the app — not two. Set by the head script above. */
+    .mt-native #mt-boot { display: none !important; }
+  </style>
+  <link rel="alternate" type="application/atom+xml" title="MangaTime — الإعلانات" href="/feed.xml" />
+  <script type="module" crossorigin src="/assets/index-CJ4TqQJ-.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/router-ChvJCORO.js">
+  <link rel="modulepreload" crossorigin href="/assets/motion-Z7upfL-9.js">
+  <link rel="modulepreload" crossorigin href="/assets/data-D9Hx0_IQ.js">
+  <link rel="preload" href="/assets/index-DJI0EDSl.css" as="style" />
+    <link rel="stylesheet" href="/assets/index-DJI0EDSl.css" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="/assets/index-DJI0EDSl.css" /></noscript>
+</head>
+
+<body>
+  <div id="root">
+    <!-- Boot screen — replaced by React on mount (see #mt-boot CSS above). -->
+    <div id="mt-boot" aria-hidden="true">
+      <span class="mt-boot-bar"></span>
+      <img class="mt-boot-logo" src="/images/logo-64.png" alt="" width="64" height="64" decoding="async" />
+    </div>
+  </div>
+  <!-- Prefetch hot-path data in parallel with JS bundle download.
+       Each entry hands the bundle a Promise it can read synchronously on
+       first render, eliminating the post-mount re-fetch round-trip and
+       the layout shifts those round-trips would otherwise cause:
+         • homepage      — drives the section grid (was always prefetched).
+         • announcements — P2.3. Banner state known from first paint.
+         • cardOverrides — P2.5. ResolverProvider gets the live overrides
+           synchronously; cards resolve to their final variant on first
+           paint instead of swapping ~100ms in (variant swap = potentially
+           different card height = CLS).
+         • cardCustoms   — P2.5. Same story for admin-authored custom
+           variants: the runtime CardRegistry hydrates before the first
+           card resolves.
+       All four endpoints are publicProcedure / no-auth — safe to fire
+       from a pre-bundle script with no Authorization header. -->
+  <script>
+    (function() {
+      try {
+        window.__PREFETCH__ = window.__PREFETCH__ || {};
+        var onHome = location.pathname === '/';
+
+        // Capacitor APK: the WebView origin is https://localhost (the local
+        // bundle server), so a RELATIVE '/trpc/...' resolves against
+        // localhost and fails instantly — the prefetch silently never
+        // worked in-app and the homepage waited for full React boot before
+        // its first network request. The bundle is local in the APK (zero
+        // download time), so starting the data fetch at HTML-parse time is
+        // worth even more there than on web. The Capacitor bridge script is
+        // injected at document start, so window.Capacitor is available
+        // here; the origin check is a belt-and-braces fallback.
+        var isNative = false;
+        try {
+          isNative = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())
+            || location.origin === 'https://localhost'
+            || location.protocol === 'capacitor:';
+        } catch (ne) {}
+
+        // In-app, <img> resources load over the WebView network stack —
+        // warm the DNS+TLS connection to the image host before the first
+        // cover request. (API fetches go through the native CapacitorHttp
+        // bridge, which preconnect can't help; the prefetch fetch below is
+        // itself the warm-up for that path.) Skipped on web: same-origin,
+        // and PageSpeed flags unused preconnects.
+        if (isNative) {
+          var pc = document.createElement('link');
+          pc.rel = 'preconnect';
+          pc.href = 'https://mangatime.org';
+          document.head.appendChild(pc);
+        }
+
+        // cardOverrides + cardCustoms are needed on every route (they drive
+        // the CardRegistry to avoid CLS). homepage + announcements only on '/'
+        // — expensive aggregate should not run on deep-link/SEO routes that
+        // never consume it. (WEB2/WEB3: batch 4→2 procs on non-home routes)
+        var procs = ['cards.getOverrides', 'cards.customs.getPublishedCustoms'];
+        if (onHome) procs = ['homepage.getHomepage', 'homepage.getAnnouncements'].concat(procs);
+
+        var input = {};
+        procs.forEach(function(_, i) { input[i] = {}; });
+
+        // Native must use the absolute API origin (mirrors getApiBaseUrl()
+        // in src/lib/config.ts — keep the two in sync). Web stays relative
+        // ('/trpc' is routed by host nginx; same-origin, no extra DNS).
+        var apiBase = isNative ? 'https://mangatime.org/api' : '';
+        var url = apiBase + '/trpc/' + procs.join(',') + '?batch=1&input=' + encodeURIComponent(JSON.stringify(input));
+        var batched = fetch(url).then(function(r) { return r.json(); }).catch(function() { return null; });
+
+        // Re-expose each procedure's slice under its existing __PREFETCH__ key
+        // so consumers are unchanged. A batched response is an array indexed
+        // like `procs`; wrap each element as [arr[i]] to match the shape the
+        // previous single-call go() returned: [{result:{data:...}}].
+        // Each consumer does arr[0].result.data.xxx — this preserves that path.
+        //
+        // Each key ALSO lands on window.__PREFETCH_SETTLED__ in the microtask it
+        // resolves, so a useState initializer can consume it SYNCHRONOUSLY when
+        // the network beat React boot (common on web — the fetch starts at
+        // HTML-parse time). The settled mirror stores the resolved value
+        // ([arr[i]] on success, null on a failed batch — `batched` already
+        // catches to null).
+        //
+        // DRAINING CONTRACT: any consumer that reads a __PREFETCH_SETTLED__ key
+        // MUST delete BOTH window.__PREFETCH__[key] and
+        // window.__PREFETCH_SETTLED__[key] on consumption, or back-navigation to
+        // '/' replays stale session-start data. `announcements` is consumed
+        // (settled sync-read) and drained by AnnouncementsBanner; `homepage` is
+        // consumed via the __PREFETCH__ promise by usePrefetchedHomepage
+        // (HomePage.tsx) which drains BOTH keys on consumption — the settled
+        // mirror copy must never outlive the promise copy, even though nothing
+        // sync-reads it yet; `cardOverrides`/`cardCustoms` remain write-only
+        // (inert) until their consumers adopt the pattern, at which point they
+        // too must drain both keys.
+        //
+        // Any post-boot reader that needs the homepage payload (e.g. the hero LCP
+        // preload) must attach to the `batched`/slice PROMISE in this script
+        // (drain-immune: drains delete window properties, not promise callbacks)
+        // or consume it inside usePrefetchedHomepage's onPayload — it must NOT
+        // read __PREFETCH_SETTLED__.homepage, which is drained on consumption and
+        // pinned against sync-reads by HomePage.seed.test.tsx.
+        procs.forEach(function(name, i) {
+          var key = name === 'homepage.getHomepage'              ? 'homepage'
+                  : name === 'homepage.getAnnouncements'         ? 'announcements'
+                  : name === 'cards.getOverrides'                ? 'cardOverrides'
+                  : 'cardCustoms';
+          var slice = batched.then(function(arr) {
+            return arr ? [arr[i]] : null;
+          });
+          slice.then(function(v) {
+            (window.__PREFETCH_SETTLED__ = window.__PREFETCH_SETTLED__ || {})[key] = v;
+          });
+          window.__PREFETCH__[key] = slice;
+        });
+
+        // ── LCP: above-the-fold AD-banner image preload (homepage only) ──
+        // The homepage's LCP element on both mobile and desktop is the
+        // app-download banner ad rendered into the `hero-overlay` surface
+        // (an <img> via AnimatedBanner). Its URL is NOT in the homepage
+        // batch above — it lives behind `homepage.ads.getActivePlacements`,
+        // a separate query that previously only fired AFTER React booted, so
+        // the browser discovered the LCP image very late (requestDiscoverable
+        // = NO in the 2026-06-11 baseline). We fire that query here at
+        // HTML-parse time (in parallel with the bundle download) and, the
+        // moment it resolves, inject a real <link rel=preload as=image
+        // fetchpriority=high> for the first hero/hero-overlay image ad. The
+        // banner <img> already renders eager + fetchpriority=high (see
+        // AnimatedBanner / BannerVariant), so the preloaded bytes are reused
+        // when React paints it — no double fetch.
+        //
+        // getActivePlacements is a publicProcedure (no auth) → safe to fetch
+        // from this pre-bundle script with no Authorization header. We do NOT
+        // seed React Query from this; the ad hosts keep their own useQuery
+        // (the placement JSON is tiny). This fetch exists to (a) warm that
+        // response and (b) surface the LCP image URL early enough to preload.
+        if (onHome) {
+          try {
+            // Mirror the batch call shape used above for no-input procs:
+            // input is a plain `{}` per index (NOT superjson-wrapped on the
+            // request — matches the working homepage/announcements batch).
+            var adsUrl = apiBase + '/trpc/homepage.ads.getActivePlacements?batch=1&input=' + encodeURIComponent(JSON.stringify({ 0: {} }));
+            fetch(adsUrl).then(function (r) { return r.json(); }).then(function (res) {
+              // Batched response: an array indexed like the input. Each element
+              // is { result: { data: { json: <payload> } } } (superjson on the
+              // wire). The inline script can't run superjson, but `bySurface`
+              // and the `mediaUrl` strings are plain JSON, so reading `.json`
+              // is safe.
+              var first = Array.isArray(res) ? res[0] : res;
+              var data = first && first.result && first.result.data;
+              data = data && (data.json !== undefined ? data.json : data);
+              var bySurface = data && data.bySurface;
+              if (!bySurface) return;
+              // ONLY the `hero-overlay` surface — it renders via AnimatedBanner,
+              // whose <img src> is `ad.mediaUrl` VERBATIM, so the preload href
+              // matches byte-for-byte (a mismatched preload is wasted bytes;
+              // see docs/runbooks/mobile-image-loading.md). The `hero` surface
+              // (HeroAdSlider) instead serves an optimizedImageUrl()-resized
+              // webp, which we can't reproduce exactly in this transformer-less
+              // inline script — so we deliberately don't preload it here.
+              //
+              // Phase 1.b (perf/cwv-development, 2026-06-11): we investigated
+              // reproducing the hero-slider URL inline and DELIBERATELY did not.
+              // The rendered <img src> = optimizedImageUrl(ad.mediaUrl, { width,
+              // format:'webp', quality }) where BOTH inputs are runtime-only:
+              //   • width is chosen by the slider's <picture> (640 on mobile,
+              //     1920 on desktop) — viewport-dependent, the inline script
+              //     can't know which <source> the browser will pick; and
+              //   • quality (qMobile 45/65/80, qDesktop 50/70/85) is derived
+              //     from PerformanceContext.networkMode, which is auto-detected
+              //     ON MOUNT (navigator.connection / saveData / UA / CPU) and
+              //     persisted per-user — unknown at HTML-parse time.
+              // A preload at the wrong width/quality would be wasted bytes (the
+              // exact footgun in docs/runbooks/mobile-image-loading.md), so we
+              // skip it. Instead the slider's FIRST slide already renders
+              // loading="eager" + fetchPriority="high" + decoding="sync" (see
+              // HeroAdSlider — only idx 0 gets high priority), which is the
+              // best we can do without a mismatch. A TRUE preload here needs
+              // the API to return a pre-resolved/presized hero URL field (e.g.
+              // ad.heroSrc640 / ad.heroSrc1920) so the inline script can emit a
+              // byte-exact href — tracked as a Phase 1.b follow-up.
+              var entries = bySurface['hero-overlay'];
+              var mediaUrl = null;
+              if (entries && entries.length) {
+                for (var e = 0; e < entries.length; e++) {
+                  var entry = entries[e];
+                  var ad = entry && entry.ad;
+                  var placement = entry && entry.placement;
+                  if (ad && (ad.type === 'image' || !ad.type) && ad.mediaUrl
+                      && (!placement || placement.enabled !== false)) {
+                    mediaUrl = ad.mediaUrl; // AnimatedBanner renders ad.mediaUrl verbatim
+                    break;
+                  }
+                }
+              }
+              if (mediaUrl) {
+                var l = document.createElement('link');
+                l.rel = 'preload';
+                l.as = 'image';
+                l.setAttribute('fetchpriority', 'high');
+                l.href = mediaUrl;
+                document.head.appendChild(l);
+              }
+            }).catch(function () {});
+          } catch (ae) {}
+        }
+      } catch(e) {}
+    })();
+  </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"378227e012db46bd9e7ad8146d11fd20","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,17 @@
+function updateGridOnly() {
+    if (state.activeTab === 'users') {
+        const usersContainer = document.getElementById('users-grid-container');
+        if (!usersContainer) { renderApp(); return; }
+        
+        let filteredUsers = state.browseUsers || [];
+        if (state.searchQuery) {
+            const q = state.searchQuery.toLowerCase();
+            filteredUsers = filteredUsers.filter(u => u.username.toLowerCase().includes(q));
+        }
+
+        const totalUsers = filteredUsers.length;
+        const usersCards = filteredUsers.map(u => `
+            <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+                <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+                <div>
+                    <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h

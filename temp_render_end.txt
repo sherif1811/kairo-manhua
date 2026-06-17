@@ -1,0 +1,41 @@
+} else if (state.currentView === 'reader') {
+        viewHtml = await ReaderViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'admin') {
+        viewHtml = AdminPanelViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'bookmarks') {
+        viewHtml = BookmarksViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'downloads') {
+        viewHtml = await DownloadsViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'history') {
+        viewHtml = HistoryViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'profile') {
+        viewHtml = await ProfileViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'leaderboard') {
+        viewHtml = await LeaderboardViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'reset-password') {
+        viewHtml = ResetPasswordViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'announcements') {
+        viewHtml = await AnnouncementsViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'store') {
+        viewHtml = await StoreViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'chat') {
+        viewHtml = ChatViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    } else if (state.currentView === 'search') {
+        viewHtml = SearchViewComponent();
+        if (sliderInterval) clearInterval(sliderInterval);
+    }
+
+    // 3. بناء وتصيير الهيكل الأساسي للواجهة
+    if (state.currentView === 'reader') {
+        root.innerHTML

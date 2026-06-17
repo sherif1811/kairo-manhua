@@ -1,0 +1,100 @@
+3521: 
+3522:     // 2. تجميع محتوى الواجهة المعنية
+3523:     let viewHtml = '';
+3524:     
+3525:         if (state.currentView === 'home') {
+3526:         const s = state;
+3527:         let contentHtml = '';
+3528: 
+3529:         if (s.activeTab === 'users') {
+3530:             // Fetch users if not loaded or if we just switched
+3531:             if (!s.browseUsers) {
+3532:                 try {
+3533:                     const res = await fetch('/api/leaderboard?limit=1000');
+3534:                     s.browseUsers = await res.json();
+3535:                 } catch(e) {
+3536:                     console.error('Failed to load users', e);
+3537:                     s.browseUsers = [];
+3538:                 }
+3539:             }
+3540: 
+3541:             let filteredUsers = s.browseUsers || [];
+3542:             if (s.searchQuery) {
+3543:                 const q = s.searchQuery.toLowerCase();
+3544:                 filteredUsers = filteredUsers.filter(u => u.username.toLowerCase().includes(q));
+3545:             }
+3546: 
+3547:             const totalUsers = filteredUsers.length;
+3548:             const usersCards = filteredUsers.map(u => `
+3549:                 <div class="user-search-item" style="background:var(--bg-card); padding:15px; border-radius:12px; border:1px solid var(--border-color); display:flex; align-items:center; gap:15px; cursor:pointer;" onclick="navigate('profile', '${u.username}')">
+3550:                     <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
+3551:                     <div>
+3552:                         <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
+3553:                         <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
+3554:                     </div>
+3555:                     <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
+3556:                         ${u.points || 0} XP
+3557:                     </div>
+3558:                 </div>
+3559:             `).join('');
+3560: 
+3561:             contentHtml = `
+3562:             <div id="users-grid-container" style="max-width:1200px; margin:0 auto; padding:0 20px;">
+3563:                 <div class="mangatime-toolbar" style="margin-bottom:20px;">
+3564:                     <div class="mangatime-toolbar-left">${totalUsers} مستخدم</div>
+3565:                 </div>
+3566:                 ${filteredUsers.length === 0 ? '<div class="empty-state"><h3>لا يوجد مستخدمين</h3></div>' : `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">${usersCards}</div>`}
+3567:             </div>
+3568:             `;
+3569:         } else {
+3570:             // Default Manga view
+3571:             let filtered = [...s.mangas];
+3572: 
+3573:             // Apply filters
+3574:             if (s.activeGenre && s.activeGenre !== 'الكل') {
+3575:                 filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
+3576:             }
+3577:             if (s.filterStatus && s.filterStatus !== 'الكل') {
+3578:                 filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+3579:             }
+3580:             if (s.filterType && s.filterType !== 'الكل') {
+3581:                 filtered = filtered.filter(m => m.type === s.filterType);
+3582:             }
+3583:             if (s.filterYearMin) {
+3584:                 filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+3585:             }
+3586:             if (s.filterYearMax) {
+3587:                 filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+3588:             }
+3589:             if (s.filterRatingMin) {
+3590:                 filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+3591:             }
+3592:             if (s.filterRatingMax) {
+3593:                 filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+3594:             }
+3595:             if (s.filterChaptersMin) {
+3596:                 filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+3597:             }
+3598:             if (s.filterChaptersMax) {
+3599:                 filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+3600:             }
+3601: 
+3602:             // Apply search
+3603:             if (s.searchQuery) {
+3604:                 const q = s.searchQuery.toLowerCase();
+3605:                 if (s.searchType === 'title' || s.searchType === 'all' || !s.searchType) {
+3606:                     filtered = filtered.filter(m => m.title && m.title.toLowerCase().includes(q));
+3607:                 } else if (s.searchType === 'tags') {
+3608:                     filtered = filtered.filter(m => m.genres && m.genres.some(g => g.toLowerCase().includes(q)));
+3609:                 } else if (s.searchType === 'author') {
+3610:                     filtered = filtered.filter(m => m.author && m.author.toLowerCase().includes(q));
+3611:                 }
+3612:             }
+3613: 
+3614:             // Apply sort
+3615:             if (s.filterSort === 'الأحدث' || !s.filterSort) {
+3616:                 filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+3617:             } else if (s.filterSort === 'أحدث التحديثات') {
+3618:                 filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+3619:             } else if (s.filterSort === 'أ-ي') {
+3620:                 filtered.sort((a,b) => a.title.localeCompare(b.title));

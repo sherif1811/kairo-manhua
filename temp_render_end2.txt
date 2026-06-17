@@ -1,0 +1,31 @@
+// 3. بناء وتصيير الهيكل الأساسي للواجهة
+    if (state.currentView === 'reader') {
+        root.innerHTML = `<div id="app-root">${viewHtml} ${AuthModalComponent()} ${SuggestionsModalComponent()} ${SettingsModalComponent()} ${DailyRewardModalComponent()}</div>`;
+        
+        if (state.readerSettings.mode !== 'horizontal') {
+            initLazyLoading();
+            initProgressTracker();
+        }
+    } else {
+        root.innerHTML = `
+        <div id="app-root">
+            ${HeaderComponent()}
+            <main class="main-content page-fade-in">
+                ${viewHtml}
+            </main>
+            ${AuthModalComponent()}
+            ${SuggestionsModalComponent()}
+            ${SettingsModalComponent()}
+            ${DailyRewardModalComponent()}
+        </div>
+        `;
+    }
+
+    initScrollToTop();
+    initLazyImages();
+    attachEventListeners();
+}
+
+// ==========================================
+// 4.4.5. معاينة ملف المستخدم
+// ==========================================

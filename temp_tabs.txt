@@ -1,0 +1,6 @@
+<div class="mangatime-tabs">
+            <div class="mangatime-tab ${s.activeTab==='series'?'active':''}" onclick="toggleFilter('tab','series')"><i class="fa-solid fa-layer-group"></i> السلاسل</div>
+            <div class="mangatime-tab ${s.activeTab==='users'?'active':''}" onclick="toggleFilter('tab','users')"><i class="fa-solid fa-user-group"></i> المستخدمون</div>
+        </div>
+
+        <div cl

@@ -1,0 +1,30 @@
+-btn" disabled>التالي <i class="fa-solid fa-chevron-left"></i></button>
+    </div>
+    `;
+}
+
+window.toggleFilter = function(type, value) {
+    const s = state;
+    if (type === 'genre') s.activeGenre = (s.activeGenre === value) ? '' : value;
+    else if (type === 'status') s.filterStatus = value;
+    else if (type === 'type') s.filterType = value;
+    else if (type === 'sort') s.filterSort = value;
+    else if (type === 'limit') s.limit = parseInt(value);
+    else if (type === 'search_type') s.searchType = value;
+    else if (type === 'tab') s.activeTab = value;
+    
+    updateGridOnly();
+};
+window.toggleViewMode = function(mode) {
+    state.viewMode = mode;
+    updateGridOnly();
+};
+window.handleSearchInput = function(e) {
+    state.searchQuery = e.target.value;
+    updateGridOnly();
+};
+window.handleNumberInput = function(type, value) {
+    state[type] = value;
+    updateGridOnly();
+};
+

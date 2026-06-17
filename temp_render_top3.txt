@@ -1,0 +1,22 @@
+chapters ? m.chapters.length : 0) >= chMin);
+        }
+        if (s.filterChaptersMax) {
+            const chMax = parseInt(s.filterChaptersMax);
+            if (!isNaN(chMax)) filteredMangas = filteredMangas.filter(m => (m.chapters ? m.chapters.length : 0) <= chMax);
+        }
+        if (s.filterSort === 'الأقدم') {
+            filteredMangas = [...filteredMangas].reverse();
+        } else if (s.filterSort === 'التقييم') {
+            filteredMangas = [...filteredMangas].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        } else if (s.filterSort === 'عدد الفصول') {
+            filteredMangas = [...filteredMangas].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
+        }
+    }
+
+    // 2. تجميع محتوى الواجهة المعنية
+    let viewHtml = '';
+    
+        if (state.currentView === 'home') {
+            const s = state;
+            const searchTypes = [
+                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'

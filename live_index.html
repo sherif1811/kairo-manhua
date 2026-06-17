@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى</title>
+    <!-- Monetag Verification -->
+    <meta name="monetag" content="a2f9bed6edf6bb3ece21d0a9235cd5e0">
+    <!-- خط Cairo المميز من Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" as="style">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome للأيقونات الاحترافية -->
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ملفات التنسيق المخصصة -->
+    <link rel="stylesheet" href="style.css?v=3.6">
+    <!-- دعم وضع عدم الاتصال (PWA Basic Setup) -->
+    <meta name="theme-color" content="#0a0b0e">
+    <meta name="description" content="منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.">
+    <meta property="og:title" content="KAIRO / منهوا">
+    <meta property="og:description" content="منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/default_cover.svg">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="KAIRO / منهوا">
+    <meta name="twitter:description" content="منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية.">
+    <meta name="twitter:image" content="/default_cover.svg">
+    <!-- Web App Manifest for PWA Install -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" type="image/svg+xml" href="/icon-192.svg">
+    <link rel="apple-touch-icon" href="/icon-192.svg">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- مكتبة Google Identity Services لتسجيل الدخول الاجتماعي -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    
+    <!-- Google site verification (أدخل كود التحقق الخاص بك من Google Search Console) -->
+    <meta name="google-site-verification" content="YOUR_VERIFICATION_CODE_HERE" />
+    
+    <!-- Google Analytics (أدخل G-ID الخاص بك من Google Analytics) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-XXXXXXXXXX');
+    </script>
+</head>
+<body>
+    <!-- PWA Offline Indicator -->
+    <div class="offline-indicator" role="status" aria-label="حالة الاتصال"><i class="fa-solid fa-wifi" aria-hidden="true"></i> غير متصل</div>
+    <!-- الهيكل الرئيسي للتطبيق -->
+    <div id="app">
+        <!-- سيتم تحميل المحتوى بالكامل ديناميكياً بواسطة JavaScript -->
+        <div class="loading-screen" id="initial-loader">
+            <div class="loader-content">
+                <h1 class="logo-text neon-pulse">KAIRO<span>/منهوا</span></h1>
+                <div class="spinner"></div>
+                <p>جاري تحميل عالم المانجا الخاص بك...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adsterra Native Banner -->
+    <div style="width:100%; text-align:center; padding: 8px 0;">
+        <script async="async" data-cfasync="false" src="https://pl29769776.effectivecpmnetwork.com/50c88d07c89743ccdb683da15248163d2/invoke.js"></script>
+        <div id="container-50c88d07c89743cdb683da15248163d2"></div>
+    </div>
+
+    <!-- Adsterra 468x60 Banner -->
+    <div style="width:100%; text-align:center; padding: 8px 0;">
+        <script>
+          atOptions = {
+            'key' : '4d1b18a48a5e3faf3aace3327afb145f',
+            'format' : 'iframe',
+            'height' : 60,
+            'width' : 468,
+            'params' : {}
+          };
+        </script>
+        <script src="https://www.highperformanceformat.com/4d1b18a48a5e3faf3aace3327afb145f/invoke.js"></script>
+    </div>
+
+    <!-- Adsterra 300x250 Banner -->
+    <div style="width:100%; text-align:center; padding: 8px 0;">
+        <script>
+          atOptions = {
+            'key' : '541ce3656c6497ec1fc928c336ea9597',
+            'format' : 'iframe',
+            'height' : 250,
+            'width' : 300,
+            'params' : {}
+          };
+        </script>
+        <script src="https://www.highperformanceformat.com/541ce3656c6497ec1fc928c336ea9597/invoke.js"></script>
+    </div>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').then(reg => {
+                console.log('SW registered:', reg.scope);
+                reg.update();
+                setInterval(() => reg.update(), 3600000);
+            }).catch(err => {
+                console.error('SW registration failed:', err);
+            });
+        }
+    </script>
+    <!-- المنطق البرمجي الرئيسي للموقع -->
+    <script src="app.js?v=3.7"></script>
+    
+    <!-- Adsterra Ads -->
+    <script src="https://pl29769773.effectivecpmnetwork.com/dd/5b/62/dd5b627a49d3df63715e88ea22b05539.js"></script>
+    <script src="https://pl29769775.effectivecpmnetwork.com/b1/31/5b/b1315bd75a891805c447d086c9d9df30.js"></script>
+    <script type="text/javascript">
+        var so = document.createElement('script');
+        so.type = 'text/javascript';
+        so.async = true;
+        so.src = 'https://www.effectivecpmnetwork.com/kgr8zhttdi?key=98a734aefdd76c2bc2529a8cd051f5e3';
+        document.head.appendChild(so);
+    </script>
+
+    <!-- Monetag Ads -->
+    <script>(function(s){s.dataset.zone='11158999',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+
+    <!-- Fix iOS Double Tap Hover Issue -->
+    <script>
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        document.addEventListener('click', function(e) {
+            const a = e.target.closest('a');
+            if (a && a.getAttribute('href') === '#') {
+                e.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>

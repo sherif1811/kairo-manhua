@@ -1,0 +1,37 @@
+function getFilteredMangas() {
+    const s = state;
+    let result = s.mangas;
+    if (s.searchQuery) {
+        result = result.filter(m => 
+            m.title.toLowerCase().includes(s.searchQuery.toLowerCase()) ||
+            (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
+        );
+    }
+    if (s.activeGenre !== 'الكل') {
+        result = result.filter(m => m.genres.includes(s.activeGenre));
+    }
+    if (s.filterStatus !== 'الكل') {
+        result = result.filter(m => m.status === s.filterStatus);
+    }
+    if (s.filterType !== 'الكل') {
+        result = result.filter(m => (m.type || '') === s.filterType);
+    }
+    if (s.filterYearMin) {
+        const yearMin = parseFloat(s.filterYearMin);
+        if (!isNaN(yearMin)) result = result.filter(m => (m.year || 0) >= yearMin);
+    }
+    if (s.filterYearMax) {
+        const yearMax = parseFloat(s.filterYearMax);
+        if (!isNaN(yearMax)) result = result.filter(m => (m.year || 9999) <= yearMax);
+    }
+    if (s.filterRatingMin) {
+        const ratingMin = parseFloat(s.filterRatingMin);
+        if (!isNaN(ratingMin)) result = result.filter(m => (m.rating || 0) >= ratingMin);
+    }
+    if (s.filterRatingMax) {
+        const ratingMax = parseFloat(s.filterRatingMax);
+        if (!isNaN(ratingMax)) result = result.filter(m => (m.rating || 5) <= ratingMax);
+    }
+    if (s.filterChaptersMin) {
+        const chMin = parseInt(s.filterChaptersMin);
+        if (!isNaN(chMin)) result = result.filter(m => (m

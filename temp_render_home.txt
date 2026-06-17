@@ -1,0 +1,90 @@
+if (state.currentView === 'home') {
+            const s = state;
+            const searchTypes = [
+                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+                {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
+            ];
+            const searchTypeHtml = searchTypes.map(t => 
+                `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
+            ).join('');
+
+            const allGenres = ['الكل'];
+            s.mangas.forEach(m => m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }));
+
+            const contentHtml = await window.generateHomeGridHtml();
+
+            viewHtml = `
+            <div class="mangatime-browse-container">
+                <div class="mangatime-hero-section">
+                    <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+                    <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+                </div>
+                <div class="mangatime-search-wrapper">
+                    <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+                    <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
+                    <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
+                </div>
+                <div class="mangatime-search-filters">
+                    <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
+                    ${searchTypeHtml}
+                </div>
+                <div class="mangatime-dropdowns-row" style="display:${s.searchType==='username'?'none':'flex'}">
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-tags glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('genre', this.value)">
+                            ${allGenres.map(g => `<option value="${g}" ${s.activeGenre===g?'selected':''}>${g}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-book-open glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('type', this.value)">
+                            <option value="الكل" ${s.filterType==='الكل'?'selected':''}>كل الأنواع</option>
+                            <option value="مانهوا كورية" ${s.filterType==='مانهوا كورية'?'selected':''}>مانهوا كورية</option>
+                            <option value="مانجا يابانية" ${s.filterType==='مانجا يابانية'?'selected':''}>مانجا يابانية</option>
+                            <option value="مانها صينية" ${s.filterType==='مانها صينية'?'selected':''}>مانها صينية</option>
+                            <option value="كوميك" ${s.filterType==='كوميك'?'selected':''}>كوميك</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-circle-check glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('status', this.value)">
+                            <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                            <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                            <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                            <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                        </select>
+                    </div>
+                    <div class="glass-select-wrapper">
+                        <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
+                        <select class="glass-select" onchange="toggleFilter('sort', this.value)">
+                            <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                            <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                            <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                            <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                            <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                            <option value="عدد الفصول" ${s.filterSort==='عدد الفصول'?'selected':''}>عدد الفصول</option>
+                        </select>
+                    </div>
+                    <div class="glass-input-group">
+                        <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
+                        <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                        <span class="glass-separator">-</span>
+                        <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+                    </div>
+                    <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
+                        <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
+                        <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
+                            <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
+                                <option value="12" ${s.limit===12?'selected':''}>12</option>
+                                <option value="24" ${s.limit===24?'selected':''}>24</option>
+                                <option value="48" ${s.limit===48?'selected':''}>48</option>
+                            </select>
+                        </div>
+                        <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                        <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض قائمة" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+                    </div>
+                </div>
+                ${contentHtml}
+            </div>
+            `;
+        startSliderTimer();

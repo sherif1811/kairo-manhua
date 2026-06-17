@@ -13,6 +13,7 @@ services:
       - ./images:/app/images
     environment:
       - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/0
     depends_on:
       - redis
 
@@ -24,6 +25,21 @@ services:
     volumes:
       - ./kairo.db:/app/kairo.db
 
+      - ./mangas_data:/app/mangas_data
+      - ./images:/app/images
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+      - web
+
+  celery_worker:
+    build: .
+    container_name: kairo_celery
+    restart: always
+    command: celery -A celery_app worker --loglevel=info -P threads -c 4
+    volumes:
+      - ./kairo.db:/app/kairo.db
       - ./mangas_data:/app/mangas_data
       - ./images:/app/images
     environment:

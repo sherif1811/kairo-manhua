@@ -1,0 +1,23 @@
+  <div class="mangatime-search-wrapper">
+            <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+            <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
+            <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
+        </div>
+
+        <div class="mangatime-search-filters">
+            <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
+            ${searchTypeHtml}
+        </div>
+
+        <div class="mangatime-tabs">
+            <div class="mangatime-tab ${s.activeTab==='series'?'active':''}" onclick="toggleFilter('tab','series')"><i class="fa-solid fa-layer-group"></i> السلاسل</div>
+            <div class="mangatime-tab ${s.activeTab==='users'?'active':''}" onclick="toggleFilter('tab','users')"><i class="fa-solid fa-user-group"></i> المستخدمون</div>
+        </div>
+
+        <div class="mangatime-dropdowns-row">
+            <!-- التصنيف -->
+            <div class="glass-select-wrapper">
+                <i class="fa-solid fa-tags glass-icon"></i>
+                <select class="glass-select" onchange="toggleFilter('genre', this.value)">
+                    <option value="">كل التصنيفات</option>
+            

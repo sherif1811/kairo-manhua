@@ -1,0 +1,43 @@
+terStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
+    }
+    if (s.filterType && s.filterType !== 'الكل') {
+        filtered = filtered.filter(m => m.type === s.filterType);
+    }
+    if (s.filterYearMin) {
+        filtered = filtered.filter(m => (m.year || 0) >= parseInt(s.filterYearMin));
+    }
+    if (s.filterYearMax) {
+        filtered = filtered.filter(m => (m.year || 9999) <= parseInt(s.filterYearMax));
+    }
+    if (s.filterRatingMin) {
+        filtered = filtered.filter(m => (m.rating || 0) >= parseFloat(s.filterRatingMin));
+    }
+    if (s.filterRatingMax) {
+        filtered = filtered.filter(m => (m.rating || 5) <= parseFloat(s.filterRatingMax));
+    }
+    if (s.filterChaptersMin) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) >= parseInt(s.filterChaptersMin));
+    }
+    if (s.filterChaptersMax) {
+        filtered = filtered.filter(m => (m.chapters ? m.chapters.length : 0) <= parseInt(s.filterChaptersMax));
+    }
+
+    if (s.searchQuery) {
+        const q = s.searchQuery.toLowerCase();
+        if (s.searchType === 'title' || s.searchType === 'all' || !s.searchType) {
+            filtered = filtered.filter(m => m.title && m.title.toLowerCase().includes(q));
+        } else if (s.searchType === 'tags') {
+            filtered = filtered.filter(m => m.genres && m.genres.some(g => g.toLowerCase().includes(q)));
+        } else if (s.searchType === 'author') {
+            filtered = filtered.filter(m => m.author && m.author.toLowerCase().includes(q));
+        }
+    }
+
+    if (s.filterSort === 'الأحدث' || !s.filterSort) {
+        filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+    } else if (s.filterSort === 'أحدث التحديثات') {
+        filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
+    } else if (s.filterSort === 'أ-ي') {
+        filtered.sort((a,b) => a.title.localeCompare(b.title));
+    } else if (s.filterSort === 'الأعلى تقييماً') {
+        filtered.sort((a,b) =

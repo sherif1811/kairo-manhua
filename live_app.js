@@ -1427,16 +1427,9 @@ function getProxiedImageUrl(url) {
     return url;
 }
 
-window._hasPrefetchedNextChapter = false;
-window._nextChapterImages = null;
-
 function prefetchNextChapter(images) {
-    if (!images || !Array.isArray(images) || window._hasPrefetchedNextChapter) return;
-    window._hasPrefetchedNextChapter = true;
-    
-    // Only prefetch the first 5 images to avoid slowing down the current chapter
-    const toPrefetch = images.slice(0, 5);
-    toPrefetch.forEach(url => {
+    if (!images || !Array.isArray(images)) return;
+    images.forEach(url => {
         const img = new Image();
         img.src = getProxiedImageUrl(url);
     });
@@ -1704,7 +1697,6 @@ function HeaderComponent() {
                     <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> الإعلانات</div>
                     <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> الدردشة</div>
                 </div>
-            </div>
             <span class="nav-link ${activeView === 'suggestions' ? 'active' : ''}" id="nav-suggestions" onclick="window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي</span>
             <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> قناتنا</a>
         </nav>
@@ -2140,14 +2132,6 @@ function MangaCardComponent(manga) {
     const type = manga.type || 'مانهوا';
     const rating = manga.rating || (Math.random() * (9.9 - 8.0) + 8.0).toFixed(1);
 
-    let displayChapterText = chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة";
-    if (latestChapter && latestChapter.id) {
-        const numMatch = latestChapter.id.match(/\d+(?:\.\d+)?/);
-        if (numMatch) {
-            displayChapterText = "فصل " + parseFloat(numMatch[0]);
-        }
-    }
-
     if (state.viewMode === 'list') {
         return `
         <div class="mt-list-card" onclick="navigate('detail', '${id}'); return false;" style="cursor:pointer;">
@@ -2158,7 +2142,7 @@ function MangaCardComponent(manga) {
             <div class="mt-list-card-content">
                 <h3 style="margin-bottom:10px; color:#fff; font-size:1.2rem;">${title}</h3>
                 <div style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">${manga.genres ? manga.genres.slice(0,3).join('، ') : ''}</div>
-                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${displayChapterText}</div>
+                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة"}</div>
             </div>
         </div>
         `;
@@ -2171,7 +2155,7 @@ function MangaCardComponent(manga) {
         <div class="mt-badge-top-right">${type}</div>
         <div class="mt-card-overlay">
             <h3 class="mt-card-title">${title}</h3>
-            ${chaptersCount > 0 ? `<div class="mt-card-chap">${displayChapterText}</div>` : ""}
+            ${chaptersCount > 0 ? `<div class="mt-card-chap">${chaptersCount} فصل</div>` : ""}
         </div>
     </div>
     `;
@@ -2745,25 +2729,10 @@ async function ReaderViewComponent() {
         }
     }
 
-    // إعداد التحميل المسبق الذكي (هيتفعل لما القارئ ينزل لتحت)
-    window._hasPrefetchedNextChapter = false;
-    window._nextChapterImages = null;
+    // التحميل المسبق للفصل التالي
     const nextChapter = manga.chapters[chapterIndex - 1];
     if (nextChapter) {
-        window._nextChapterImages = nextChapter.images;
-    }
-
-    // التحميل المسبق الذكي على السيرفر للفصول القادمة
-    const prefetchCount = 2; 
-    for (let i = 1; i <= prefetchCount; i++) {
-        const futureChapter = manga.chapters[chapterIndex - i];
-        if (futureChapter && futureChapter.id) {
-            fetch('/api/preload-chapter', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manga_id: manga.id, chapter_id: futureChapter.id })
-            }).catch(e => console.log('Preload background error:', e));
-        }
+        prefetchNextChapter(nextChapter.images);
     }
 
     // خيارات الفصول
@@ -2786,16 +2755,18 @@ async function ReaderViewComponent() {
     if (settings.mode === 'horizontal') {
         pages.forEach((pageUrl, index) => {
             const isActivePage = index === state.activePageIndex;
+            const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
             <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${pageUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
+                <img src="${proxiedUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async">
             </div>
             `;
         });
     } else {
         pages.forEach((pageUrl, index) => {
+            const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
-            <div class="reader-image-container lazy-load-container" data-src="${pageUrl}">
+            <div class="reader-image-container lazy-load-container" data-src="${proxiedUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
                     <span>جاري تحميل الصفحة ${index + 1}...</span>
@@ -5630,10 +5601,7 @@ function attachEventListeners() {
             try {
                 const res = await fetch('/api/admin/auto-translate', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + state.sessionToken
-                    },
+                    headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({url, manga_id: mangaId, chapter_id: chapterId})
                 });
                 const data = await res.json();
@@ -7153,58 +7121,27 @@ function loadEditMangaData() {
 // 6. تشغيل القارئ والتحميل الكسول
 // ==========================================
 
-window.readerImageQueue = [];
-window.readerActiveImageLoads = 0;
-const MAX_CONCURRENT_IMAGES = 3;
-
-function processReaderImageQueue() {
-    if (window.readerActiveImageLoads >= MAX_CONCURRENT_IMAGES || window.readerImageQueue.length === 0) return;
-    
-    window.readerActiveImageLoads++;
-    var task = window.readerImageQueue.shift();
-    var container = task.container;
-    var src = task.src;
-    var isProxyFallback = task.isProxyFallback;
-
+function loadSingleImage(container, src) {
     var retries = parseInt(container.dataset.retries || '0', 10);
     if (retries >= 2) {
-        window.readerActiveImageLoads--;
         showImageError(container, src, true);
-        processReaderImageQueue();
         return;
     }
-
     var img = document.createElement('img');
-    img.referrerPolicy = "no-referrer"; // Bypass basic hotlink protection
     img.src = src;
-
     img.onload = function() {
         container.innerHTML = '';
         container.appendChild(img);
-        window.readerActiveImageLoads--;
-        processReaderImageQueue();
     };
-
     img.onerror = function() {
         container.dataset.retries = String(retries + 1);
-        window.readerActiveImageLoads--;
-        
-        // If the direct link failed and we haven't tried the proxy yet
-        if (!isProxyFallback && src.startsWith('http')) {
-            var proxyUrl = '/proxy-image?url=' + encodeURIComponent(src);
-            window.readerImageQueue.unshift({ container: container, src: proxyUrl, isProxyFallback: true });
+        if (src && src.startsWith('/proxy-image?url=')) {
+            var originalUrl = decodeURIComponent(src.split('?url=')[1]);
+            loadSingleImage(container, originalUrl);
         } else {
             showImageError(container, src, false);
         }
-        processReaderImageQueue();
     };
-}
-
-function loadSingleImage(container, src) {
-    // Determine if the URL is already a proxy URL (e.g. from retry button)
-    var isProxy = src && src.startsWith('/proxy-image');
-    window.readerImageQueue.push({ container: container, src: src, isProxyFallback: isProxy });
-    processReaderImageQueue();
 }
 
 function showImageError(container, src, exhausted) {
@@ -7296,11 +7233,6 @@ function initProgressTracker() {
         
         if (state.activeMangaId && state.activeChapterId) {
             state.saveReadingProgress(state.activeMangaId, state.activeChapterId, winScroll, scrolled);
-        }
-        
-        // التحميل الاستباقي الذكي للفصل القادم
-        if (scrolled > 70 && !window._hasPrefetchedNextChapter && window._nextChapterImages) {
-            prefetchNextChapter(window._nextChapterImages);
         }
     };
 }

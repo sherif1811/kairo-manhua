@@ -1,0 +1,689 @@
+[
+  {
+    "title": "Blue Lock",
+    "slug": "blue-lock",
+    "id": "697df7820c5d340ac154519f",
+    "type": "manga",
+    "chapter_count": 356,
+    "genres": [
+      "رياضة"
+    ]
+  },
+  {
+    "title": "Sakamoto Days",
+    "slug": "sakamoto-days",
+    "id": "697df7740c5d340ac1544a76",
+    "type": "manga",
+    "chapter_count": 261,
+    "genres": [
+      "شونين",
+      "اكشن",
+      "دراما",
+      "فانتازيا",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Kimetsu no Yaiba",
+    "slug": "kimetsu-no-yaiba",
+    "id": "697df7790c5d340ac1544e4a",
+    "type": "manga",
+    "chapter_count": 205,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "دراما",
+      "شونين",
+      "قوة خارقة",
+      "تاريخي",
+      "كوميدي",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Jujutsu Kaisen",
+    "slug": "jujutsu-kaisen",
+    "id": "697df76a0c5d340ac1544633",
+    "type": "manga",
+    "chapter_count": 269,
+    "genres": [
+      "شونين",
+      "اكشن",
+      "دراما",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Kagurabachi",
+    "slug": "kagurabachi",
+    "id": "697df7610c5d340ac1544072",
+    "type": "manga",
+    "chapter_count": 105,
+    "genres": [
+      "اكشن"
+    ]
+  },
+  {
+    "title": "Noblesse",
+    "slug": "noblesse",
+    "id": "697df7990c5d340ac1545fc3",
+    "type": "manhwa",
+    "chapter_count": 544,
+    "genres": [
+      "اكشن",
+      "فانتازيا",
+      "شونين",
+      "قوة خارقة",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Swordmaster’s Youngest Son",
+    "slug": "swordmaster-s-youngest-son",
+    "id": "697df7640c5d340ac1544235",
+    "type": "manhwa",
+    "chapter_count": 187,
+    "genres": [
+      "اكشن",
+      "فانتازيا",
+      "شونين",
+      "دراما",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Boruto: Two Blue Vortex",
+    "slug": "boruto-two-blue-vortex",
+    "id": "697df7e80c5d340ac15495b2",
+    "type": "manga",
+    "chapter_count": 22,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "دراما",
+      "شونين",
+      "غموض",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "One punch man",
+    "slug": "one-punch-man",
+    "id": "697df78a0c5d340ac1545718",
+    "type": "manga",
+    "chapter_count": 303,
+    "genres": [
+      "شونين",
+      "اكشن",
+      "دراما",
+      "كوميدي",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Boruto Naruto Next Generation",
+    "slug": "boruto-naruto-next-generation",
+    "id": "697df7e60c5d340ac15494ca",
+    "type": "manga",
+    "chapter_count": 53,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "دراما",
+      "شونين",
+      "غموض",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "WEE!!!",
+    "slug": "wee",
+    "id": "697df7d10c5d340ac15481b5",
+    "type": "manhwa",
+    "chapter_count": 442,
+    "genres": [
+      "دراما",
+      "الحياة اليومية",
+      "مدرسي"
+    ]
+  },
+  {
+    "title": "Special Civil Servant",
+    "slug": "special-civil-servant",
+    "id": "697df7c70c5d340ac1547b4f",
+    "type": "manhwa",
+    "chapter_count": 66,
+    "genres": [
+      "اكشن",
+      "فانتازيا"
+    ]
+  },
+  {
+    "title": "Blue Lock – Episode Nagi",
+    "slug": "blue-lock-episode-nagi",
+    "id": "697df7d50c5d340ac15488f5",
+    "type": "manga",
+    "chapter_count": 34,
+    "genres": [
+      "شونين",
+      "اكشن",
+      "دراما",
+      "فانتازيا",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Escort warrior",
+    "slug": "escort-warrior",
+    "id": "697df7c50c5d340ac15479e1",
+    "type": "manhwa",
+    "chapter_count": 89,
+    "genres": [
+      "اكشن",
+      "تاريخي",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Classmate",
+    "slug": "classmate",
+    "id": "697df8310c5d340ac154c912",
+    "type": "manhwa",
+    "chapter_count": 48,
+    "genres": [
+      "دراما",
+      "رعب",
+      "غموض"
+    ]
+  },
+  {
+    "title": "Magic Academy’s Genius Blinker",
+    "slug": "magic-academy-s-genius-blinker",
+    "id": "697df7aa0c5d340ac1546e60",
+    "type": "manhwa",
+    "chapter_count": 58,
+    "genres": [
+      "اكشن",
+      "فانتازيا",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Chronicles of the Demon Faction",
+    "slug": "chronicles-of-the-demon-faction",
+    "id": "697df78f0c5d340ac154593e",
+    "type": "manga",
+    "chapter_count": 175,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "خيال",
+      "تاريخي",
+      "شونين",
+      "قتال"
+    ]
+  },
+  {
+    "title": "Star-Embracing Swordmaster",
+    "slug": "star-embracing-swordmaster",
+    "id": "697df7c90c5d340ac1547cfa",
+    "type": "manhwa",
+    "chapter_count": 91,
+    "genres": [
+      "شونين",
+      "مغامرات",
+      "فانتازيا",
+      "اكشن"
+    ]
+  },
+  {
+    "title": "Black Clover",
+    "slug": "black-clover",
+    "id": "697df7a30c5d340ac1546905",
+    "type": "manga",
+    "chapter_count": 238,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "شونين",
+      "قوة خارقة"
+    ]
+  },
+  {
+    "title": "For your murder",
+    "slug": "for-your-murder",
+    "id": "697df8100c5d340ac154af36",
+    "type": "manhwa",
+    "chapter_count": 69,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "فانتازيا",
+      "قوة خارقة"
+    ]
+  },
+  {
+    "title": "Solo Leveling Ragnarok",
+    "slug": "solo-leveling-ragnarok",
+    "id": "697df7af0c5d340ac1547225",
+    "type": "manhwa",
+    "chapter_count": 45,
+    "genres": [
+      "إثارة",
+      "خيال",
+      "نظام",
+      "وحوش",
+      "اكشن",
+      "دموي"
+    ]
+  },
+  {
+    "title": "Genius of the Unique Lineage",
+    "slug": "genius-of-the-unique-lineage",
+    "id": "697df7950c5d340ac1545cee",
+    "type": "manhwa",
+    "chapter_count": 153,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "شونين",
+      "غموض",
+      "ويب تون",
+      "السفر عبر الزمن",
+      "إثارة",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Lu Bu Life’s Story – Immortal Updates",
+    "slug": "lu-bu-life-s-story-immortal-updates",
+    "id": "697df7c30c5d340ac15478ba",
+    "type": "manhwa",
+    "chapter_count": 70,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "سينين"
+    ]
+  },
+  {
+    "title": "Solo Leveling",
+    "slug": "solo-leveling",
+    "id": "697df7610c5d340ac154401b",
+    "type": "manhwa",
+    "chapter_count": 199,
+    "genres": [
+      "اكشن",
+      "قوة خارقة",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Gachiakuta",
+    "slug": "gachiakuta",
+    "id": "697df8150c5d340ac154b338",
+    "type": "manga",
+    "chapter_count": 172,
+    "genres": [
+      "اكشن",
+      "تراجيدي",
+      "خيال",
+      "وحوش",
+      "نفسي"
+    ]
+  },
+  {
+    "title": "Absolute Regression",
+    "slug": "absolute-regression",
+    "id": "697df7cc0c5d340ac1547ecd",
+    "type": "manhwa",
+    "chapter_count": 49,
+    "genres": [
+      "إثارة",
+      "خيال",
+      "صقل",
+      "قوة خارقة",
+      "فنون",
+      "قتال",
+      "غموض",
+      "شونين",
+      "مغامرات",
+      "فانتازيا",
+      "إعادة إحياء",
+      "ثأر",
+      "اكشن",
+      "بطل غير إعتيادي",
+      "دموي"
+    ]
+  },
+  {
+    "title": "Reincarnation of the Fist King",
+    "slug": "reincarnation-of-the-fist-king",
+    "id": "697df8030c5d340ac154a854",
+    "type": "manhwa",
+    "chapter_count": 55,
+    "genres": [
+      "شونين",
+      "قوة خارقة",
+      "قتال",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "Swordsman of Sichuan Tang Family",
+    "slug": "swordsman-of-sichuan-tang-family",
+    "id": "697df7ab0c5d340ac1546fed",
+    "type": "manhwa",
+    "chapter_count": 74,
+    "genres": [
+      "إثارة",
+      "بطل غير إعتيادي",
+      "خيال",
+      "صقل",
+      "قوة خارقة",
+      "غموض",
+      "شونين",
+      "مغامرات",
+      "إعادة إحياء",
+      "اكشن"
+    ]
+  },
+  {
+    "title": "Bad Born Blood",
+    "slug": "bad-born-blood",
+    "id": "697df7da0c5d340ac1548d55",
+    "type": "manhwa",
+    "chapter_count": 88,
+    "genres": [
+      "اكشن",
+      "شونين",
+      "قوة خارقة",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "My Pirate Prince",
+    "slug": "my-pirate-prince",
+    "id": "69bef8e6bf5fdeab9af8fb09",
+    "type": "manhwa",
+    "chapter_count": 28,
+    "genres": [
+      "رومانسى",
+      "شوجو",
+      "مانها",
+      "ويب تون"
+    ]
+  },
+  {
+    "title": "Past Life Returner",
+    "slug": "past-life-returner",
+    "id": "697df7c10c5d340ac15477ac",
+    "type": "manhwa",
+    "chapter_count": 65,
+    "genres": [
+      "اكشن",
+      "ثأر",
+      "شونين",
+      "غموض",
+      "وحوش",
+      "إعادة إحياء",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "The new beggars sect",
+    "slug": "the-new-beggars-sect",
+    "id": "697df78a0c5d340ac15456be",
+    "type": "manhwa",
+    "chapter_count": 19,
+    "genres": [
+      "اكشن"
+    ]
+  },
+  {
+    "title": "lord-level Assassin, I am the shadow",
+    "slug": "lord-level-assassin-i-am-the-shadow",
+    "id": "697df7eb0c5d340ac15498ec",
+    "type": "manhwa",
+    "chapter_count": 74,
+    "genres": [
+      "اكشن",
+      "خيال",
+      "دراما",
+      "قتال",
+      "إعادة إحياء"
+    ]
+  },
+  {
+    "title": "When The System Opens After The Age Of 100 , All Grandchildren Kneel Upon The Mountains!",
+    "slug": "when-the-system-opens-after-the-age-of-100-all-gra",
+    "id": "697df7940c5d340ac1545c83",
+    "type": "manhua",
+    "chapter_count": 20,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "شونين",
+      "قتال",
+      "فانتازيا"
+    ]
+  },
+  {
+    "title": "I’m Being Misunderstood As A Soccer Genius",
+    "slug": "i-m-being-misunderstood-as-a-soccer-genius",
+    "id": "697df82f0c5d340ac154c779",
+    "type": "manhwa",
+    "chapter_count": 71,
+    "genres": [
+      "دراما",
+      "رياضة",
+      "كوميدي",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "Chronicles of the Lazy Sovereign",
+    "slug": "chronicles-of-the-lazy-sovereign",
+    "id": "697df8110c5d340ac154b060",
+    "type": "manhwa",
+    "chapter_count": 51,
+    "genres": [
+      "اكشن",
+      "قتال",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Bad Boy",
+    "slug": "bad-boy",
+    "id": "697df7640c5d340ac154421f",
+    "type": "manga",
+    "chapter_count": 1,
+    "genres": [
+      "اكشن",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Kaiju No. 8",
+    "slug": "kaiju-no-8",
+    "id": "697df7630c5d340ac15441f1",
+    "type": "manga",
+    "chapter_count": 131,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "قوة خارقة",
+      "كوميدي"
+    ]
+  },
+  {
+    "title": "Return of the High-Ranking Civil Servant",
+    "slug": "return-of-the-high-ranking-civil-servant",
+    "id": "697df7d80c5d340ac1548b97",
+    "type": "manhwa",
+    "chapter_count": 95,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "فانتازيا"
+    ]
+  },
+  {
+    "title": "Noah's tube",
+    "slug": "noah-s-tube",
+    "id": "697df7980c5d340ac1545f6c",
+    "type": "manhwa",
+    "chapter_count": 19,
+    "genres": [
+      "خيال"
+    ]
+  },
+  {
+    "title": "Surviving The Apocalypse",
+    "slug": "surviving-the-apocalypse",
+    "id": "697df7ba0c5d340ac15472f0",
+    "type": "manhwa",
+    "chapter_count": 36,
+    "genres": [
+      "إثارة",
+      "مغامرات",
+      "دراما",
+      "بعد الكارثة",
+      "اكشن",
+      "ويب تون",
+      "دموي"
+    ]
+  },
+  {
+    "title": "Villain Is Here",
+    "slug": "villain-is-here",
+    "id": "697df7a80c5d340ac1546d11",
+    "type": "manhwa",
+    "chapter_count": 75,
+    "genres": [
+      "إثارة",
+      "إيسيكاي",
+      "بطل غير إعتيادي",
+      "خيال",
+      "نظام",
+      "صقل",
+      "قوة خارقة",
+      "فنون",
+      "قتال",
+      "غموض",
+      "اكشن",
+      "دموي"
+    ]
+  },
+  {
+    "title": "Red shirt",
+    "slug": "red-shirt",
+    "id": "697df8070c5d340ac154ac19",
+    "type": "manhwa",
+    "chapter_count": 59,
+    "genres": [
+      "اكشن"
+    ]
+  },
+  {
+    "title": "After Becoming a Dumpling, the Villain Family All Wants to Kill Me!",
+    "slug": "after-becoming-a-dumpling-the-villain-family-all-wants-to-kill-me",
+    "id": "69c747aa0472419cc8a90fdd",
+    "type": "manhua",
+    "chapter_count": 48,
+    "genres": [
+      "دراما",
+      "شوجو",
+      "فنتازيا",
+      "مانها"
+    ]
+  },
+  {
+    "title": "The Divine Demon’s Grand Ascension",
+    "slug": "the-divine-demons-grand-ascension",
+    "id": "69c3d5fe0472419cc8a88202",
+    "type": "manhwa",
+    "chapter_count": 52,
+    "genres": [
+      "اعادة احياء",
+      "اكشن",
+      "تاريخ",
+      "دراما",
+      "رومانسى",
+      "رياضه",
+      "سينين",
+      "فنتازيا",
+      "كوميدى",
+      "مغامرة",
+      "ويب تون",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "Light Of The Dawn (Remake)",
+    "slug": "light-of-the-dawn-remake",
+    "id": "69c7468e0472419cc8a90a67",
+    "type": "manhwa",
+    "chapter_count": 90,
+    "genres": [
+      "اكاديميه",
+      "فنون قتاليه",
+      "مغامرة"
+    ]
+  },
+  {
+    "title": "Kengan Omega",
+    "slug": "kengan-omega",
+    "id": "69cdba6b0472419cc8aa7655",
+    "type": "manga",
+    "chapter_count": 356,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "شونين",
+      "فنون قتاليه"
+    ]
+  },
+  {
+    "title": "Reborn As The Heavenly Martial Demon",
+    "slug": "reborn-as-the-heavenly-martial-demon",
+    "id": "697df7c80c5d340ac1547c1f",
+    "type": "manhua",
+    "chapter_count": 31,
+    "genres": [
+      "اكشن",
+      "شونين",
+      "وحوش",
+      "السفر عبر الزمن",
+      "قتال",
+      "إثارة"
+    ]
+  },
+  {
+    "title": "Blue Lock",
+    "slug": "blue-look",
+    "id": "6999cef8a3d831d3564fe988",
+    "type": "manga",
+    "chapter_count": 1,
+    "genres": [
+      "اكشن",
+      "قوة خارقة",
+      "مغامرات"
+    ]
+  },
+  {
+    "title": "Apocalyptic super farm",
+    "slug": "apocalyptic-super-farm",
+    "id": "697df7da0c5d340ac1548cb0",
+    "type": "manhwa",
+    "chapter_count": 38,
+    "genres": [
+      "اكشن",
+      "دراما",
+      "شونين",
+      "قوة خارقة",
+      "فانتازيا"
+    ]
+  }
+]

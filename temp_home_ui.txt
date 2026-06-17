@@ -1,0 +1,27 @@
+mangas.forEach(m => m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }));
+
+    const searchTypes = [
+        {id:'all', label:'الكل'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+        {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}, {id:'isbn', label:'ISBN'}
+    ];
+
+    const searchTypeHtml = searchTypes.map(t => 
+        `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
+    ).join('');
+
+    return `
+    <div class="mangatime-browse-container">
+        
+        <div class="mangatime-hero-section">
+            <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+            <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+        </div>
+
+        <div class="mangatime-search-wrapper">
+            <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+            <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
+            <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
+        </div>
+
+        <div class="mangatime-search-filters">
+            <span style="color:var(--text-muted);font-size:0.85rem;ma
