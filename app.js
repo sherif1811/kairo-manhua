@@ -2140,6 +2140,14 @@ function MangaCardComponent(manga) {
     const type = manga.type || 'مانهوا';
     const rating = manga.rating || (Math.random() * (9.9 - 8.0) + 8.0).toFixed(1);
 
+    let displayChapterText = chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة";
+    if (latestChapter && latestChapter.id) {
+        const numMatch = latestChapter.id.match(/\d+(?:\.\d+)?/);
+        if (numMatch) {
+            displayChapterText = "فصل " + parseFloat(numMatch[0]);
+        }
+    }
+
     if (state.viewMode === 'list') {
         return `
         <div class="mt-list-card" onclick="navigate('detail', '${id}'); return false;" style="cursor:pointer;">
@@ -2150,7 +2158,7 @@ function MangaCardComponent(manga) {
             <div class="mt-list-card-content">
                 <h3 style="margin-bottom:10px; color:#fff; font-size:1.2rem;">${title}</h3>
                 <div style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">${manga.genres ? manga.genres.slice(0,3).join('، ') : ''}</div>
-                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة"}</div>
+                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${displayChapterText}</div>
             </div>
         </div>
         `;
@@ -2163,7 +2171,7 @@ function MangaCardComponent(manga) {
         <div class="mt-badge-top-right">${type}</div>
         <div class="mt-card-overlay">
             <h3 class="mt-card-title">${title}</h3>
-            ${chaptersCount > 0 ? `<div class="mt-card-chap">${chaptersCount} فصل</div>` : ""}
+            ${chaptersCount > 0 ? `<div class="mt-card-chap">${displayChapterText}</div>` : ""}
         </div>
     </div>
     `;
