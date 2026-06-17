@@ -2479,11 +2479,7 @@ i, .fa-solid, .fa-regular, .fa-brands {
     background: rgba(10, 11, 14, 0.8);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    animation: fadeInModal 0.3s ease;
+    z-index: 9999;\r\n    display: flex;\r\n    align-items: center;\r\n    justify-content: center;\r\n    animation: fadeInModal 0.3s ease;
 }
 
 .auth-modal-card {
@@ -7100,3 +7096,77 @@ input:checked + .slider:before { transform: translateX(26px); }
     }
 }
 
+
+/* ==========================================
+   CRITICAL MOBILE FIXES - Anti-Regression
+   ========================================== */
+@media (max-width: 768px) {
+
+    /* Fix: Icon overlap in header */
+    .header {
+        padding: 0 12px;
+        gap: 8px;
+    }
+    .header-actions {
+        gap: 6px;
+    }
+
+    /* Fix: Bottom nav icon alignment */
+    .bottom-nav {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        padding: 6px 0 env(safe-area-inset-bottom, 0px);
+        z-index: 1000;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+    .bottom-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        flex: 1;
+        padding: 6px 4px;
+        text-align: center;
+    }
+    .bottom-nav-item i {
+        font-size: 1.3rem;
+        line-height: 1;
+    }
+    .bottom-nav-item span {
+        font-size: 0.62rem;
+        line-height: 1;
+    }
+
+    /* Fix: Auth modal on mobile */
+    .auth-modal-overlay {
+        z-index: 9999;
+        align-items: flex-end;
+        padding: 0;
+    }
+    .auth-modal-card {
+        width: 100%;
+        max-width: 100%;
+        border-radius: var(--border-radius-md) var(--border-radius-md) 0 0;
+        padding: 24px 20px;
+        max-height: 92vh;
+        overflow-y: auto;
+    }
+
+    /* Fix: Cards layout on mobile */
+    .manga-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    /* Fix: Reader images on mobile */
+    .reader-image-container img {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+}

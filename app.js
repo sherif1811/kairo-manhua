@@ -2756,7 +2756,7 @@ async function ReaderViewComponent() {
             const proxiedUrl = getProxiedImageUrl(pageUrl);
             imagesHtml += `
             <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${proxiedUrl}" alt="صفحة ${index + 1}">
+                <img src="${proxiedUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async">
             </div>
             `;
         });
@@ -3960,19 +3960,19 @@ function BottomNavComponent() {
     const s = state.currentView;
     return `
     <nav class="bottom-nav">
-        <a href="#" class="bottom-nav-item ${s==='home'?'active':''}" onclick="window.navigateView('home')">
+        <a href="javascript:void(0);" class="bottom-nav-item ${s==='home'?'active':''}" onclick="event.preventDefault(); window.navigateView('home')">
             <i class="fa-solid fa-house"></i>
             <span>الرئيسية</span>
         </a>
-        <a href="#" class="bottom-nav-item ${s==='search'?'active':''}" onclick="window.navigateView('search')">
+        <a href="javascript:void(0);" class="bottom-nav-item ${s==='search'?'active':''}" onclick="event.preventDefault(); window.navigateView('search')">
             <i class="fa-solid fa-magnifying-glass"></i>
             <span>بحث</span>
         </a>
-        <a href="#" class="bottom-nav-item ${s==='bookmarks'?'active':''}" onclick="window.navigateView('bookmarks')">
+        <a href="javascript:void(0);" class="bottom-nav-item ${s==='bookmarks'?'active':''}" onclick="event.preventDefault(); window.navigateView('bookmarks')">
             <i class="fa-solid fa-bookmark"></i>
             <span>مكتبتي</span>
         </a>
-        <a href="#" class="bottom-nav-item ${s==='profile'?'active':''}" onclick="if(state.sessionToken){ window.navigateProfile(state.sessionUsername); } else { window.toggleModal('auth-modal'); }">
+        <a href="javascript:void(0);" class="bottom-nav-item ${s==='profile'?'active':''}" onclick="event.preventDefault(); if(state.sessionToken){ window.navigateProfile(state.sessionUsername); } else { window.toggleModal('auth-modal'); }">
             <i class="fa-solid fa-user"></i>
             <span>حسابي</span>
         </a>
