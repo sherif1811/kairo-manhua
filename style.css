@@ -1917,6 +1917,7 @@ i, .fa-solid, .fa-regular, .fa-brands {
     overflow-y: auto;
     padding-left: 8px;
     padding-right: 4px;
+    direction: ltr;
 }
 
 .chapter-item {

@@ -2440,8 +2440,9 @@ async function DetailViewComponent() {
     });
 
     filteredChapters = [...filteredChapters].sort((a, b) => {
-        const na = parseFloat(String(a.id).replace(/[^0-9.]/g, '')) || 0;
-        const nb = parseFloat(String(b.id).replace(/[^0-9.]/g, '')) || 0;
+        // Use .number field directly (most reliable), fallback to title parsing
+        const na = parseFloat(a.number) || parseFloat((a.title || '').replace(/[^0-9.]/g, '')) || 0;
+        const nb = parseFloat(b.number) || parseFloat((b.title || '').replace(/[^0-9.]/g, '')) || 0;
         return state.chapterSortOrder === 'oldest' ? na - nb : nb - na;
     });
     let chaptersHtml = '';
