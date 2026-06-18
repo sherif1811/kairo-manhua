@@ -6,7 +6,7 @@ self.options = {
 self.lary = ""
 importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
 
-const CACHE_NAME = 'kairo-cache-v33';
+const CACHE_NAME = 'kairo-cache-v34';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
@@ -61,12 +61,9 @@ self.addEventListener('fetch', event => {
         url.pathname.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)$/i);
     const isAPI = url.pathname.startsWith('/api/');
 
-    if (isDoc) {
-        // Network First for the document to always serve fresh HTML
+    if (isDoc || isStaticAsset) {
+        // Network First for the document and static assets to always serve fresh HTML and JS
         event.respondWith(networkFirst(event.request));
-    } else if (isStaticAsset) {
-        // Stale-While-Revalidate: serve cached instantly, fetch latest in background
-        event.respondWith(staleWhileRevalidate(event.request));
     } else if (isImage) {
         // Cache First for images with network fallback
         event.respondWith(cacheFirst(event.request));

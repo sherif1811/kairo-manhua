@@ -3953,10 +3953,11 @@ async function renderApp() {
                 ${HeaderComponent()}
                 <main id="main-content" class="main-content page-fade-in">${viewHtml}</main>
                 ${BottomNavComponent()}
-                ${AuthModalComponent()}
-                
-                ${SettingsModalComponent()}
-                ${DailyRewardModalComponent()}
+                <div id="modals-container">
+                    ${AuthModalComponent()}
+                    ${SettingsModalComponent()}
+                    ${DailyRewardModalComponent()}
+                </div>
             </div>
             `;
         }
@@ -3980,6 +3981,14 @@ async function renderApp() {
                         link.classList.add('active');
                     }
                 });
+                
+                let modalsContainer = document.getElementById('modals-container');
+                if (!modalsContainer) {
+                    modalsContainer = document.createElement('div');
+                    modalsContainer.id = 'modals-container';
+                    appRoot.appendChild(modalsContainer);
+                }
+                modalsContainer.innerHTML = `${AuthModalComponent()} ${SettingsModalComponent()} ${DailyRewardModalComponent()}`;
             }
         }
     }
