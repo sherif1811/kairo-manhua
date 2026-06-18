@@ -646,7 +646,7 @@ class AppState {
 
     async loadScrapedMangas() {
         try {
-            const response = await fetch('./scraped_mangas.json');
+            const response = await fetch(`./scraped_mangas.json?v=${Date.now()}`);
             if (response.ok) {
                 const scraped = await response.json();
                 if (Array.isArray(scraped)) {
