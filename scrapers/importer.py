@@ -87,12 +87,24 @@ def import_manga_from_url(url: str, db_path: str = "kairo.db", scrape_images: bo
         ch_url = ch.get("url", "")
         # Try to extract number from title first
         num_match = re.search(r'(?:chapter|ch|chap|الفصل)[\s.-]*(\d+(?:\.\d+)?)', ch_title, re.IGNORECASE)
+        
+        # If strict match fails, try finding ANY number in the title (pick the last one)
+        if not num_match:
+            matches = re.findall(r'(\d+(?:\.\d+)?)', ch_title)
+            if matches:
+                class DummyMatch:
+                    def __init__(self, val): self.val = val
+                    def group(self, n): return self.val
+                num_match = DummyMatch(matches[-1])
+
         if not num_match:
             # Try from URL — last path segment before trailing slash
             url_part = ch_url.rstrip('/').split('/')[-1]
             num_match = re.search(r'(?:chapter|ch|chap)[\s.-]*(\d+(?:\.\d+)?)', url_part, re.IGNORECASE)
+            
         if not num_match:
             num_match = re.search(r'(\d+(?:\.\d+)?)', url_part if 'url_part' in dir() else ch_url)
+            
         ch_number = float(num_match.group(1)) if num_match else 0.0
         cleaned_title = f"الفصل {int(ch_number) if ch_number == int(ch_number) else ch_number}"
         ch["title"] = cleaned_title
