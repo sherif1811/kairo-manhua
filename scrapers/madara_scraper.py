@@ -159,26 +159,38 @@ class MadaraScraper(BaseScraper):
                 try:
                     from curl_cffi import requests as curl_requests
                     scraper = curl_requests.Session(impersonate="chrome110")
-                    ajax_data = {"action": "manga_get_chapters", "manga": post_id}
-                    ajax_resp = scraper.post(ajax_url, data=ajax_data, timeout=15)
-                    if ajax_resp.status_code == 200:
-                        ajax_soup = BeautifulSoup(ajax_resp.text, "html.parser")
-                        for li in ajax_soup.select("li.wp-manga-chapter"):
-                            a_tag = li.select_one("a")
-                            if a_tag and a_tag.get("href"):
-                                ch_url = urljoin(url, a_tag["href"].strip())
-                                if ch_url.startswith('#') or ch_url.startswith('javascript'):
-                                    continue
-                                ch_title = "".join(a_tag.find_all(string=True, recursive=False)).strip()
-                                if not ch_title:
-                                    ch_title = a_tag.text.strip()
-                                ch_title = re.sub(r'\s+', ' ', ch_title)
-                                date_span = li.select_one(".chapter-release-date i, .chapter-release-date a, span.post-on, .c-new-tag a")
-                                ch_date = date_span.text.strip() if date_span else ""
-                                if not any(c['url'] == ch_url for c in chapters):
+                    for page_num in range(1, 20):
+                        ajax_data = {"action": "manga_get_chapters", "manga": post_id, "paged": page_num}
+                        ajax_resp = scraper.post(ajax_url, data=ajax_data, timeout=30)
+                        if ajax_resp.status_code == 200 and ajax_resp.text.strip() != "0" and ajax_resp.text.strip() != "":
+                            ajax_soup = BeautifulSoup(ajax_resp.text, "html.parser")
+                            found_any = False
+                            for li in ajax_soup.select("li.wp-manga-chapter"):
+                                a_tag = li.select_one("a")
+                                if a_tag and a_tag.get("href"):
+                                    ch_url = urljoin(url, a_tag["href"].strip())
+                                    if ch_url.startswith('#') or ch_url.startswith('javascript'):
+                                        continue
+                                    
+                                    # If duplicate found, it means pagination loop repeated or no pagination support
+                                    if any(c['url'] == ch_url for c in chapters):
+                                        continue
+                                        
+                                    found_any = True
+                                    ch_title = "".join(a_tag.find_all(string=True, recursive=False)).strip()
+                                    if not ch_title:
+                                        ch_title = a_tag.text.strip()
+                                    ch_title = re.sub(r'\s+', ' ', ch_title)
+                                    date_span = li.select_one(".chapter-release-date i, .chapter-release-date a, span.post-on, .c-new-tag a")
+                                    ch_date = date_span.text.strip() if date_span else ""
                                     chapters.append({"url": ch_url, "title": ch_title, "date": ch_date})
+                            
+                            if not found_any:
+                                break # Stop pagination if no new chapters found
+                        else:
+                            break # Request failed or empty
                 except Exception as e:
-                    logger.warning(f"AJAX fallback failed: {e}")
+                    logger.warning(f"AJAX fallback failed on page {page_num if 'page_num' in locals() else 'unknown'}: {e}")
                     
             if not chapters:
                 logger.info("Attempting alternative AJAX route (url/ajax/chapters/)...")
