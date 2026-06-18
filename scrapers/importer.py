@@ -81,30 +81,27 @@ def import_manga_from_url(url: str, db_path: str = "kairo.db", scrape_images: bo
     metadata["id"] = manga_id
     metadata["source_url"] = url
 
-    # Clean chapter titles once for both frontend and DB
+    # Clean chapter titles and extract chapter numbers
     for ch in chapters_raw:
         ch_title = ch.get("title", "")
         ch_url = ch.get("url", "")
-        num_match = re.search(r'(?:chapter|ch|chap|الفصل)\s*(\d+(?:\.\d+)?)', ch_title, re.IGNORECASE)
+        # Try to extract number from title first
+        num_match = re.search(r'(?:chapter|ch|chap|الفصل)[\s.-]*(\d+(?:\.\d+)?)', ch_title, re.IGNORECASE)
         if not num_match:
-            num_match = re.search(r'(\d+(?:\.\d+)?)', ch_url.split('/')[-2] if ch_url.endswith('/') else ch_url.split('/')[-1])
+            # Try from URL — last path segment before trailing slash
+            url_part = ch_url.rstrip('/').split('/')[-1]
+            num_match = re.search(r'(?:chapter|ch|chap)[\s.-]*(\d+(?:\.\d+)?)', url_part, re.IGNORECASE)
+        if not num_match:
+            num_match = re.search(r'(\d+(?:\.\d+)?)', url_part if 'url_part' in dir() else ch_url)
         ch_number = float(num_match.group(1)) if num_match else 0.0
-        cleaned_title = f"الفصل {int(ch_number) if ch_number.is_integer() else ch_number}"
+        cleaned_title = f"الفصل {int(ch_number) if ch_number == int(ch_number) else ch_number}"
         ch["title"] = cleaned_title
         ch["number"] = ch_number
 
-    # Renumber chapters if numbers are abnormally large (e.g. 241 instead of 1)
-    # Sort by current number first, then reassign sequential numbers
+    # Always sort chapters ascending by their real number (oldest first)
+    # The frontend will handle display order (newest first toggle)
     chapters_raw.sort(key=lambda c: c.get("number", 0))
-    large_threshold = 100
-    large_count = sum(1 for c in chapters_raw if c.get("number", 0) > large_threshold)
-    if large_count > len(chapters_raw) // 2:
-        has_prologue = chapters_raw[0].get("number", 0) == 0
-        log.info(f"Renumbering {len(chapters_raw)} chapters ({large_count}/{len(chapters_raw)} were > {large_threshold})")
-        for i, ch in enumerate(chapters_raw):
-            new_num = 0 if (has_prologue and i == 0) else (i if has_prologue else i + 1)
-            ch["number"] = float(new_num)
-            ch["title"] = f"الفصل {new_num}"
+    log.info(f"Chapters sorted: {len(chapters_raw)} chapters, range [{chapters_raw[0].get('number',0) if chapters_raw else 'N/A'} - {chapters_raw[-1].get('number',0) if chapters_raw else 'N/A'}]")
 
     # Preserve existing images if re-importing (must happen BEFORE scrape/clear)
     existing_images = {}

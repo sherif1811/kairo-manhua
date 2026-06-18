@@ -206,16 +206,7 @@ class MadaraScraper(BaseScraper):
                 except Exception as e:
                     logger.warning(f"Alternative AJAX fallback failed: {e}")
 
-        # Sort chapters by number descending
-        def extract_num(ch):
-            title = ch.get("title", "").lower()
-            url_str = ch.get("url", "")
-            match = re.search(r'(?:chapter|ch|chap|الفصل)[^\d]*(\d+(?:\.\d+)?)', title)
-            if not match:
-                match = re.search(r'(\d+(?:\.\d+)?)', url_str.split('/')[-2] if url_str.endswith('/') else url_str.split('/')[-1])
-            return float(match.group(1)) if match else 0.0
-            
-        chapters.sort(key=extract_num, reverse=True)
+        # NOTE: Do NOT sort here — importer.py handles the definitive sort by number ascending.
             
         return {
             "title": title, 
