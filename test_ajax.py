@@ -1,23 +1,31 @@
+import sys
+try: sys.stdout.reconfigure(encoding='utf-8')
+except: pass
 from curl_cffi import requests
-import re
 from bs4 import BeautifulSoup
+import re
 
-def main():
-    r = requests.get('https://3asq.org/manga/kingdom-2/', impersonate='chrome110')
-    html = r.text
-    match = re.search(r'"manga_id":"(\d+)"', html)
-    if not match:
-        print("manga_id not found")
-        return
-    post_id = match.group(1)
-    print("post_id:", post_id)
-    
-    r_ajax = requests.post('https://3asq.org/wp-admin/admin-ajax.php', 
-                           data={'action': 'manga_get_chapters', 'manga': post_id}, 
-                           impersonate='chrome110')
-    soup = BeautifulSoup(r_ajax.text, 'html.parser')
-    chapters = soup.select('li.wp-manga-chapter')
-    print("AJAX chapters:", len(chapters))
+url = 'https://mangatime.org/manga/blue-lock'
+session = requests.Session(impersonate='chrome110')
+res = session.get(url, allow_redirects=True)
+soup = BeautifulSoup(res.text, 'html.parser')
 
-if __name__ == "__main__":
-    main()
+print('Title:', soup.title.string)
+
+post_id = None
+rating = soup.select_one('.rating-post-id')
+if rating:
+    post_id = rating.get('value')
+    print('Found rating-post-id:', post_id)
+
+data_id = soup.select_one('#manga-chapters-holder')
+if data_id and data_id.has_attr('data-id'):
+    print('Found manga-chapters-holder data-id:', data_id['data-id'])
+
+wp_manga = re.search(r'manga_id[\"\']?\s*[:=]\s*[\"\']?(\d+)', res.text)
+if wp_manga:
+    print('Found regex manga_id:', wp_manga.group(1))
+
+wp_post = re.search(r'\"post_id\"[\"\']?\s*[:=]\s*[\"\']?(\d+)', res.text)
+if wp_post:
+    print('Found regex post_id:', wp_post.group(1))

@@ -7377,3 +7377,201 @@ input:checked + .slider:before { transform: translateX(26px); }
         overflow-y: auto !important;
     }
 }
+
+/* ===== زر الاقتراحات العائم (FAB) ===== */
+.suggestions-fab {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-secondary), #ff007f);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 20px rgba(255, 0, 127, 0.4);
+    cursor: pointer;
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.suggestions-fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(255, 0, 127, 0.6);
+}
+.suggestions-fab:active {
+    transform: scale(0.95);
+}
+@media (min-width: 769px) {
+    .suggestions-fab {
+        bottom: 40px;
+        left: 40px;
+    }
+}
+
+/* PWA Install Banner */
+.pwa-install-banner {
+    position: fixed;
+    bottom: -100px; /* Hidden initially */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    background: rgba(22, 25, 36, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 9999;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.pwa-install-banner.show {
+    bottom: 80px; /* Above mobile navbar if any */
+}
+
+.pwa-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.pwa-icon {
+    width: 45px;
+    height: 45px;
+    background: var(--color-primary);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 0, 127, 0.3);
+}
+
+.pwa-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.pwa-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 2px;
+}
+
+.pwa-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.pwa-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.pwa-btn-install {
+    background: var(--color-primary);
+    color: #fff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.pwa-btn-install:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 0, 127, 0.4);
+}
+
+.pwa-btn-close {
+    background: transparent;
+    color: var(--text-muted);
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.2s;
+}
+
+.pwa-btn-close:hover {
+    color: var(--text-main);
+}
+
+/* =========================================
+   READER SETTINGS UI (Customizable Reader)
+========================================= */
+.reader-settings-panel {
+    animation: fadeInSlideDown 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes fadeInSlideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.settings-header h3 {
+    margin: 0;
+    color: var(--text-main);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.settings-header .close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: color 0.2s, transform 0.2s;
+}
+
+.settings-header .close-btn:hover {
+    color: var(--color-primary);
+    transform: rotate(90deg);
+}
+
+.setting-opt {
+    flex: 1;
+    padding: 10px;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.setting-opt:hover {
+    background: rgba(255, 0, 127, 0.1);
+    border-color: var(--color-primary);
+}
+
+.setting-opt.active {
+    background: var(--color-primary);
+    color: #fff;
+    border-color: var(--color-primary);
+    box-shadow: 0 4px 12px rgba(255, 0, 127, 0.3);
+}
+
+.settings-panel-toggle {
+    margin-right: 10px;
+}

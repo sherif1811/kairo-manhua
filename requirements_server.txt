@@ -1,7 +1,21 @@
-# Lightweight requirements for PythonAnywhere Web Server
+# متطلبات السيرفر — تحديث وتشغيل الموقع والشات
+# pip install -r requirements_server.txt
+
+# ---- تشغيل الموقع ----
 flask==3.0.2
 Pillow==10.3.0
-cloudscraper==1.2.71
+gunicorn==22.0.0
+
+# ---- شات (WebSocket) ----
+flask-socketio==5.3.6
+flask-cors==4.0.0
+eventlet==0.36.1
+
+# ---- سكرابينج ----
 beautifulsoup4==4.12.3
-requests==2.31.0
 lxml==5.2.1
+requests==2.31.0
+cloudscraper==1.2.71
+curl_cffi==0.15.0
+playwright==1.60.0
+playwright-stealth==2.0.3

@@ -154,12 +154,18 @@ class GlobalExtractor:
                 wp_manga = re.search(r'(?:manga_id|post_id)[\"\']?\s*[:=]\s*[\"\']?(\d+)', str(soup))
                 if wp_manga: manga_id = wp_manga.group(1)
             
+            # Prepare specific AJAX headers
+            ajax_headers = self.bypasser.headers.copy()
+            ajax_headers["X-Requested-With"] = "XMLHttpRequest"
+            ajax_headers["Content-Type"] = "application/x-www-form-urlencoded"
+            ajax_headers["Referer"] = url
+
             # Try 1: Modern Madara AJAX endpoint
             if not links:
                 try:
                     ajax_url = url.rstrip('/') + '/ajax/chapters/'
                     print(f"[*] محاولة الجلب العميق عبر (Endpoint المباشر)...")
-                    res = self.bypasser.session.post(ajax_url, headers=self.bypasser.headers, timeout=15)
+                    res = self.bypasser.session.post(ajax_url, headers=ajax_headers, timeout=15)
                     if res.status_code == 200 and len(res.text) > 100:
                         soup_ajax = BeautifulSoup(res.text, 'html.parser')
                         links = soup_ajax.select("li.wp-manga-chapter a")
@@ -173,7 +179,7 @@ class GlobalExtractor:
                     ajax_url = base_url + '/wp-admin/admin-ajax.php'
                     print(f"[*] محاولة الجلب العميق (AJAX) للمعرف: {manga_id}...")
                     payload = {'action': 'manga_get_chapters', 'manga': manga_id}
-                    res = self.bypasser.session.post(ajax_url, data=payload, headers=self.bypasser.headers, timeout=15)
+                    res = self.bypasser.session.post(ajax_url, data=payload, headers=ajax_headers, timeout=15)
                     if res.status_code == 200 and len(res.text) > 100:
                         soup_ajax = BeautifulSoup(res.text, 'html.parser')
                         links = soup_ajax.select("li.wp-manga-chapter a")

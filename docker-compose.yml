@@ -55,6 +55,17 @@ services:
     ports:
       - 6379:6379
 
+  chat:
+    build: .
+    container_name: kairo_chat
+    restart: always
+    command: python chat_server.py 5001
+    volumes:
+      - ./kairo.db:/app/kairo.db
+      - ./chat_messages.db:/app/chat_messages.db
+    depends_on:
+      - web
+
   nginx:
     image: nginx:alpine
     container_name: kairo_nginx
@@ -67,3 +78,4 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - web
+      - chat
