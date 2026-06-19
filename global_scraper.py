@@ -151,24 +151,34 @@ class GlobalExtractor:
                 data_id = soup.select_one('#manga-chapters-holder')
                 if data_id and data_id.has_attr('data-id'): manga_id = data_id['data-id']
             if not manga_id:
-                wp_manga = re.search(r'manga_id[\"\']?\s*[:=]\s*[\"\']?(\d+)', str(soup))
+                wp_manga = re.search(r'(?:manga_id|post_id)[\"\']?\s*[:=]\s*[\"\']?(\d+)', str(soup))
                 if wp_manga: manga_id = wp_manga.group(1)
             
-            if manga_id:
+            # Try 1: Modern Madara AJAX endpoint
+            if not links:
                 try:
-                    # Construct AJAX URL
-                    base_url = '/'.join(url.split('/')[:3])
-                    ajax_url = base_url + '/wp-admin/admin-ajax.php'
-                    print(f"[*] جلب القائمة الكاملة للفصول المخفية (AJAX) للمعرف: {manga_id}...")
-                    payload = {'action': 'manga_get_chapters', 'manga': manga_id}
-                    res = self.bypasser.session.post(ajax_url, data=payload, headers=self.bypasser.headers, timeout=30)
+                    ajax_url = url.rstrip('/') + '/ajax/chapters/'
+                    print(f"[*] محاولة الجلب العميق عبر (Endpoint المباشر)...")
+                    res = self.bypasser.session.post(ajax_url, headers=self.bypasser.headers, timeout=15)
                     if res.status_code == 200 and len(res.text) > 100:
                         soup_ajax = BeautifulSoup(res.text, 'html.parser')
                         links = soup_ajax.select("li.wp-manga-chapter a")
-                        if links:
-                            print(f"[*] نجح الجلب العميق! تم العثور على {len(links)} فصل عبر AJAX.")
-                except Exception as e:
-                    print(f"[-] فشل الجلب العميق: {e}")
+                        if links: print(f"[*] نجح الجلب المباشر! تم العثور على {len(links)} فصل.")
+                except: pass
+
+            # Try 2: Traditional admin-ajax.php
+            if not links and manga_id:
+                try:
+                    base_url = '/'.join(url.split('/')[:3])
+                    ajax_url = base_url + '/wp-admin/admin-ajax.php'
+                    print(f"[*] محاولة الجلب العميق (AJAX) للمعرف: {manga_id}...")
+                    payload = {'action': 'manga_get_chapters', 'manga': manga_id}
+                    res = self.bypasser.session.post(ajax_url, data=payload, headers=self.bypasser.headers, timeout=15)
+                    if res.status_code == 200 and len(res.text) > 100:
+                        soup_ajax = BeautifulSoup(res.text, 'html.parser')
+                        links = soup_ajax.select("li.wp-manga-chapter a")
+                        if links: print(f"[*] نجح الجلب! تم العثور على {len(links)} فصل.")
+                except: pass
 
             # Fallback to initial HTML if AJAX failed or returned empty
             if not links:
