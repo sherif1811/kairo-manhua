@@ -3147,6 +3147,89 @@ def updater_toggle():
         
     return jsonify({"enabled": new_state})
 
+# ============================================================
+# API: جلب فصول مانجا من ملف منفصل (Lazy Load)
+# ============================================================
+@app.route('/api/manga/<manga_id>/chapters')
+def api_manga_chapters(manga_id):
+    import glob
+    # 1. Try mangas_data/{id}.json
+    data_file = os.path.join(BASE_DIR, "mangas_data", f"{manga_id}.json")
+    if os.path.exists(data_file):
+        with open(data_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        chapters = data.get("chapters", [])
+        return jsonify({"id": manga_id, "chapters": chapters})
+
+    # 2. Try matching by id in scraped_mangas.json (for pre-migration data)
+    index_file = os.path.join(BASE_DIR, "scraped_mangas.json")
+    if os.path.exists(index_file):
+        with open(index_file, "r", encoding="utf-8") as f:
+            mangas = json.load(f)
+        for m in mangas:
+            if str(m.get("id")) == str(manga_id):
+                chapters = m.get("chapters", [])
+                return jsonify({"id": manga_id, "chapters": chapters})
+
+    return jsonify({"id": manga_id, "chapters": []})
+
+# ============================================================
+# Hybrid Prefetching (Background Download)
+# ============================================================
+@app.route('/api/prefetch_chapters', methods=['POST'])
+def prefetch_chapters():
+    data = request.get_json() or {}
+    manga_id = data.get('manga_id')
+    chapter_ids = data.get('chapter_ids', [])
+    
+    if not manga_id or not chapter_ids:
+        return jsonify({"error": "Missing manga_id or chapter_ids"}), 400
+        
+    def run_prefetch(m_id, ch_ids):
+        data_file = os.path.join(BASE_DIR, 'mangas_data', f'{m_id}.json')
+        if not os.path.exists(data_file): return
+        
+        try:
+            with open(data_file, 'r', encoding='utf-8') as f:
+                manga = json.load(f)
+                
+            chapters = manga.get('chapters', [])
+            
+            from global_scraper import CloudflareBypasser
+            bypasser = CloudflareBypasser()
+            
+            changed = False
+            for ch in chapters:
+                if str(ch.get('id')) in ch_ids:
+                    images = ch.get('images', [])
+                    new_images = []
+                    for img_idx, img_url in enumerate(images):
+                        if img_url.startswith('http'):
+                            filename = f"ch_{ch.get('number', ch.get('id'))}_{img_idx+1}.jpg"
+                            save_path = os.path.join(BASE_DIR, 'mangas_data', 'images', m_id, filename)
+                            if not os.path.exists(save_path):
+                                os.makedirs(os.path.dirname(save_path), exist_ok=True)
+                                success = bypasser.download_image(img_url, save_path, compress=True)
+                                if success:
+                                    new_images.append(f"/mangas_data/images/{m_id}/{filename}")
+                                    changed = True
+                                else:
+                                    new_images.append(img_url)
+                            else:
+                                new_images.append(f"/mangas_data/images/{m_id}/{filename}")
+                        else:
+                            new_images.append(img_url)
+                    ch['images'] = new_images
+                
+            if changed:
+                with open(data_file, 'w', encoding='utf-8') as f:
+                    json.dump(manga, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            print(f"[Prefetching Error] {e}")
+            
+    threading.Thread(target=run_prefetch, args=(manga_id, chapter_ids), daemon=True).start()
+    return jsonify({"status": "Prefetching started"}), 200
+
 if __name__ == '__main__':
     from werkzeug.serving import run_simple
     run_simple('0.0.0.0', 8000, app, threaded=True, use_reloader=False)

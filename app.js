@@ -165,7 +165,7 @@ window.generateHomeGridHtml = async function() {
 ------------------------------------------------------- */
 
 // ==========================================
-// 1. قاعدة البيانات والبيانات الافتراضية (IndexedDB & State)
+// 1. قاعدة البيانات والبيانات Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© (IndexedDB & State)
 // ==========================================
 
 const APP_VERSION = '2.5';
@@ -202,7 +202,7 @@ const BOOKMARK_STATUS_META = {
 };
 const BOOKMARK_STATUS_ORDER = ['', 'reading', 'plan', 'completed'];
 
-// معرفات التطبيقات لتسجيل الدخول الاجتماعي (تُحمّل من قاعدة البيانات)
+// Ù…Ø¹Ø±ÙØ§Øª التطبيقات لتسجيل الدخول الاجتماعي (ØªÙØ­Ù…Ù‘Ù„ من قاعدة البيانات)
 let GOOGLE_CLIENT_ID = '';
 let FACEBOOK_APP_ID = '';
 
@@ -295,7 +295,7 @@ function timeAgo(timestamp) {
     return '\u0645\u0646\u0630 ' + Math.floor(diff / 86400) + ' \u064a\u0648\u0645';
 }
 
-// تهيئة قاعدة بيانات IndexedDB لحفظ الفصول للقراءة دون اتصال
+// تهيئة قاعدة بيانات IndexedDB Ù„Ø­ÙØ¸ Ø§Ù„ÙØµÙˆÙ„ للقراءة دون اتصال
 function initDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -310,7 +310,7 @@ function initDB() {
     });
 }
 
-// حفظ الفصل في IndexedDB (القراءة دون اتصال)
+// Ø­ÙØ¸ Ø§Ù„ÙØµÙ„ ÙÙŠ IndexedDB (القراءة دون اتصال)
 async function saveChapterOffline(mangaId, chapterId, images) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -329,7 +329,7 @@ async function saveChapterOffline(mangaId, chapterId, images) {
     });
 }
 
-// جلب الفصل المحفوظ من IndexedDB
+// جلب Ø§Ù„ÙØµÙ„ Ø§Ù„Ù…Ø­ÙÙˆØ¸ من IndexedDB
 async function getChapterOffline(mangaId, chapterId) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -341,7 +341,7 @@ async function getChapterOffline(mangaId, chapterId) {
     });
 }
 
-// جلب كافة الفصول المحملة
+// جلب ÙƒØ§ÙØ© Ø§Ù„ÙØµÙˆÙ„ المحملة
 async function getAllDownloadsOffline() {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -353,7 +353,7 @@ async function getAllDownloadsOffline() {
     });
 }
 
-// حذف فصل محمل
+// Ø­Ø°Ù ÙØµÙ„ محمل
 async function deleteChapterOffline(mangaId, chapterId) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -365,7 +365,7 @@ async function deleteChapterOffline(mangaId, chapterId) {
     });
 }
 
-// إنتاج صفحات مانجا تجريبية مميزة بتصميم متجه (SVG Pages) لتعمل أوفلاين 100% وبسرعة فائقة
+// إنتاج ØµÙØ­Ø§Øª مانجا تجريبية مميزة بتصميم متجه (SVG Pages) لتعمل Ø£ÙˆÙÙ„Ø§ÙŠÙ† 100% وبسرعة ÙØ§Ø¦Ù‚Ø©
 function generateMockPages(mangaTitle, chapNum, count = 5) {
     const pages = [];
     for (let i = 1; i <= count; i++) {
@@ -384,12 +384,12 @@ function generateMockPages(mangaTitle, chapNum, count = 5) {
             <rect x="20" y="20" width="760" height="1160" rx="15" fill="none" stroke="#222638" stroke-width="2"/>
             <circle cx="400" cy="550" r="140" fill="#161924" stroke="#8a2be2" stroke-width="3" stroke-dasharray="12 6"/>
             
-            <!-- نص محتوى الصفحة -->
+            <!-- نص محتوى Ø§Ù„ØµÙØ­Ø© -->
             <text x="400" y="520" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="28" font-weight="bold" text-anchor="middle">KAIRO / منهوا</text>
             <text x="400" y="570" fill="#00f0ff" font-family="'Cairo', sans-serif" font-size="24" font-weight="600" text-anchor="middle">${mangaTitle}</text>
-            <text x="400" y="620" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="20" text-anchor="middle">الفصل ${chapNum} - الصفحة ${i}</text>
+            <text x="400" y="620" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="20" text-anchor="middle">Ø§Ù„ÙØµÙ„ ${chapNum} - Ø§Ù„ØµÙØ­Ø© ${i}</text>
             
-            <!-- لوحة المانجا الزخرفية -->
+            <!-- لوحة المانجا Ø§Ù„Ø²Ø®Ø±ÙÙŠØ© -->
             <path d="M 300 800 L 500 800 L 450 950 L 350 950 Z" fill="#8a2be2" fill-opacity="0.1" stroke="#8a2be2" stroke-width="1"/>
             <line x1="50" y1="1100" x2="750" y2="1100" stroke="#222638" stroke-width="1"/>
             
@@ -402,7 +402,7 @@ function generateMockPages(mangaTitle, chapNum, count = 5) {
     return pages;
 }
 
-// إنتاج صفحات مانجا ملونة وحصرية لـ Kingdom تحمل علامة مائية لـ KAIRO/منهوا
+// إنتاج ØµÙØ­Ø§Øª مانجا ملونة وحصرية لـ Kingdom تحمل علامة مائية لـ KAIRO/منهوا
 function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
     const pages = [];
     for (let i = 1; i <= count; i++) {
@@ -418,7 +418,7 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
             </defs>
             <rect width="100%" height="100%" fill="url(#gk_${chapNum}_${i})"/>
             
-            <!-- إطار عسكري زخرفي -->
+            <!-- إطار عسكري Ø²Ø®Ø±ÙÙŠ -->
             <rect x="25" y="25" width="750" height="1150" rx="10" fill="none" stroke="#ff9900" stroke-width="2" stroke-opacity="0.4"/>
             <rect x="35" y="35" width="730" height="1130" rx="6" fill="none" stroke="#22263b" stroke-width="1"/>
             
@@ -431,7 +431,7 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
             
             <!-- لوحة 2: لوحة تعبيرية للقتال -->
             <rect x="60" y="410" width="320" height="400" rx="8" fill="#241a22" stroke="#8a2be2" stroke-width="1"/>
-            <text x="220" y="600" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">صوت السيوف! *كلاش*</text>
+            <text x="220" y="600" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">صوت Ø§Ù„Ø³ÙŠÙˆÙ! *كلاش*</text>
             
             <!-- لوحة 3: وجه شين الغاضب -->
             <rect x="420" y="410" width="320" height="400" rx="8" fill="#162029" stroke="#00f0ff" stroke-width="1"/>
@@ -447,8 +447,8 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
                 <text x="400" y="615" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="40" font-weight="900" text-anchor="middle" letter-spacing="2">KAIRO / منهوا - حصري</text>
             </g>
             
-            <!-- علامة مائية صغيرة ثابتة بالأسفل -->
-            <text x="400" y="1125" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="16" font-weight="bold" text-anchor="middle">حصري ومترجم لـ KAIRO/منهوا - الفصل ${chapNum} - الصفحة ${i}</text>
+            <!-- علامة مائية صغيرة ثابتة Ø¨Ø§Ù„Ø£Ø³ÙÙ„ -->
+            <text x="400" y="1125" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="16" font-weight="bold" text-anchor="middle">حصري ومترجم لـ KAIRO/منهوا - Ø§Ù„ÙØµÙ„ ${chapNum} - Ø§Ù„ØµÙØ­Ø© ${i}</text>
         </svg>
         `;
         const encoded = btoa(unescape(encodeURIComponent(svg)));
@@ -457,25 +457,25 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
     return pages;
 }
 
-// مولد الفصول التلقائي التفاعلي لتقليل حجم الكود البرمجي وتوفير قاعدة بيانات كاملة
+// مولد Ø§Ù„ÙØµÙˆÙ„ التلقائي Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠ لتقليل حجم الكود البرمجي ÙˆØªÙˆÙÙŠØ± قاعدة بيانات كاملة
 function populateDefaultChapters(maxChapters, isKingdom = false) {
     const chapters = [];
     for (let i = maxChapters; i >= 1; i--) {
         chapters.push({
             id: String(i),
-            title: `الفصل ${i}: ${isKingdom ? 'موقعة توحيد الصين العظمى' : 'بداية المغامرة والقتال'} ${isKingdom ? '(ملون وحصري)' : ''}`,
+            title: `Ø§Ù„ÙØµÙ„ ${i}: ${isKingdom ? 'موقعة توحيد الصين العظمى' : 'بداية المغامرة والقتال'} ${isKingdom ? '(ملون وحصري)' : ''}`,
             date: new Date(Date.now() - (maxChapters - i) * 8 * 60 * 60 * 1000).toISOString().split('T')[0], // تواريخ واقعية متسلسلة
-            images: [] // مصفوفة فارغة سيتم توليد صورها ديناميكياً على الطاير في القارئ
+            images: [] // Ù…ØµÙÙˆÙØ© ÙØ§Ø±ØºØ© سيتم توليد صورها ديناميكياً على الطاير ÙÙŠ القارئ
         });
     }
     return chapters;
 }
 
-// البيانات الافتراضية للموقع
+// البيانات Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© للموقع
 const DEFAULT_MANGAS = [
     {
         id: "1",
-        title: "سولو ليفيلينغ (Solo Leveling)",
+        title: "سولو Ù„ÙŠÙÙŠÙ„ÙŠÙ†Øº (Solo Leveling)",
         alternative: "Na Honjaman Level Up",
         author: "Chugong",
         cover: "solo_leveling_cover.jpg",
@@ -485,7 +485,7 @@ const DEFAULT_MANGAS = [
         type: "منهوا",
         views: 0,
         genres: ["أكشن", "مغامرة", "خيال", "قوى خارقة"],
-        synopsis: "في عالم يربط فيه بوابة غامضة عالم البشر بعالم الوحوش، يكتشف الصياد الأضعف سونغ جين وو نظاماً غامضاً يمنحه القدرة الفريدة على رفع مستواه بلا حدود.",
+        synopsis: "ÙÙŠ عالم يربط ÙÙŠÙ‡ بوابة غامضة عالم البشر بعالم الوحوش، ÙŠÙƒØªØ´Ù الصياد Ø§Ù„Ø£Ø¶Ø¹Ù سونغ جين وو نظاماً غامضاً يمنحه القدرة Ø§Ù„ÙØ±ÙŠØ¯Ø© على Ø±ÙØ¹ مستواه بلا حدود.",
         chapters: populateDefaultChapters(200, false)
     }
 ];
@@ -1116,19 +1116,19 @@ class AppState {
                 if (response.ok) {
                     this.mangas.unshift(newManga);
                     this.saveMangas();
-                    alert("تم إدراج العمل الفني على السيرفر بنجاح!");
+                    alert("تم إدراج العمل Ø§Ù„ÙÙ†ÙŠ على Ø§Ù„Ø³ÙŠØ±ÙØ± بنجاح!");
                     navigate('home');
                 } else {
                     const err = await response.json();
-                    alert(`فشل الحفظ: ${err.error || 'خطأ غير معروف'}`);
+                    alert(`ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸: ${err.error || 'خطأ غير Ù…Ø¹Ø±ÙˆÙ'}`);
                 }
             } catch (e) {
-                alert("خطأ في الاتصال بالخادم وحفظ المنهوا.");
+                alert("خطأ ÙÙŠ الاتصال بالخادم ÙˆØ­ÙØ¸ المنهوا.");
             }
         } else {
             this.mangas.unshift(newManga);
             this.saveMangas();
-            alert("تم حفظ المنهوا محلياً (غير مسجلة على السيرفر لأنك لست المدير).");
+            alert("تم Ø­ÙØ¸ المنهوا محلياً (غير مسجلة على Ø§Ù„Ø³ÙŠØ±ÙØ± لأنك لست المدير).");
             navigate('home');
         }
     }
@@ -1146,7 +1146,7 @@ class AppState {
 
         const newChapter = {
             id: String(chapterNo),
-            title: title || `الفصل ${chapterNo}`,
+            title: title || `Ø§Ù„ÙØµÙ„ ${chapterNo}`,
             date: new Date().toISOString().split('T')[0],
             images
         };
@@ -1172,20 +1172,20 @@ class AppState {
                 });
                 if (response.ok) {
                     this.saveMangas();
-                    alert(`تم رفع ونشر الفصل ${chapterNo} بنجاح!`);
+                    alert(`تم Ø±ÙØ¹ ونشر Ø§Ù„ÙØµÙ„ ${chapterNo} بنجاح!`);
                     navigate('detail', mangaId);
                 } else {
                     manga.chapters = originalChapters;
                     const err = await response.json();
-                    alert(`فشل إضافة الفصل: ${err.error || 'خطأ غير معروف'}`);
+                    alert(`ÙØ´Ù„ Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„: ${err.error || 'خطأ غير Ù…Ø¹Ø±ÙˆÙ'}`);
                 }
             } catch (e) {
                 manga.chapters = originalChapters;
-                alert("خطأ في الاتصال بالسيرفر وإضافة الفصل.");
+                alert("خطأ ÙÙŠ الاتصال Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± ÙˆØ¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„.");
             }
         } else {
             this.saveMangas();
-            alert(`تم إضافة الفصل ${chapterNo} محلياً.`);
+            alert(`تم Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„ ${chapterNo} محلياً.`);
             navigate('detail', mangaId);
         }
     }
@@ -1225,12 +1225,12 @@ const state = new AppState();
 // 3. محرك التنقل والتحكم والواجهات (Routing & Views)
 // ==========================================
 
-// دالة موحدة لمقارنة وتطبيع معرفات الفصول لمنع أي تعارض في الأنواع أو التنسيقات
+// دالة موحدة لمقارنة وتطبيع Ù…Ø¹Ø±ÙØ§Øª Ø§Ù„ÙØµÙˆÙ„ لمنع أي تعارض ÙÙŠ الأنواع أو التنسيقات
 function normalizeChapterId(id) {
     if (id === null || id === undefined) return '';
-    // إزالة أي معاملات إضافية بعد علامة الاستفهام إن وجدت (مثل ?v=1.9)
+    // إزالة أي معاملات Ø¥Ø¶Ø§ÙÙŠØ© بعد علامة Ø§Ù„Ø§Ø³ØªÙÙ‡Ø§Ù… إن وجدت (مثل ?v=1.9)
     let cleanId = String(id).split('?')[0].trim();
-    // تحويل الأرقام العشرية الصافية مثل 200.0 إلى 200
+    // تحويل الأرقام العشرية Ø§Ù„ØµØ§ÙÙŠØ© مثل 200.0 إلى 200
     if (!isNaN(cleanId) && cleanId.includes('.')) {
         const parsed = parseFloat(cleanId);
         if (parsed % 1 === 0) {
@@ -1263,7 +1263,7 @@ function navigate(view, param1 = null, param2 = null) {
 }
 
 async function handleRouting() {
-    // التحويل التلقائي للمسارات النظيفة (Clean URLs) إلى مسارات الهاش (Hash URLs) لمنع التوجيه الخاطئ
+    // التحويل التلقائي للمسارات Ø§Ù„Ù†Ø¸ÙŠÙØ© (Clean URLs) إلى مسارات الهاش (Hash URLs) لمنع التوجيه الخاطئ
     const path = window.location.pathname;
     if (path.startsWith('/manga/') || path.startsWith('/reader/')) {
         window.location.replace('/#' + path + window.location.search);
@@ -1335,7 +1335,7 @@ async function handleRouting() {
     
     // SEO: تحديث meta tags ديناميكياً حسب المسار
     var seoTitle = 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
-    var seoDesc = 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.';
+    var seoDesc = 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا Ø§Ù„Ù…ÙØ¶Ù„Ø© لديك بجودة عالية وبدون إعلانات مزعجة.';
     var seoImg = '';
     
     if (state.currentView === 'detail' && state.activeMangaId) {
@@ -1349,25 +1349,25 @@ async function handleRouting() {
         var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
         if (mangaR && Array.isArray(mangaR.chapters)) {
             var chapter = mangaR.chapters.find(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
-            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
-            seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
+            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'ÙØµÙ„ ' + state.activeChapterId) + ' | KAIRO / منهوا';
+            seoDesc = 'اقرأ ' + mangaR.title + ' Ø§Ù„ÙØµÙ„ ' + state.activeChapterId + ' على KAIRO/منهوا';
             seoImg = getDisplayCover(mangaR);
         }
     } else if (state.currentView === 'bookmarks') {
-        seoTitle = 'المفضلة | KAIRO / منهوا';
-        seoDesc = 'قائمة المانجا والمنهوا المفضلة لديك على KAIRO/منهوا';
+        seoTitle = 'Ø§Ù„Ù…ÙØ¶Ù„Ø© | KAIRO / منهوا';
+        seoDesc = 'قائمة المانجا والمنهوا Ø§Ù„Ù…ÙØ¶Ù„Ø© لديك على KAIRO/منهوا';
     } else if (state.currentView === 'history') {
         seoTitle = 'سجل القراءة | KAIRO / منهوا';
         seoDesc = 'سجل قراءة المانجا والمنهوا على KAIRO/منهوا';
     } else if (state.currentView === 'downloads') {
-        seoTitle = 'الفصول المحملة | KAIRO / منهوا';
-        seoDesc = 'الفصول المحملة للقراءة دون اتصال على KAIRO/منهوا';
+        seoTitle = 'Ø§Ù„ÙØµÙˆÙ„ المحملة | KAIRO / منهوا';
+        seoDesc = 'Ø§Ù„ÙØµÙˆÙ„ المحملة للقراءة دون اتصال على KAIRO/منهوا';
     } else if (state.currentView === 'admin') {
         seoTitle = 'لوحة الإدارة | KAIRO / منهوا';
         seoDesc = 'لوحة تحكم وإدارة موقع KAIRO/منهوا';
     } else if (state.currentView === 'profile') {
         seoTitle = (state.profileUsername || 'المستخدم') + ' | KAIRO / منهوا';
-        seoDesc = 'ملف تعريف المستخدم على KAIRO/منهوا';
+        seoDesc = 'Ù…Ù„Ù ØªØ¹Ø±ÙŠÙ المستخدم على KAIRO/منهوا';
     } else if (state.currentView === 'leaderboard') {
         seoTitle = 'المتصدرين | KAIRO / منهوا';
         seoDesc = 'قائمة أكثر المستخدمين نشاطاً ونقاطاً على KAIRO/منهوا';
@@ -1378,11 +1378,11 @@ async function handleRouting() {
         seoDesc = 'آخر الإعلانات والتحديثات على KAIRO/منهوا';
     } else if (state.currentView === 'store') {
         seoTitle = 'المتجر | KAIRO / منهوا';
-        seoDesc = 'استبدل نقاطك بعناصر حصرية في متجر KAIRO/منهوا';
+        seoDesc = 'استبدل نقاطك بعناصر حصرية ÙÙŠ متجر KAIRO/منهوا';
     } else if (state.currentView === 'search') {
         const q = state.searchQuery || '';
         seoTitle = q ? `بحث: ${q} | KAIRO / منهوا` : 'بحث متقدم | KAIRO / منهوا';
-        seoDesc = q ? `نتائج البحث عن "${q}" في KAIRO/منهوا` : 'ابحث عن مانجا، مانهوا، ومستخدمين في KAIRO/منهوا';
+        seoDesc = q ? `نتائج البحث عن "${q}" ÙÙŠ KAIRO/منهوا` : 'ابحث عن مانجا، مانهوا، ومستخدمين ÙÙŠ KAIRO/منهوا';
     } else if (state.currentView === 'chat') {
         seoTitle = 'الشات العام | KAIRO / منهوا';
         seoDesc = 'تحدث مع مجتمع القراء على KAIRO/منهوا';
@@ -1401,12 +1401,12 @@ async function handleRouting() {
     renderApp();
 }
 
-// استماع لتغيرات الهاش في المتصفح للتنقل
+// استماع لتغيرات الهاش ÙÙŠ Ø§Ù„Ù…ØªØµÙØ­ للتنقل
 window.addEventListener('hashchange', handleRouting);
 
 function updateSEOMeta(title, description, image) {
     document.title = title || 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
-    let desc = description || 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.';
+    let desc = description || 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا Ø§Ù„Ù…ÙØ¶Ù„Ø© لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.';
     let img = image || '';
     let setMeta = function(name, value) {
         document.querySelectorAll('meta[name="' + name + '"], meta[property="' + name + '"]').forEach(function(el) { el.remove(); });
@@ -1472,8 +1472,8 @@ function HeaderComponent() {
         <div id="rewards-dropdown" class="top-dropdown">
             <div class="close-modal-btn" onclick="window.toggleTopDropdown('rewards-dropdown')"><i class="fa-solid fa-xmark"></i></div>
             <div class="rewards-header">
-                <div class="rewards-title"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
-                <div class="rewards-subtitle">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
+                <div class="rewards-title"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية</div>
+                <div class="rewards-subtitle">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم Ù…ØªØªØ§Ù„Ù</div>
             </div>
             <div class="rewards-grid">
                 <div class="reward-card completed">
@@ -1509,7 +1509,7 @@ function HeaderComponent() {
                 <div class="reward-card wide locked">
                     <div>
                         <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Ù…ÙƒØ§ÙØ£Ø© الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">Ù…Ø¶Ø§Ø¹Ù</span></div>
                         <div class="reward-prizes" style="margin-top:5px; font-size:1rem;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
                     </div>
                     <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
@@ -1527,7 +1527,7 @@ function HeaderComponent() {
             </div>
             <div class="theme-tabs">
                 <div class="theme-tab active" onclick="setThemeMode('dark')"><i class="fa-regular fa-moon"></i> الوضع الداكن</div>
-                <div class="theme-tab" onclick="setThemeMode('light')"><i class="fa-regular fa-sun"></i> الوضع الفاتح</div>
+                <div class="theme-tab" onclick="setThemeMode('light')"><i class="fa-regular fa-sun"></i> الوضع Ø§Ù„ÙØ§ØªØ­</div>
             </div>
             <div style="padding:0 15px; font-weight:bold; font-size:0.9rem; color:var(--primary-color); display:flex; align-items:center; gap:8px;">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> المجموعات الداكنة
@@ -1565,7 +1565,7 @@ function HeaderComponent() {
                 <div style="font-weight:bold;">الإشعارات</div>
                 <div style="display:flex; gap:15px; color:var(--text-muted); cursor:pointer; margin-left:30px;">
                     <i class="fa-solid fa-check-double" title="تحديد الكل كمقروء"></i>
-                    <i class="fa-solid fa-trash-can" title="حذف الكل"></i>
+                    <i class="fa-solid fa-trash-can" title="Ø­Ø°Ù الكل"></i>
                     <i class="fa-solid fa-gear" onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('settings'); state.settingsTab='notifications'; renderApp();" title="الإعدادات"></i>
                 </div>
             </div>
@@ -1596,11 +1596,11 @@ function HeaderComponent() {
                     <p>@${s.sessionToken ? getUserHandle(s.userEmail) : 'guest'}</p>
                 </div>
             </div>
-            <a class="user-menu-link" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');">افتح ملفك لرؤية النشاط، المكتبة، والإنجازات.</a>
+            <a class="user-menu-link" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');">Ø§ÙØªØ­ Ù…Ù„ÙÙƒ لرؤية النشاط، المكتبة، والإنجازات.</a>
             
             <div style="padding:10px 0;">
                 <div style="padding:0 20px 5px; font-size:0.75rem; color:var(--text-muted);">حسابي</div>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');"><i class="fa-regular fa-user"></i> الملف الشخصي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');"><i class="fa-regular fa-user"></i> Ø§Ù„Ù…Ù„Ù الشخصي</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('bookmarks');"><i class="fa-solid fa-book-open"></i> مكتبتي</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.toggleTopDropdown('notifications-dropdown');"><i class="fa-regular fa-bell"></i> الإشعارات</a>
                 <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-award"></i> إنجازاتي</a>
@@ -1709,7 +1709,7 @@ function HeaderComponent() {
             <div style="position:relative;display:inline-block;">
                 <span class="nav-link ${activeView === 'leaderboard' || activeView === 'store' || activeView === 'announcements' || activeView === 'chat' ? 'active' : ''}" id="nav-community"><i class="fa-solid fa-users"></i> المجتمع <i class="fa-solid fa-caret-down" style="font-size:0.6rem;"></i></span>
                 <div class="community-dropdown" id="community-dropdown">
-                    <div class="community-dropdown-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> التصنيفات</div>
+                    <div class="community-dropdown-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</div>
                     <div class="community-dropdown-item" id="nav-store"><i class="fa-solid fa-store"></i> المتجر</div>
                     <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> الإعلانات</div>
                     <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> الدردشة</div>
@@ -1820,7 +1820,7 @@ function SuggestionsModalComponent() {
                 <i class="fa-solid fa-comments" style="color: var(--color-secondary);"></i> تقديم اقتراح أو شكوى
             </h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; text-align: right; line-height: 1.6;">
-                رأيك يهمنا لتطوير موقع KAIRO/منهوا. يمكنك كتابة اقتراح لتحسين الموقع أو تقديم شكوى عن أي مشكلة فنية.
+                رأيك يهمنا لتطوير موقع KAIRO/منهوا. يمكنك كتابة اقتراح لتحسين الموقع أو تقديم شكوى عن أي مشكلة ÙÙ†ÙŠØ©.
             </p>
             
             <form id="suggestions-form" class="auth-form" style="display: flex; flex-direction: column; gap: 16px;">
@@ -1838,8 +1838,8 @@ function SuggestionsModalComponent() {
                     </div>
                 </div>
                 <div class="form-group" style="text-align: right;">
-                    <label for="sug-content" style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">تفاصيل الرسالة</label>
-                    <textarea id="sug-content" required rows="4" placeholder="اكتب تفاصيل اقتراحك أو شكواك هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;"></textarea>
+                    <label for="sug-content" style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">ØªÙØ§ØµÙŠÙ„ الرسالة</label>
+                    <textarea id="sug-content" required rows="4" placeholder="اكتب ØªÙØ§ØµÙŠÙ„ اقتراحك أو شكواك هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;"></textarea>
                 </div>
                 <div id="sug-error-msg" class="auth-error-msg" style="display:none; color: #ff007f; font-size: 0.85rem; text-align: right;"></div>
                 <div id="sug-success-msg" class="auth-success-msg" style="display:none; color: #00ff7f; font-size: 0.85rem; text-align: right;"></div>
@@ -1869,7 +1869,7 @@ function SettingsModalComponent() {
             <div style="display:flex;border-bottom:1px solid var(--border-color);">
                 ${[
                     { key:'account', label:'الحساب', icon:'fa-user' },
-                    { key:'profile', label:'الملف', icon:'fa-pen' },
+                    { key:'profile', label:'Ø§Ù„Ù…Ù„Ù', icon:'fa-pen' },
                     { key:'security', label:'الأمان', icon:'fa-lock' },
                     { key:'appearance', label:'المظهر', icon:'fa-palette' }
                 ].map(t => `
@@ -1905,7 +1905,7 @@ function SettingsModalComponent() {
                         <div class="form-group">
                             <input type="text" id="settings-new-username" placeholder="أدخل اسم المستخدم الجديد" value="${state.userProfile?.username || ''}" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
-                        <button class="auth-submit-btn" id="btn-save-username" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));color:#07080c;margin-top:8px;">حفظ اسم المستخدم</button>
+                        <button class="auth-submit-btn" id="btn-save-username" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));color:#07080c;margin-top:8px;">Ø­ÙØ¸ اسم المستخدم</button>
                         <div id="username-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
                     </div>
                 ` : ''}
@@ -1916,7 +1916,7 @@ function SettingsModalComponent() {
                             <input type="password" id="settings-current-password" placeholder="كلمة المرور الحالية" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
                         <div class="form-group" style="margin-bottom:12px;">
-                            <input type="password" id="settings-new-password" placeholder="كلمة المرور الجديدة (6 أحرف)" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                            <input type="password" id="settings-new-password" placeholder="كلمة المرور الجديدة (6 Ø£Ø­Ø±Ù)" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
                         <button class="auth-submit-btn" id="btn-save-password" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-secondary),var(--color-primary));color:#07080c;margin-top:4px;">تغيير كلمة المرور</button>
                         <div id="password-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
@@ -1932,7 +1932,7 @@ function SettingsModalComponent() {
                             </div>
                             <div style="text-align:center;padding:16px;background:var(--bg-card);border-radius:12px;border:2px solid var(--border-color);cursor:pointer;opacity:0.5;" id="theme-light-btn">
                                 <div style="font-size:1.5rem;"><i class="fa-solid fa-sun"></i></div>
-                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">فاتح (قريباً)</div>
+                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">ÙØ§ØªØ­ (قريباً)</div>
                             </div>
                         </div>
                     </div>
@@ -2039,7 +2039,7 @@ function ReadingHistoryComponent() {
             </div>
             <div class="history-item-details">
                 <h4 class="history-item-title">${manga.title}</h4>
-                <span class="history-item-chapter">الفصل ${numClean}</span>
+                <span class="history-item-chapter">Ø§Ù„ÙØµÙ„ ${numClean}</span>
                 <div style="margin-top:4px;">
                     <div class="level-progress-info" style="margin-bottom: 2px;">
                         <span class="history-item-progress-text">تقدم القراءة</span>
@@ -2066,14 +2066,14 @@ function ReadingHistoryComponent() {
     `;
 }
 
-// صفحة سجل القراءة التفصيلي
+// ØµÙØ­Ø© سجل القراءة Ø§Ù„ØªÙØµÙŠÙ„ÙŠ
 function HistoryViewComponent() {
     if (state.history.length === 0) {
         return `
         <div class="empty-state">
             <i class="fa-solid fa-clock-rotate-left" style="color:var(--border-color)"></i>
-            <h3>سجل القراءة فارغ</h3>
-            <p>ابدأ بقراءة أي مانجا أو منهوا وسيتم تسجيل تقدمك هنا لتتمكن من العودة واستكمالها في أي وقت.</p>
+            <h3>سجل القراءة ÙØ§Ø±Øº</h3>
+            <p>ابدأ بقراءة أي مانجا أو منهوا وسيتم تسجيل تقدمك هنا لتتمكن من العودة واستكمالها ÙÙŠ أي وقت.</p>
         </div>
         `;
     }
@@ -2102,12 +2102,12 @@ function HistoryViewComponent() {
                 <div style="min-width:0; flex:1;">
                     <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">${manga.title}</h4>
                     <span style="font-size:0.85rem; color:var(--text-muted); display:inline-block; margin-bottom:4px;">
-                        الفصل الذي تقف عنده: <strong style="color:var(--color-secondary);">الفصل ${hist.chapterId}</strong> (${percentage}%)
+                        Ø§Ù„ÙØµÙ„ الذي ØªÙ‚Ù عنده: <strong style="color:var(--color-secondary);">Ø§Ù„ÙØµÙ„ ${hist.chapterId}</strong> (${percentage}%)
                     </span>
                     ${hasNewChapters ? `
                         <div style="display:inline-block; margin-right:10px;">
                             <span class="badge-new-chapters" style="background:rgba(0,255,127,0.1); border:1px solid #00ff7f; color:#00ff7f; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:700; white-space:nowrap;">
-                                <i class="fa-solid fa-bell"></i> توجد فصول جديدة! (أحدث فصل: ${latestChapter.id})
+                                <i class="fa-solid fa-bell"></i> توجد ÙØµÙˆÙ„ جديدة! (أحدث ÙØµÙ„: ${latestChapter.id})
                             </span>
                         </div>
                     ` : ''}
@@ -2117,7 +2117,7 @@ function HistoryViewComponent() {
                 <button class="detail-btn btn-read resume-reading-history-btn" style="padding:8px 16px; font-size:0.85rem; border-radius:20px;" data-manga-id="${hist.mangaId}" data-chap-id="${hist.chapterId}" data-scroll="${hist.scrollY}" data-page="${hist.activePageIndex}">
                     <i class="fa-solid fa-play"></i> متابعة القراءة
                 </button>
-                <button class="download-btn delete-history-entry-btn" data-manga-id="${hist.mangaId}" title="حذف من السجل" style="border-color:rgba(255,255,255,0.05); color:var(--text-dark);">
+                <button class="download-btn delete-history-entry-btn" data-manga-id="${hist.mangaId}" title="Ø­Ø°Ù من السجل" style="border-color:rgba(255,255,255,0.05); color:var(--text-dark);">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -2133,7 +2133,7 @@ function HistoryViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">سجل القراءة <span>التفصيلي والمتابعة</span></h2>
+            <h2 class="section-title">سجل القراءة <span>Ø§Ù„ØªÙØµÙŠÙ„ÙŠ والمتابعة</span></h2>
         </div>
         ${listHtml}
     </div>
@@ -2150,11 +2150,11 @@ function MangaCardComponent(manga) {
     const type = manga.type || 'مانهوا';
     const rating = manga.rating || (Math.random() * (9.9 - 8.0) + 8.0).toFixed(1);
 
-    let displayChapterText = chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة";
+    let displayChapterText = chaptersCount > 0 ? chaptersCount + " ÙØµÙ„" : "مستمرة";
     if (latestChapter && latestChapter.id) {
         const numMatch = latestChapter.id.match(/\d+(?:\.\d+)?/);
         if (numMatch) {
-            displayChapterText = "فصل " + parseFloat(numMatch[0]);
+            displayChapterText = "ÙØµÙ„ " + parseFloat(numMatch[0]);
         }
     }
 
@@ -2270,8 +2270,8 @@ function AdvancedFiltersComponent() {
     if (s.mangas) s.mangas.forEach(m => { if (m.genres) m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }); });
 
     const searchTypes = [
-        {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
-        {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
+        {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'Ø§Ù„Ù…Ø¤Ù„Ù'},
+        {id:'tags', label:'الرسوم'}, {id:'desc', label:'Ø§Ù„ÙˆØµÙ'}
     ];
 
     const searchTypeHtml = searchTypes.map(t => 
@@ -2282,8 +2282,8 @@ function AdvancedFiltersComponent() {
     <div class="mangatime-browse-container">
         
         <div class="mangatime-hero-section">
-            <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
-            <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+            <h1 class="mangatime-hero-title">ØªØµÙØ­ عالم المانجا</h1>
+            <p class="mangatime-hero-subtitle">Ø§ÙƒØªØ´Ù عملك التالي بين Ø¢Ù„Ø§Ù السلاسل</p>
         </div>
 
         <div class="mangatime-search-wrapper">
@@ -2300,11 +2300,11 @@ function AdvancedFiltersComponent() {
         
 
         <div class="mangatime-dropdowns-row">
-            <!-- التصنيف -->
+            <!-- Ø§Ù„ØªØµÙ†ÙŠÙ -->
             <div class="glass-select-wrapper">
                 <i class="fa-solid fa-tags glass-icon"></i>
                 <select class="glass-select" onchange="toggleFilter('genre', this.value)">
-                    <option value="">كل التصنيفات</option>
+                    <option value="">كل Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</option>
                     ${allGenres.map(g => `<option value="${g}" ${s.activeGenre===g?'selected':''}>${g}</option>`).join('')}
                 </select>
             </div>
@@ -2328,7 +2328,7 @@ function AdvancedFiltersComponent() {
                     <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
                     <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
                     <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
-                    <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                    <option value="Ù…ØªÙˆÙ‚ÙØ©" ${s.filterStatus==='Ù…ØªÙˆÙ‚ÙØ©'?'selected':''}>Ù…ØªÙˆÙ‚ÙØ©</option>
                 </select>
             </div>
 
@@ -2341,8 +2341,8 @@ function AdvancedFiltersComponent() {
                     <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
                     <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
                     <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
-                    <option value="الأكثر فصولاً" ${s.filterSort==='الأكثر فصولاً'?'selected':''}>الأكثر فصولاً</option>
-                    <option value="الأقل فصولاً" ${s.filterSort==='الأقل فصولاً'?'selected':''}>الأقل فصولاً</option>
+                    <option value="الأكثر ÙØµÙˆÙ„Ø§Ù‹" ${s.filterSort==='الأكثر ÙØµÙˆÙ„Ø§Ù‹'?'selected':''}>الأكثر ÙØµÙˆÙ„Ø§Ù‹</option>
+                    <option value="الأقل ÙØµÙˆÙ„Ø§Ù‹" ${s.filterSort==='الأقل ÙØµÙˆÙ„Ø§Ù‹'?'selected':''}>الأقل ÙØµÙˆÙ„Ø§Ù‹</option>
                 </select>
             </div>
 
@@ -2362,10 +2362,10 @@ function AdvancedFiltersComponent() {
                 <input type="number" class="glass-input" placeholder="إلى" value="${s.filterRatingMax||''}" step="0.1" oninput="handleNumberInput('filterRatingMax', this.value)">
             </div>
 
-            <!-- الفصول -->
+            <!-- Ø§Ù„ÙØµÙˆÙ„ -->
             <div class="glass-input-group">
                 <i class="fa-solid fa-list-ol glass-icon" style="margin-left:5px;"></i>
-                <input type="number" class="glass-input" placeholder="من فصول" value="${s.filterChaptersMin||''}" oninput="handleNumberInput('filterChaptersMin', this.value)">
+                <input type="number" class="glass-input" placeholder="من ÙØµÙˆÙ„" value="${s.filterChaptersMin||''}" oninput="handleNumberInput('filterChaptersMin', this.value)">
                 <span class="glass-separator">-</span>
                 <input type="number" class="glass-input" placeholder="إلى" value="${s.filterChaptersMax||''}" oninput="handleNumberInput('filterChaptersMax', this.value)">
             </div>
@@ -2387,7 +2387,7 @@ function AdvancedFiltersComponent() {
     </div>
     `;
 }
-// صفحة التفاصيل الكاملة
+// ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„ الكاملة
 async function DetailViewComponent() {
     if (state.isLoading) {
         return `
@@ -2426,7 +2426,7 @@ async function DetailViewComponent() {
         `;
     }).join('');
     
-    // جلب الفصول المحملة للتأكد من حالة التحميل
+    // جلب Ø§Ù„ÙØµÙˆÙ„ المحملة للتأكد من حالة التحميل
     const localDownloads = await getAllDownloadsOffline();
     const downloadedIds = localDownloads
         .filter(d => d.mangaId === manga.id)
@@ -2457,7 +2457,7 @@ async function DetailViewComponent() {
     });
     let chaptersHtml = '';
     if (filteredChapters.length === 0) {
-        chaptersHtml = `<p style="padding: 20px; color: var(--text-dark); text-align: center;">${searchQ ? 'لا توجد فصول تطابق البحث.' : 'لا تتوفر أي فصول حالياً لهذه المانجا.'}</p>`;
+        chaptersHtml = `<p style="padding: 20px; color: var(--text-dark); text-align: center;">${searchQ ? 'لا توجد ÙØµÙˆÙ„ تطابق البحث.' : 'لا ØªØªÙˆÙØ± أي ÙØµÙˆÙ„ حالياً لهذه المانجا.'}</p>`;
     } else {
         filteredChapters.forEach(ch => {
             const isDownloaded = downloadedIds.includes(ch.id);
@@ -2489,7 +2489,7 @@ async function DetailViewComponent() {
                     <span class="chapter-item-date"><i class="fa-regular fa-calendar"></i> ${ch.date}</span>
                     <div class="chapter-actions-inline">
                         ${isDownloading ? `<span style="font-size: 0.8rem; color: var(--color-secondary);">${progress}%</span>` : ''}
-                        <button class="download-btn ${downloadClass}" data-chap-id="${ch.id}" title="${isDownloaded ? 'محمل أوفلاين (اضغط للحذف)' : 'تحميل للقراءة بدون اتصال'}">
+                        <button class="download-btn ${downloadClass}" data-chap-id="${ch.id}" title="${isDownloaded ? 'محمل Ø£ÙˆÙÙ„Ø§ÙŠÙ† (اضغط Ù„Ù„Ø­Ø°Ù)' : 'تحميل للقراءة بدون اتصال'}">
                             ${downloadIcon}
                         </button>
                     </div>
@@ -2499,7 +2499,7 @@ async function DetailViewComponent() {
         });
     }
 
-    // جلب التقييمات والمراجعات من السيرفر
+    // جلب التقييمات والمراجعات من Ø§Ù„Ø³ÙŠØ±ÙØ±
     let reviewsListHtml = '';
     let userReview = null;
     let avgRating = 0;
@@ -2540,13 +2540,13 @@ async function DetailViewComponent() {
         }
     } catch (e) {
         console.error("Error loading reviews:", e);
-        reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">فشل تحميل مراجعات هذا العمل.</p>';
+        reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">ÙØ´Ù„ تحميل مراجعات هذا العمل.</p>';
     }
 
     manga.rating = hasReviews ? parseFloat(avgRating) : 0;
-    const displayRating = hasReviews ? `${manga.rating} / 10` : 'لم تُقيم بعد';
+    const displayRating = hasReviews ? `${manga.rating} / 10` : 'لم ØªÙÙ‚ÙŠÙ… بعد';
 
-    // نموذج إضافة مراجعة
+    // نموذج Ø¥Ø¶Ø§ÙØ© مراجعة
     let reviewFormHtml = '';
     if (state.sessionToken) {
         const userRating = userReview ? userReview.rating : 10;
@@ -2561,7 +2561,7 @@ async function DetailViewComponent() {
         reviewFormHtml = `
         <div class="review-form-container glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 16px; text-align: right;">
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">
-                ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
+                ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> Ø£Ø¶Ù تقييمك ومراجعتك للعمل'}
             </h4>
             <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
                 <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم من 10:</span>
@@ -2601,7 +2601,7 @@ async function DetailViewComponent() {
                 <div class="detail-actions">
                     ${latestChapter ? `
                         <button class="detail-btn btn-read start-reading-btn" data-chap-id="${latestChapter.id}">
-                            <i class="fa-solid fa-play"></i> قراءة أول فصل
+                            <i class="fa-solid fa-play"></i> قراءة أول ÙØµÙ„
                         </button>
                     ` : ''}
                     
@@ -2621,7 +2621,7 @@ async function DetailViewComponent() {
                             <i class="fa-solid fa-pen-to-square"></i> تعديل هذا العمل
                         </button>
                         <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:6px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
-                            <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
+                            <i class="fa-solid fa-trash-can"></i> Ø­Ø°Ù هذا العمل
                         </button>
                     ` : ''}
                     
@@ -2642,7 +2642,7 @@ async function DetailViewComponent() {
             </div>
             <div class="detail-content">
                 <h1 class="detail-title">${manga.title}</h1>
-                <p class="detail-author">اسم آخر: ${manga.alternative} • المؤلف: ${manga.author}</p>
+                <p class="detail-author">اسم آخر: ${manga.alternative} • Ø§Ù„Ù…Ø¤Ù„Ù : ${manga.author}</p>
                 
                 <div class="detail-meta-grid">
                     <div class="meta-item"><strong>النوع:</strong> ${manga.type || 'منهوا'}</div>
@@ -2656,7 +2656,7 @@ async function DetailViewComponent() {
                 </div>
                 
                 <div class="detail-synopsis">
-                    <h3>القصة والوصف</h3>
+                    <h3>القصة ÙˆØ§Ù„ÙˆØµÙ</h3>
                     <p>${manga.synopsis}</p>
                 </div>
                 
@@ -2678,16 +2678,16 @@ async function DetailViewComponent() {
                 
                 <div class="chapters-section">
                     <div class="chapters-header">
-                        <h3>فصول المانجا المتاحة</h3>
+                        <h3>ÙØµÙˆÙ„ المانجا المتاحة</h3>
                         <div class="chapters-search-box">
-                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
+                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم Ø§Ù„ÙØµÙ„ أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <select id="chapter-sort-select" style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-main);padding:6px 12px;border-radius:8px;font-size:0.8rem;outline:none;cursor:pointer;">
                             <option value="newest" ${state.chapterSortOrder === 'newest' ? 'selected' : ''}>الأحدث أولاً</option>
                             <option value="oldest" ${state.chapterSortOrder === 'oldest' ? 'selected' : ''}>الأقدم أولاً</option>
                         </select>
-                        <span>إجمالي الفصول: ${manga.chapters.length}</span>
+                        <span>إجمالي Ø§Ù„ÙØµÙˆÙ„: ${manga.chapters.length}</span>
                     </div>
                     <div class="chapters-list">
                         ${chaptersHtml}
@@ -2711,24 +2711,24 @@ function renderRelatedMangas(manga) {
                 <div class="related-card" onclick="navigate('detail','${m.id}')" role="button">
                     <img src="${m.cover || DEFAULT_COVER_URL}" alt="${m.title}" loading="lazy">
                     <div class="related-title">${m.title}</div>
-                    <div class="related-rating">${m.rating ? '⭐ '.repeat(Math.round(m.rating)) : ''}</div>
+                    <div class="related-rating">${m.rating ? 'â­ '.repeat(Math.round(m.rating)) : ''}</div>
                 </div>
             `).join('')}
         </div>
     </div>`;
 }
 
-// قارئ الفصول
+// قارئ Ø§Ù„ÙØµÙˆÙ„
 async function ReaderViewComponent() {
     const manga = state.mangas.find(m => m.id === state.activeMangaId);
-    if (!manga) return '<p>المانجا غير متوفرة</p>';
+    if (!manga) return '<p>المانجا غير Ù…ØªÙˆÙØ±Ø©</p>';
 
     if (manga.id === "1" && !state.soloLevelingLoaded) {
         await state.loadSoloLevelingChapters();
     }
     
     const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-    if (chapterIndex === -1) return '<p>الفصل غير متوفر</p>';
+    if (chapterIndex === -1) return '<p>Ø§Ù„ÙØµÙ„ غير Ù…ØªÙˆÙØ±</p>';
     
     const chapter = manga.chapters[chapterIndex];
     
@@ -2738,16 +2738,16 @@ async function ReaderViewComponent() {
     // نقاط القراءة
     state.addPoints(3);
 
-    // فحص ما إذا كان هذا الفصل محمل أوفلاين
+    // ÙØ­Øµ ما إذا كان هذا Ø§Ù„ÙØµÙ„ محمل Ø£ÙˆÙÙ„Ø§ÙŠÙ†
     let pages = chapter.images;
     const offlineData = await getChapterOffline(manga.id, chapter.id);
     const isOfflineAvailable = !!offlineData;
     if (isOfflineAvailable) {
         pages = offlineData.images;
-        console.log("تم تحميل صفحات الفصل المحفوظة من الـ IndexedDB محلياً.");
+        console.log("تم تحميل ØµÙØ­Ø§Øª Ø§Ù„ÙØµÙ„ Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø© من الـ IndexedDB محلياً.");
     }
 
-    // التوليد الديناميكي على الطاير لتخفيف الذاكرة والملفات
+    // التوليد الديناميكي على الطاير Ù„ØªØ®ÙÙŠÙ الذاكرة ÙˆØ§Ù„Ù…Ù„ÙØ§Øª
     if (!pages || pages.length === 0) {
         if (manga.id === "4") {
             pages = generateKingdomMockPages(manga.title, chapter.id);
@@ -2756,7 +2756,7 @@ async function ReaderViewComponent() {
         }
     }
 
-    // إعداد التحميل المسبق الذكي (هيتفعل لما القارئ ينزل لتحت)
+    // إعداد التحميل المسبق الذكي (Ù‡ÙŠØªÙØ¹Ù„ لما القارئ ينزل لتحت)
     window._hasPrefetchedNextChapter = false;
     window._nextChapterImages = null;
     const nextChapter = manga.chapters[chapterIndex - 1];
@@ -2764,26 +2764,30 @@ async function ReaderViewComponent() {
         window._nextChapterImages = nextChapter.images;
     }
 
-    // التحميل المسبق الذكي على السيرفر للفصول القادمة
+    // التحميل المسبق الذكي على Ø§Ù„Ø³ÙŠØ±ÙØ± Ù„Ù„ÙØµÙˆÙ„ القادمة
     const prefetchCount = 2; 
+    const prefetchChapterIds = [];
     for (let i = 1; i <= prefetchCount; i++) {
         const futureChapter = manga.chapters[chapterIndex - i];
         if (futureChapter && futureChapter.id) {
-            fetch('/api/preload-chapter', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ manga_id: manga.id, chapter_id: futureChapter.id })
-            }).catch(e => console.log('Preload background error:', e));
+            prefetchChapterIds.push(futureChapter.id);
         }
     }
+    if (prefetchChapterIds.length > 0) {
+        fetch('/api/prefetch_chapters', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ manga_id: manga.id, chapter_ids: prefetchChapterIds })
+        }).catch(e => console.log('Prefetch background error:', e));
+    }
 
-    // خيارات الفصول
+    // خيارات Ø§Ù„ÙØµÙˆÙ„
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
-            optionsHtml += `<option value="${ch.id}" ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'selected' : ''}>الفصل ${ch.id}</option>`;
+            optionsHtml += `<option value="${ch.id}" ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'selected' : ''}>Ø§Ù„ÙØµÙ„ ${ch.id}</option>`;
     });
 
-    // تفضيل الفصل
+    // ØªÙØ¶ÙŠÙ„ Ø§Ù„ÙØµÙ„
     const likeKey = `${manga.id}_${chapter.id}`;
     const isLiked = state.likes[likeKey] || false;
 
@@ -2799,7 +2803,7 @@ async function ReaderViewComponent() {
             const isActivePage = index === state.activePageIndex;
             imagesHtml += `
             <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${pageUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
+                <img src="${pageUrl}" alt="ØµÙØ­Ø© ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
             </div>
             `;
         });
@@ -2809,19 +2813,19 @@ async function ReaderViewComponent() {
             <div class="reader-image-container lazy-load-container" data-src="${pageUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
-                    <span>جاري تحميل الصفحة ${index + 1}...</span>
+                    <span>جاري تحميل Ø§Ù„ØµÙØ­Ø© ${index + 1}...</span>
                 </div>
             </div>
             `;
         });
     }
 
-    // --- التحميل التلقائي للفصل التالي (Infinite Scroll) ---
+    // --- التحميل التلقائي Ù„Ù„ÙØµÙ„ التالي (Infinite Scroll) ---
     if (chapterIndex > 0 && settings.mode !== 'horizontal') {
         imagesHtml += '<div id="next-chapter-sentinel" style="height:1px;width:100%;"></div>';
     }
 
-    // جلب تعليقات الفصل من السيرفر
+    // جلب تعليقات Ø§Ù„ÙØµÙ„ من Ø§Ù„Ø³ÙŠØ±ÙØ±
     let chapterComments = [];
     let commentsListHtml = '';
     try {
@@ -2829,7 +2833,7 @@ async function ReaderViewComponent() {
         if (response.ok) {
             chapterComments = await response.json();
             if (chapterComments.length === 0) {
-                commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">كن أول من يترك تعليقاً على هذا الفصل!</p>';
+                commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">كن أول من يترك تعليقاً على هذا Ø§Ù„ÙØµÙ„!</p>';
             } else {
                 chapterComments.forEach(comm => {
                     const userDisplay = comm.email.split('@')[0];
@@ -2858,7 +2862,7 @@ async function ReaderViewComponent() {
         }
     } catch (e) {
         console.error("Error fetching comments:", e);
-        commentsListHtml = '<p style="color:#ff007f;text-align:center;padding:20px;">فشل تحميل تعليقات هذا الفصل.</p>';
+        commentsListHtml = '<p style="color:#ff007f;text-align:center;padding:20px;">ÙØ´Ù„ تحميل تعليقات هذا Ø§Ù„ÙØµÙ„.</p>';
     }
 
     // صندوق تعليق مسجل الدخول أو غير المسجل
@@ -2870,7 +2874,7 @@ async function ReaderViewComponent() {
                 <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> التعليق باسم: <strong>${state.userEmail.split('@')[0]}</strong>
             </div>
             <div style="display: flex; gap: 12px; width: 100%;">
-                <input type="text" placeholder="شاركنا رأيك حول الفصل..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
+                <input type="text" placeholder="شاركنا رأيك حول Ø§Ù„ÙØµÙ„..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
                 <button type="submit" style="padding: 10px 24px; background: var(--color-primary); color: #fff; border: none; border-radius: 30px; font-weight: 700; cursor: pointer;">إرسال</button>
             </div>
         </form>
@@ -2879,14 +2883,14 @@ async function ReaderViewComponent() {
         commentFormHtml = `
         <div class="glass-card" style="padding: 18px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 0, 127, 0.03); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">
-                <i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من كتابة تعليق على هذا الفصل.
+                <i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من كتابة تعليق على هذا Ø§Ù„ÙØµÙ„.
             </p>
             <button class="login-navbar-btn" id="comment-auth-prompt-btn" style="padding: 6px 18px; font-size: 0.8rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول الآن</button>
         </div>
         `;
     }
 
-    // استرجاع وحفظ التقدم
+    // استرجاع ÙˆØ­ÙØ¸ التقدم
     const progressPercent = settings.mode === 'horizontal' ? ((state.activePageIndex + 1) / pages.length) * 100 : 0;
     state.saveReadingProgress(manga.id, chapter.id, 0, progressPercent, state.activePageIndex);
 
@@ -2895,13 +2899,13 @@ async function ReaderViewComponent() {
         <div class="reader-progress-bar" id="reading-bar" style="width: ${progressPercent}%"></div>
         
         <div class="reader-nav">
-            <button class="reader-btn return-to-manga" title="العودة لصفحة المانجا"><i class="fa-solid fa-arrow-right"></i></button>
+            <button class="reader-btn return-to-manga" title="العودة Ù„ØµÙØ­Ø© المانجا"><i class="fa-solid fa-arrow-right"></i></button>
             <div class="reader-title-info">
                 <h2>${manga.title}</h2>
-                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
+                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> Ø£ÙˆÙÙ„Ø§ÙŠÙ†</span>' : ''}</p>
             </div>
             <div class="reader-controls">
-                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ السابق"><i class="fa-solid fa-chevron-right"></i></button>
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
@@ -2910,13 +2914,13 @@ async function ReaderViewComponent() {
                     </button>
                     <div class="dropdown-content">
                         <div class="dropdown-search-box">
-                            <input type="text" id="chapter-drop-search" placeholder="ابحث عن رقم الفصل..." autocomplete="off">
+                            <input type="text" id="chapter-drop-search" placeholder="ابحث عن رقم Ø§Ù„ÙØµÙ„..." autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <div class="dropdown-items-list">
                             ${manga.chapters.map(ch => {
                                 let subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : '') : '';
-                                let mainTitle = ch.title ? ch.title.split(':')[0].trim() : `الفصل ${String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}`;
+                                let mainTitle = ch.title ? ch.title.split(':')[0].trim() : `Ø§Ù„ÙØµÙ„ ${String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}`;
                                 if (subtitle.replace(/[^0-9.]/g, '') === mainTitle.replace(/[^0-9.]/g, '')) {
                                     subtitle = '';
                                 }
@@ -2931,9 +2935,9 @@ async function ReaderViewComponent() {
                     </div>
                 </div>
 
-                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ التالي"><i class="fa-solid fa-chevron-left"></i></button>
                 ${state.userRole === 'admin' ? `
-                <button class="reader-btn translate-chapter-btn" title="ترجمة هذا الفصل" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
+                <button class="reader-btn translate-chapter-btn" title="ترجمة هذا Ø§Ù„ÙØµÙ„" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
                     <i class="fa-solid fa-language"></i>
                 </button>` : ''}
             </div>
@@ -2944,11 +2948,11 @@ async function ReaderViewComponent() {
             
             ${settings.mode === 'horizontal' ? `
                 <div class="horizontal-click-navigator">
-                    <div class="nav-zone nav-zone-right" id="h-prev-zone" title="الصفحة السابقة"><i class="fa-solid fa-chevron-right"></i></div>
-                    <div class="nav-zone nav-zone-left" id="h-next-zone" title="الصفحة التالية"><i class="fa-solid fa-chevron-left"></i></div>
+                    <div class="nav-zone nav-zone-right" id="h-prev-zone" title="Ø§Ù„ØµÙØ­Ø© السابقة"><i class="fa-solid fa-chevron-right"></i></div>
+                    <div class="nav-zone nav-zone-left" id="h-next-zone" title="Ø§Ù„ØµÙØ­Ø© التالية"><i class="fa-solid fa-chevron-left"></i></div>
                 </div>
                 <div class="horizontal-page-indicator">
-                    صفحة ${state.activePageIndex + 1} من ${pages.length}
+                    ØµÙØ­Ø© ${state.activePageIndex + 1} من ${pages.length}
                 </div>
             ` : ''}
         </div>
@@ -2956,14 +2960,14 @@ async function ReaderViewComponent() {
         <div class="chapter-likes-interactive">
             <button class="like-chapter-btn ${isLiked ? 'liked' : ''}" id="chapter-like-btn">
                 <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
-                <span id="like-text">${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
+                <span id="like-text">${isLiked ? 'أعجبني هذا Ø§Ù„ÙØµÙ„!' : 'أعجبني'}</span>
             </button>
         </div>
         
         <div class="reader-bottom-nav">
-            <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i> الفصل السابق</button>
-            <button class="reader-btn return-to-manga" title="العودة لصفحة المانهوا">رجوع إلى المانهوا</button>
-            <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي">الفصل التالي <i class="fa-solid fa-chevron-left"></i></button>
+            <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ السابق"><i class="fa-solid fa-chevron-right"></i> Ø§Ù„ÙØµÙ„ السابق</button>
+            <button class="reader-btn return-to-manga" title="العودة Ù„ØµÙØ­Ø© المانهوا">رجوع إلى المانهوا</button>
+            <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ التالي">Ø§Ù„ÙØµÙ„ التالي <i class="fa-solid fa-chevron-left"></i></button>
         </div>
         
         <button class="reader-settings-toggle-btn" id="settings-panel-toggle" title="تخصيص القراءة"><i class="fa-solid fa-gear"></i></button>
@@ -2973,11 +2977,11 @@ async function ReaderViewComponent() {
                 <label>اتجاه القراءة</label>
                 <div class="setting-buttons">
                     <button class="setting-btn ${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
-                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
+                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">Ø£ÙÙ‚ÙŠ (Manga)</button>
                 </div>
             </div>
             <div class="setting-row">
-                <label>لون الخلفية</label>
+                <label>لون Ø§Ù„Ø®Ù„ÙÙŠØ©</label>
                 <div class="setting-buttons">
                     <button class="setting-btn ${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
                     <button class="setting-btn ${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
@@ -3006,7 +3010,7 @@ async function ReaderViewComponent() {
         
         <div class="main-content" style="max-width: 800px; margin: 0 auto; width: 100%;">
             <div class="comments-container" style="margin-bottom: 50px;">
-                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (${chapterComments.length})</h3>
+                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة Ø§Ù„ÙØµÙ„ (${chapterComments.length})</h3>
                 ${commentFormHtml}
                 <div class="comments-list" id="chapter-comments-list">
                     ${commentsListHtml}
@@ -3041,7 +3045,7 @@ function AdminPanelViewComponent() {
         
         <!-- Date Range + Export Controls -->
         <div class="admin-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255,255,255,0.01);">
-            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-calendar"></i> تصفية:</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-calendar"></i> ØªØµÙÙŠØ©:</span>
             <input type="date" id="admin-date-from" value="${dateFrom}" style="direction: ltr; text-align: right; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
             <span style="color: var(--text-dark);">→</span>
             <input type="date" id="admin-date-to" value="${dateTo}" style="direction: ltr; text-align: right; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
@@ -3073,7 +3077,7 @@ function AdminPanelViewComponent() {
                 </div>
                 ${state.adminStats.suggestions_in_range !== undefined ? `
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> اقتراحات/شكاوى (في النطاق)</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> اقتراحات/شكاوى (ÙÙŠ النطاق)</span>
                     <strong style="font-size: 1.5rem; color: #ff007f; font-weight: 800;">${state.adminStats.suggestions_in_range}</strong>
                 </div>` : state.adminStats.total_suggestions !== undefined ? `
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
@@ -3089,7 +3093,7 @@ function AdminPanelViewComponent() {
         </div>
 
         <div class="admin-tabs">
-            <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
+            <button class="admin-tab" id="tab-add-chapter">Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ جديد</button>
             <button class="admin-tab" id="tab-edit-manga">تعديل مانجا/منهوا</button>
             <button class="admin-tab active" id="tab-live-scraper"><i class="fa-solid fa-terminal"></i> سحب و مراقبة (Pro)</button>
             <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
@@ -3108,11 +3112,11 @@ function AdminPanelViewComponent() {
                 </div>
                 <div id="edit-manga-fields" style="display:none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                     <div class="admin-form-group">
-                        <label>رابط صورة الغلاف (Cover)</label>
-                        <input type="url" id="edit-manga-cover" placeholder="رابط URL للغلاف">
+                        <label>رابط صورة Ø§Ù„ØºÙ„Ø§Ù (Cover)</label>
+                        <input type="url" id="edit-manga-cover" placeholder="رابط URL Ù„Ù„ØºÙ„Ø§Ù">
                     </div>
                     <div class="admin-form-group">
-                        <label>التصنيفات (تفصل بفاصلة)</label>
+                        <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª (ØªÙØµÙ„ Ø¨ÙØ§ØµÙ„Ø©)</label>
                         <input type="text" id="edit-manga-genres" placeholder="أكشن, مغامرة, خيال, عسكري">
                     </div>
                     <div class="admin-form-group">
@@ -3124,12 +3128,12 @@ function AdminPanelViewComponent() {
                         <input type="text" id="edit-manga-alt" placeholder="العنوان بالإنجليزي أو البديل">
                     </div>
                     <div class="admin-form-group">
-                        <label>المؤلف</label>
-                        <input type="text" id="edit-manga-author" placeholder="اسم المؤلف أو الرسام">
+                        <label>Ø§Ù„Ù…Ø¤Ù„Ù</label>
+                        <input type="text" id="edit-manga-author" placeholder="اسم Ø§Ù„Ù…Ø¤Ù„Ù أو الرسام">
                     </div>
                     <div class="admin-form-group">
-                        <label>القصة (الوصف)</label>
-                        <textarea id="edit-manga-synopsis" rows="4" placeholder="وصف القصة"></textarea>
+                        <label>القصة (Ø§Ù„ÙˆØµÙ)</label>
+                        <textarea id="edit-manga-synopsis" rows="4" placeholder="ÙˆØµÙ القصة"></textarea>
                     </div>
 
 
@@ -3147,10 +3151,10 @@ function AdminPanelViewComponent() {
                         <select id="edit-manga-status">
                             <option value="مستمر">مستمر</option>
                             <option value="مكتمل">مكتمل</option>
-                            <option value="متوقف">متوقف</option>
+                            <option value="Ù…ØªÙˆÙ‚Ù">Ù…ØªÙˆÙ‚Ù</option>
                         </select>
                     </div>
-                    <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات</button>
+                    <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-floppy-disk"></i> Ø­ÙØ¸ التعديلات</button>
                     <div id="edit-manga-msg" style="margin-top: 12px; font-size: 0.9rem; text-align: center;"></div>
                 </div>
             </form>
@@ -3180,8 +3184,8 @@ function AdminPanelViewComponent() {
                     <input type="text" id="manga-alt" placeholder="أدخل العنوان بالإنجليزي أو الياباني">
                 </div>
                 <div class="admin-form-group">
-                    <label>المؤلف</label>
-                    <input type="text" id="manga-author" placeholder="أدخل اسم المؤلف أو الرسام" required>
+                    <label>Ø§Ù„Ù…Ø¤Ù„Ù</label>
+                    <input type="text" id="manga-author" placeholder="أدخل اسم Ø§Ù„Ù…Ø¤Ù„Ù أو الرسام" required>
                 </div>
                 <div class="admin-form-group">
                     <label>نوع العمل</label>
@@ -3191,22 +3195,22 @@ function AdminPanelViewComponent() {
                     </select>
                 </div>
                 <div class="admin-form-group">
-                    <label>رابط صورة الغلاف (Cover)</label>
-                    <input type="url" id="manga-cover" placeholder="رابط URL للغلاف، أو اتركه فارغاً لنستخدم صورة افتراضية ممتازة">
+                    <label>رابط صورة Ø§Ù„ØºÙ„Ø§Ù (Cover)</label>
+                    <input type="url" id="manga-cover" placeholder="رابط URL Ù„Ù„ØºÙ„Ø§ÙØŒ أو اتركه ÙØ§Ø±ØºØ§Ù‹ لنستخدم صورة Ø§ÙØªØ±Ø§Ø¶ÙŠØ© ممتازة">
                 </div>
                 <div class="admin-form-group">
-                    <label>رابط صورة الخلفية العريضة (Banner)</label>
-                    <input type="url" id="manga-banner" placeholder="رابط URL للخلفية في صفحة التفاصيل">
+                    <label>رابط صورة Ø§Ù„Ø®Ù„ÙÙŠØ© العريضة (Banner)</label>
+                    <input type="url" id="manga-banner" placeholder="رابط URL Ù„Ù„Ø®Ù„ÙÙŠØ© ÙÙŠ ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„">
                 </div>
                 <div class="admin-form-group">
-                    <label>التصنيفات (تفصل بفاصلة)</label>
+                    <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª (ØªÙØµÙ„ Ø¨ÙØ§ØµÙ„Ø©)</label>
                     <input type="text" id="manga-genres" placeholder="أكشن, مغامرة, خيال, عسكري" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>قصة المانجا (الوصف)</label>
+                    <label>قصة المانجا (Ø§Ù„ÙˆØµÙ)</label>
                     <textarea id="manga-synopsis" rows="5" placeholder="أكتب ملخص القصة والسيناريو الخاص بالمانجا..." required></textarea>
                 </div>
-                <button type="submit" class="admin-submit-btn">حفظ وإدراج العمل الجديد</button>
+                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ وإدراج العمل الجديد</button>
             </form>
         </div>
 
@@ -3219,18 +3223,18 @@ function AdminPanelViewComponent() {
                     </select>
                 </div>
                 <div class="admin-form-group">
-                    <label>رقم الفصل</label>
-                    <input type="number" step="any" id="chap-number" placeholder="رقم الفصل، مثلاً: 4 أو 4.5" required>
+                    <label>رقم Ø§Ù„ÙØµÙ„</label>
+                    <input type="number" step="any" id="chap-number" placeholder="رقم Ø§Ù„ÙØµÙ„ØŒ مثلاً: 4 أو 4.5" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>عنوان الفصل (اختياري)</label>
-                    <input type="text" id="chap-title" placeholder="أدخل اسماً للفصل، مثلاً: البداية الجديدة">
+                    <label>عنوان Ø§Ù„ÙØµÙ„ (اختياري)</label>
+                    <input type="text" id="chap-title" placeholder="أدخل اسماً Ù„Ù„ÙØµÙ„ØŒ مثلاً: البداية الجديدة">
                 </div>
                 <div class="admin-form-group">
-                    <label>روابط صفحات المانجا (رابط واحد في كل سطر)</label>
-                    <textarea id="chap-images" rows="8" placeholder="ضع رابط الصورة المباشر لكل صفحة، سطر تلو سطر.&#10;إذا تركته فارغاً، سنقوم بتوليد صفحات تجريبية فائقة الجمال تلقائياً لتجربة القراءة أوفلاين."></textarea>
+                    <label>روابط ØµÙØ­Ø§Øª المانجا (رابط واحد ÙÙŠ كل سطر)</label>
+                    <textarea id="chap-images" rows="8" placeholder="ضع رابط الصورة المباشر لكل ØµÙØ­Ø©ØŒ سطر تلو سطر.&#10;إذا تركته ÙØ§Ø±ØºØ§Ù‹ØŒ سنقوم بتوليد ØµÙØ­Ø§Øª تجريبية ÙØ§Ø¦Ù‚Ø© الجمال تلقائياً لتجربة القراءة Ø£ÙˆÙÙ„Ø§ÙŠÙ†."></textarea>
                 </div>
-                <button type="submit" class="admin-submit-btn">حفظ ونشر الفصل الجديد</button>
+                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ ونشر Ø§Ù„ÙØµÙ„ الجديد</button>
             </form>
         </div>
 
@@ -3238,20 +3242,20 @@ function AdminPanelViewComponent() {
         <div class="admin-form-panel" id="panel-live-scraper" style="display:none; text-align: right;">
             <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px; margin-bottom:20px;">
                 <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-robot"></i> المحدث التلقائي (Auto-Updater)</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">يتحكم في تشغيل وإيقاف الروبوت الذي يبحث عن الفصول الجديدة للمانهوات الموجودة في الموقع بشكل تلقائي.</p>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">يتحكم ÙÙŠ تشغيل ÙˆØ¥ÙŠÙ‚Ø§Ù الروبوت الذي يبحث عن Ø§Ù„ÙØµÙˆÙ„ الجديدة للمانهوات الموجودة ÙÙŠ الموقع بشكل تلقائي.</p>
                 
                 <div style="display:flex; align-items:center; gap:15px;">
                     <label class="switch">
                         <input type="checkbox" id="auto-updater-toggle" onchange="toggleAutoUpdater()">
                         <span class="slider round"></span>
                     </label>
-                    <span id="auto-updater-status" style="font-weight:bold; color:#ff4444;">متوقف</span>
+                    <span id="auto-updater-status" style="font-weight:bold; color:#ff4444;">Ù…ØªÙˆÙ‚Ù</span>
                 </div>
             </div>
 
             <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px;">
                 <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-terminal"></i> السحب المباشر (Live Terminal)</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">اسحب أي مانهوا يدوياً وراقب تقدم العمليات هنا في الوقت الفعلي.</p>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">اسحب أي مانهوا يدوياً وراقب تقدم العمليات هنا ÙÙŠ الوقت Ø§Ù„ÙØ¹Ù„ÙŠ.</p>
                 
                 <div style="display:flex; gap:10px; margin-bottom:20px;">
                     <input type="text" id="live-scrape-url" placeholder="أدخل رابط المانهوا هنا..." style="flex:1; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; border-radius:5px; outline:none;">
@@ -3273,14 +3277,14 @@ function AdminPanelViewComponent() {
         <div class="admin-form-panel" id="panel-site-settings" style="display:none; text-align: right;">
             <form id="site-settings-form">
                 <div class="admin-form-group">
-                    <label>معرف تطبيق جوجل (Google Client ID)</label>
+                    <label>Ù…Ø¹Ø±Ù تطبيق جوجل (Google Client ID)</label>
                     <input type="text" id="setting-google-id" value="${state.adminConfig?.google_client_id || GOOGLE_CLIENT_ID}" placeholder="مثال: 123456789-abc123xyz.apps.googleusercontent.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Google Cloud Console لتفعيل تسجيل الدخول بجيميل.</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Google Cloud Console Ù„ØªÙØ¹ÙŠÙ„ تسجيل الدخول بجيميل.</span>
                 </div>
                 <div class="admin-form-group">
-                    <label>معرف تطبيق فيسبوك (Facebook App ID)</label>
+                    <label>Ù…Ø¹Ø±Ù تطبيق ÙÙŠØ³Ø¨ÙˆÙƒ (Facebook App ID)</label>
                     <input type="text" id="setting-facebook-id" value="${state.adminConfig?.facebook_app_id || FACEBOOK_APP_ID}" placeholder="مثال: 123456789012345" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Meta Developers لتفعيل تسجيل الدخول بفيسبوك.</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Meta Developers Ù„ØªÙØ¹ÙŠÙ„ تسجيل الدخول Ø¨ÙÙŠØ³Ø¨ÙˆÙƒ.</span>
                 </div>
                 
                 <h3 style="color: var(--text-main); margin-top: 30px; margin-bottom: 15px; border-right: 4px solid var(--color-primary); padding-right: 10px; font-size: 1.15rem; font-weight: 800;"><i class="fa-solid fa-envelope" style="color: var(--color-primary); margin-left: 6px;"></i> إعدادات خادم البريد (SMTP)</h3>
@@ -3290,7 +3294,7 @@ function AdminPanelViewComponent() {
                     <input type="text" id="setting-smtp-host" value="${state.adminConfig?.smtp_host || 'smtp.gmail.com'}" placeholder="smtp.gmail.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>منفذ SMTP (SMTP Port)</label>
+                    <label>Ù…Ù†ÙØ° SMTP (SMTP Port)</label>
                     <input type="text" id="setting-smtp-port" value="${state.adminConfig?.smtp_port || '587'}" placeholder="587" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 <div class="admin-form-group">
@@ -3300,7 +3304,7 @@ function AdminPanelViewComponent() {
                 </div>
                 <div class="admin-form-group">
                     <label>كلمة مرور التطبيق (SMTP Password / Gmail App Password)</label>
-                    <input type="password" id="setting-smtp-pass" value="${state.adminConfig?.smtp_pass || ''}" placeholder="كلمة مرور التطبيق المكونة من 16 حرفاً" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
+                    <input type="password" id="setting-smtp-pass" value="${state.adminConfig?.smtp_pass || ''}" placeholder="كلمة مرور التطبيق المكونة من 16 Ø­Ø±ÙØ§Ù‹" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
                     <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">إذا كنت تستخدم Gmail، يرجى إنشاء كلمة مرور تطبيق (App Password) من إعدادات حساب Google الخاص بك.</span>
                 </div>
                 <div class="admin-form-group">
@@ -3308,14 +3312,14 @@ function AdminPanelViewComponent() {
                     <input type="text" id="setting-smtp-sender" value="${state.adminConfig?.smtp_sender || 'KAIRO/منهوا <noreply@kairo-manhua.com>'}" placeholder="KAIRO/منهوا &lt;noreply@kairo-manhua.com&gt;" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 
-                <button type="submit" class="admin-submit-btn">حفظ الإعدادات وتطبيقها</button>
+                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ الإعدادات وتطبيقها</button>
             </form>
         </div>
     </div>
     `;
 }
 
-// صفحة المفضلة والمتابعة (Bookmarks)
+// ØµÙØ­Ø© Ø§Ù„Ù…ÙØ¶Ù„Ø© والمتابعة (Bookmarks)
 function BookmarksViewComponent() {
     const activeTab = state.activeGenre;
     const currentTab = ['reading', 'plan', 'completed', 'all'].includes(activeTab) ? activeTab : 'all';
@@ -3335,8 +3339,8 @@ function BookmarksViewComponent() {
         listHtml = `
         <div class="empty-state empty-state-glow">
             <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 15px;"></i>
-            <h3>المفضلة فارغة</h3>
-            <p>تصفح الأعمال وقم بإضافتها لمفضلتك لتظهر هنا وتتابعها أولاً بأول.</p>
+            <h3>Ø§Ù„Ù…ÙØ¶Ù„Ø© ÙØ§Ø±ØºØ©</h3>
+            <p>ØªØµÙØ­ الأعمال وقم Ø¨Ø¥Ø¶Ø§ÙØªÙ‡Ø§ Ù„Ù…ÙØ¶Ù„ØªÙƒ لتظهر هنا وتتابعها أولاً بأول.</p>
         </div>
         `;
     } else {
@@ -3356,7 +3360,7 @@ function BookmarksViewComponent() {
                     <h3 class="manga-card-title">${manga.title}</h3>
                     <div class="manga-card-chapter">
                         <span>تقدم القراءة</span>
-                        <span class="chap-num">فصل ${state.progress[manga.id] ? state.progress[manga.id].chapterId : 'لم تبدأ'}</span>
+                        <span class="chap-num">ÙØµÙ„ ${state.progress[manga.id] ? state.progress[manga.id].chapterId : 'لم تبدأ'}</span>
                     </div>
                 </div>
             </div>
@@ -3368,12 +3372,12 @@ function BookmarksViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">مكتبتك ومفضلتك <span>الخاصة</span></h2>
+            <h2 class="section-title">مكتبتك ÙˆÙ…ÙØ¶Ù„ØªÙƒ <span>الخاصة</span></h2>
         </div>
         <div class="bookmarks-tabs">
             <button class="bookmark-tab ${currentTab === 'all' ? 'active' : ''}" data-tab="all"><i class="fa-solid fa-layer-group"></i> الكل</button>
             <button class="bookmark-tab ${currentTab === 'reading' ? 'active' : ''}" data-tab="reading"><i class="fa-solid fa-book-open-reader"></i> أقرأه حالياً</button>
-            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan"><i class="fa-solid fa-clock"></i> أرغب في قراءته</button>
+            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan"><i class="fa-solid fa-clock"></i> أرغب ÙÙŠ قراءته</button>
             <button class="bookmark-tab ${currentTab === 'completed' ? 'active' : ''}" data-tab="completed"><i class="fa-solid fa-circle-check"></i> مكتمل</button>
         </div>
         ${listHtml}
@@ -3381,7 +3385,7 @@ function BookmarksViewComponent() {
     `;
 }
 
-// صفحة التحميلات والقراءة أوفلاين (Downloads)
+// ØµÙØ­Ø© التحميلات والقراءة Ø£ÙˆÙÙ„Ø§ÙŠÙ† (Downloads)
 async function DownloadsViewComponent() {
     const localDownloads = await getAllDownloadsOffline();
     
@@ -3390,31 +3394,31 @@ async function DownloadsViewComponent() {
         listHtml = `
         <div class="empty-state">
             <i class="fa-solid fa-circle-down" style="color:var(--border-color)"></i>
-            <h3>لا توجد فصول محملة</h3>
-            <p>قم بالدخول لصفحة أي مانجا واضغط على زر التحميل بجوار الفصل ليتم حفظه على جهازك للاستخدام دون إنترنت.</p>
+            <h3>لا توجد ÙØµÙˆÙ„ محملة</h3>
+            <p>قم بالدخول Ù„ØµÙØ­Ø© أي مانجا واضغط على زر التحميل بجوار Ø§Ù„ÙØµÙ„ ليتم Ø­ÙØ¸Ù‡ على جهازك للاستخدام دون إنترنت.</p>
         </div>
         `;
     } else {
         listHtml = `
         <div class="chapters-section">
             <div class="chapters-header">
-                <h3>الفصول المحملة للاستخدام أوفلاين</h3>
-                <span>إجمالي الفصول: ${localDownloads.length}</span>
+                <h3>Ø§Ù„ÙØµÙˆÙ„ المحملة للاستخدام Ø£ÙˆÙÙ„Ø§ÙŠÙ†</h3>
+                <span>إجمالي Ø§Ù„ÙØµÙˆÙ„: ${localDownloads.length}</span>
             </div>
             <div class="chapters-list">
         `;
         
         localDownloads.forEach(d => {
             const manga = state.mangas.find(m => m.id === d.mangaId);
-            const mangaTitle = manga ? manga.title : 'مانجا غير معروفة';
+            const mangaTitle = manga ? manga.title : 'مانجا غير Ù…Ø¹Ø±ÙˆÙØ©';
             listHtml += `
             <div class="chapter-item" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}">
                 <div class="chapter-info">
-                    <span class="chapter-name">${mangaTitle} - الفصل ${d.chapterId}</span>
+                    <span class="chapter-name">${mangaTitle} - Ø§Ù„ÙØµÙ„ ${d.chapterId}</span>
                     <span class="chapter-date" style="color:var(--color-secondary);"><i class="fa-solid fa-wifi-slash"></i> متاح دون اتصال</span>
                 </div>
                 <div class="chapter-actions-inline">
-                    <button class="download-btn downloaded delete-download-btn" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}" title="حذف الملفات المحملة">
+                    <button class="download-btn downloaded delete-download-btn" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}" title="Ø­Ø°Ù Ø§Ù„Ù…Ù„ÙØ§Øª المحملة">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
@@ -3431,7 +3435,7 @@ async function DownloadsViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">مركز التحميلات <span>أوفلاين</span></h2>
+            <h2 class="section-title">مركز التحميلات <span>Ø£ÙˆÙÙ„Ø§ÙŠÙ†</span></h2>
         </div>
         ${listHtml}
     </div>
@@ -3462,7 +3466,7 @@ function ResetPasswordViewComponent() {
 }
 
 // ==========================================
-// 4.4.7. المكافآت اليومية
+// 4.4.7. Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية
 // ==========================================
 
 function DailyRewardModalComponent() {
@@ -3475,8 +3479,8 @@ function DailyRewardModalComponent() {
                 <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
                 <div class="reward-header">
                     <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
-                    <h2>المكافآت اليومية</h2>
-                    <p class="reward-streak-text">🔥 المكافآت اليومية غير متوفرة حالياً</p>
+                    <h2>Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية</h2>
+                    <p class="reward-streak-text">🔥 Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية غير Ù…ØªÙˆÙØ±Ø© حالياً</p>
                 </div>
                 <p style="text-align:center;padding:20px;color:var(--text-muted);">هذه الميزة قيد الإعداد</p>
             </div>
@@ -3493,8 +3497,8 @@ function DailyRewardModalComponent() {
             <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
             <div class="reward-header">
                 <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
-                <h2>المكافآت اليومية</h2>
-                <p class="reward-streak-text">🔥 اليوم ${currentDay} من 7 — ${streak} يوم متتالٍ</p>
+                <h2>Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية</h2>
+                <p class="reward-streak-text">🔥 اليوم ${currentDay} من 7 — ${streak} يوم Ù…ØªØªØ§Ù„Ù</p>
             </div>
             <div class="reward-cards-grid">
                 ${rewards.map(r => {
@@ -3509,7 +3513,7 @@ function DailyRewardModalComponent() {
                     if (isWeekBonus) cardClass += ' week-bonus';
                     return `
                     <div class="${cardClass}">
-                        ${isWeekBonus ? '<span class="week-badge">مكافأة الأسبوع</span>' : ''}
+                        ${isWeekBonus ? '<span class="week-badge">Ù…ÙƒØ§ÙØ£Ø© الأسبوع</span>' : ''}
                         <div class="reward-card-day">اليوم ${r.day}</div>
                         <div class="reward-card-points"><i class="fa-solid fa-star"></i> ${r.points}</div>
                         <div class="reward-card-status">
@@ -3519,7 +3523,7 @@ function DailyRewardModalComponent() {
                     `;
                 }).join('')}
             </div>
-            ${canClaim ? '<button class="claim-reward-btn" id="claim-reward-btn"><i class="fa-solid fa-gift"></i> جمع المكافأة</button>' : '<p class="reward-claimed-msg">✅ تم جمع مكافأة اليوم، عد غداً ليوم جديد!</p>'}
+            ${canClaim ? '<button class="claim-reward-btn" id="claim-reward-btn"><i class="fa-solid fa-gift"></i> جمع Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©</button>' : '<p class="reward-claimed-msg">✅ تم جمع Ù…ÙƒØ§ÙØ£Ø© اليوم، عد غداً ليوم جديد!</p>'}
         </div>
     </div>
     `;
@@ -3617,7 +3621,7 @@ function getFilteredMangas() {
         result = [...result].reverse();
     } else if (s.filterSort === 'التقييم') {
         result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (s.filterSort === 'عدد الفصول') {
+    } else if (s.filterSort === 'عدد Ø§Ù„ÙØµÙˆÙ„') {
         result = [...result].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
     }
     if (s.filterTime === 'today') {
@@ -3726,15 +3730,15 @@ function updateGridOnly() {
         filtered.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
     } else if (s.filterSort === 'الأعلى تقييماً') {
         filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
-    } else if (s.filterSort === 'الأكثر فصولاً') {
+    } else if (s.filterSort === 'الأكثر ÙØµÙˆÙ„Ø§Ù‹') {
         filtered.sort((a,b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
-    } else if (s.filterSort === 'الأقل فصولاً') {
+    } else if (s.filterSort === 'الأقل ÙØµÙˆÙ„Ø§Ù‹') {
         filtered.sort((a,b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
     } else if (s.filterSort === 'الأكثر شعبية') {
         filtered.sort((a,b) => (b.views||0) - (a.views||0));
     }
 
-    gridContainer.innerHTML = MangaGridComponent("تصفح المانهوا", filtered);
+    gridContainer.innerHTML = MangaGridComponent("ØªØµÙØ­ المانهوا", filtered);
 }
 
 async function renderApp() {
@@ -3744,7 +3748,7 @@ async function renderApp() {
     const loader = document.getElementById('initial-loader');
     if (loader) loader.remove();
 
-    // 1. تصفية المانجا
+    // 1. ØªØµÙÙŠØ© المانجا
     let filteredMangas = getFilteredMangas();
     const s = state;
     if (s.searchQuery) {
@@ -3791,7 +3795,7 @@ async function renderApp() {
             filteredMangas = [...filteredMangas].reverse();
         } else if (s.filterSort === 'التقييم') {
             filteredMangas = [...filteredMangas].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        } else if (s.filterSort === 'عدد الفصول') {
+        } else if (s.filterSort === 'عدد Ø§Ù„ÙØµÙˆÙ„') {
             filteredMangas = [...filteredMangas].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
         }
     }
@@ -3802,8 +3806,8 @@ async function renderApp() {
         if (state.currentView === 'home') {
             const s = state;
             const searchTypes = [
-                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
-                {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
+                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'Ø§Ù„Ù…Ø¤Ù„Ù'},
+                {id:'tags', label:'الرسوم'}, {id:'desc', label:'Ø§Ù„ÙˆØµÙ'}
             ];
             const searchTypeHtml = searchTypes.map(t => 
                 `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
@@ -3817,8 +3821,8 @@ async function renderApp() {
             viewHtml = `
             <div class="mangatime-browse-container">
                 <div class="mangatime-hero-section">
-                    <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
-                    <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
+                    <h1 class="mangatime-hero-title">ØªØµÙØ­ عالم المانجا</h1>
+                    <p class="mangatime-hero-subtitle">Ø§ÙƒØªØ´Ù عملك التالي بين Ø¢Ù„Ø§Ù السلاسل</p>
                 </div>
                 <div class="mangatime-search-wrapper">
                     <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
@@ -3852,7 +3856,7 @@ async function renderApp() {
                             <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
                             <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
                             <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
-                            <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
+                            <option value="Ù…ØªÙˆÙ‚ÙØ©" ${s.filterStatus==='Ù…ØªÙˆÙ‚ÙØ©'?'selected':''}>Ù…ØªÙˆÙ‚ÙØ©</option>
                         </select>
                     </div>
                     <div class="glass-select-wrapper">
@@ -3863,7 +3867,7 @@ async function renderApp() {
                             <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
                             <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
                             <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
-                            <option value="عدد الفصول" ${s.filterSort==='عدد الفصول'?'selected':''}>عدد الفصول</option>
+                            <option value="عدد Ø§Ù„ÙØµÙˆÙ„" ${s.filterSort==='عدد Ø§Ù„ÙØµÙˆÙ„'?'selected':''}>عدد Ø§Ù„ÙØµÙˆÙ„</option>
                         </select>
                     </div>
                     <div class="glass-input-group">
@@ -4046,7 +4050,7 @@ function updateBottomNavActiveState() {
 
 
 // ==========================================
-// 4.4.5. معاينة ملف المستخدم
+// 4.4.5. معاينة Ù…Ù„Ù المستخدم
 // ==========================================
 
 async function ProfileViewComponent() {
@@ -4107,7 +4111,7 @@ async function ProfileViewComponent() {
                 <div class="profile-stats-row">
                     <div class="profile-stat"><span class="stat-value">${profile.points.toLocaleString()}</span><span class="stat-label">نقاط</span></div>
                     <div class="profile-stat"><span class="stat-value">${profile.level}</span><span class="stat-label">المستوى</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.chapters_read}</span><span class="stat-label">فصل مقروء</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.chapters_read}</span><span class="stat-label">ÙØµÙ„ مقروء</span></div>
                     <div class="profile-stat"><span class="stat-value">${profile.followers}</span><span class="stat-label">متابعون</span></div>
                     <div class="profile-stat"><span class="stat-value">${profile.following}</span><span class="stat-label">يتابع</span></div>
                     <div class="profile-stat"><span class="stat-value">${profile.streak_days || 0}</span><span class="stat-label">streak 🔥</span></div>
@@ -4123,7 +4127,7 @@ async function ProfileViewComponent() {
             <div class="reading-stats-section" style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;padding:16px;background:var(--bg-surface);border-radius:12px;border:1px solid var(--border-color);">
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.chapters_read || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">إجمالي الفصول</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">إجمالي Ø§Ù„ÙØµÙˆÙ„</div>
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.avg_rating ? profile.avg_rating.toFixed(1) : '—'}</div>
@@ -4131,11 +4135,11 @@ async function ProfileViewComponent() {
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.unique_manga || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">مانجا مختلفة</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">مانجا Ù…Ø®ØªÙ„ÙØ©</div>
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.weekly_pace || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">فصل/أسبوع</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">ÙØµÙ„/أسبوع</div>
                 </div>
             </div>
 
@@ -4152,7 +4156,7 @@ async function ProfileViewComponent() {
                         <img src="${a.cover || DEFAULT_COVER_URL}" class="activity-cover">
                         <div class="activity-info">
                             <strong>${a.title}</strong>
-                            <span>الفصل ${a.chapter_id}</span>
+                            <span>Ø§Ù„ÙØµÙ„ ${a.chapter_id}</span>
                             <small>${timeAgo(a.time)}</small>
                         </div>
                     </div>
@@ -4160,7 +4164,7 @@ async function ProfileViewComponent() {
             </div>
 
             <div class="profile-tab-content" id="profile-tab-library">
-                ${library.length === 0 ? '<div class="empty-state"><p>لا توجد مانجا في المكتبة</p></div>' : `<div class="profile-library-grid">${library.map(m => `
+                ${library.length === 0 ? '<div class="empty-state"><p>لا توجد مانجا ÙÙŠ المكتبة</p></div>' : `<div class="profile-library-grid">${library.map(m => `
                     <div class="library-card" data-manga="${m.manga_id}">
                         <img src="${m.cover || DEFAULT_COVER_URL}" class="library-card-cover">
                         <span class="library-card-title">${m.title}</span>
@@ -4197,12 +4201,12 @@ async function ProfileViewComponent() {
         `;
     } catch (e) {
         console.error('Profile error:', e);
-        return '<div class="empty-state"><p>حدث خطأ في تحميل الملف الشخصي</p></div>';
+        return '<div class="empty-state"><p>حدث خطأ ÙÙŠ تحميل Ø§Ù„Ù…Ù„Ù الشخصي</p></div>';
     }
 }
 
 // ==========================================
-// 4.4.6. صفحة الإعلانات
+// 4.4.6. ØµÙØ­Ø© الإعلانات
 // ==========================================
 
 async function AnnouncementsViewComponent() {
@@ -4235,7 +4239,7 @@ async function AnnouncementsViewComponent() {
 }
 
 // ==========================================
-// 4.4.7. صفحة المتجر
+// 4.4.7. ØµÙØ­Ø© المتجر
 // ==========================================
 
 async function StoreViewComponent() {
@@ -4254,14 +4258,14 @@ async function StoreViewComponent() {
                     return `
                     <div class="store-item" data-id="${item.id}" style="background:var(--bg-surface);border-radius:16px;overflow:hidden;border:1px solid var(--border-color);transition:var(--transition-fast);">
                         <div style="padding:24px;text-align:center;">
-                            <div style="font-size:3rem;margin-bottom:12px;">${item.icon || '🎁'}</div>
+                            <div style="font-size:3rem;margin-bottom:12px;">${item.icon || 'ðŸŽ'}</div>
                             <h3 style="margin:0 0 8px;font-size:1rem;">${item.name}</h3>
                             <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px;">${item.description || ''}</p>
                             <div style="font-size:1.1rem;font-weight:700;color:var(--color-secondary);margin-bottom:12px;">
                                 <i class="fa-solid fa-star"></i> ${item.cost}
                             </div>
                             <button class="store-buy-btn" data-id="${item.id}" ${canBuy ? '' : 'disabled'} style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:700;cursor:${canBuy ? 'pointer' : 'not-allowed'};background:${canBuy ? 'var(--color-primary)' : 'var(--border-color)'};color:#fff;">
-                                ${canBuy ? 'شراء' : 'نقاط غير كافية'}
+                                ${canBuy ? 'شراء' : 'نقاط غير ÙƒØ§ÙÙŠØ©'}
                             </button>
                         </div>
                     </div>`;
@@ -4275,14 +4279,14 @@ async function StoreViewComponent() {
 }
 
 // ==========================================
-// 4.4.8. الشات العام (واجهة فقط)
+// 4.4.8. الشات العام (واجهة ÙÙ‚Ø·)
 // ==========================================
 
 function ChatViewComponent() {
     const demoMsgs = [
-        { user: 'Kairo', text: 'مرحباً بالجميع في الشات! 🙌', time: '02:30', mine: false },
+        { user: 'Kairo', text: 'مرحباً بالجميع ÙÙŠ الشات! 🙌', time: '02:30', mine: false },
         { user: 'ReadMaster', text: 'هل هناك مانجا جديدة اليوم؟', time: '02:31', mine: false },
-        { user: 'أنت', text: 'أهلاً! نعم فيه إصدارات جديدة', time: '02:32', mine: true },
+        { user: 'أنت', text: 'أهلاً! نعم ÙÙŠÙ‡ إصدارات جديدة', time: '02:32', mine: true },
     ];
     const msgsHtml = demoMsgs.map(m => `
         <div class="chat-msg ${m.mine ? 'mine' : 'other'}">
@@ -4298,7 +4302,7 @@ function ChatViewComponent() {
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
                 ${msgsHtml}
-                ${!isLoggedIn ? '<div class="empty-state" style="margin:auto;"><p>سجّل الدخول للمشاركة في الشات</p></div>' : ''}
+                ${!isLoggedIn ? '<div class="empty-state" style="margin:auto;"><p>سجّل الدخول للمشاركة ÙÙŠ الشات</p></div>' : ''}
             </div>
             <div class="chat-input-area">
                 <input type="text" id="chat-input" placeholder="${isLoggedIn ? 'اكتب رسالتك...' : 'سجّل الدخول أولاً'}" ${!isLoggedIn ? 'disabled' : ''}>
@@ -4309,7 +4313,7 @@ function ChatViewComponent() {
 }
 
 // ==========================================
-// 4.4.9. صفحة البحث المتقدم
+// 4.4.9. ØµÙØ­Ø© البحث المتقدم
 // ==========================================
 
 function getLastChapterNum(m) {
@@ -4331,7 +4335,7 @@ function getTypeLabel(m) {
 }
 
 function getStatusLabel(s) {
-    const labels = { 'ongoing': 'مستمرة', 'completed': 'مكتملة', 'hiatus': 'متوقفة', 'cancelled': 'ملغية', 'مستمرة': 'مستمرة', 'مكتملة': 'مكتملة', 'متوقفة': 'متوقفة' };
+    const labels = { 'ongoing': 'مستمرة', 'completed': 'مكتملة', 'hiatus': 'Ù…ØªÙˆÙ‚ÙØ©', 'cancelled': 'ملغية', 'مستمرة': 'مستمرة', 'مكتملة': 'مكتملة', 'Ù…ØªÙˆÙ‚ÙØ©': 'Ù…ØªÙˆÙ‚ÙØ©' };
     return labels[s] || s;
 }
 
@@ -4358,11 +4362,11 @@ function SearchViewComponent() {
         const q = query.toLowerCase();
         if (scope === 'العنوان') {
             results = results.filter(m => m.title.toLowerCase().includes(q));
-        } else if (scope === 'المؤلف') {
+        } else if (scope === 'Ø§Ù„Ù…Ø¤Ù„Ù') {
             results = results.filter(m => (m.author || '').toLowerCase().includes(q));
         } else if (scope === 'الوسوم') {
             results = results.filter(m => (m.genres || []).some(g => g.toLowerCase().includes(q)));
-        } else if (scope === 'الوصف') {
+        } else if (scope === 'Ø§Ù„ÙˆØµÙ') {
             results = results.filter(m => (m.synopsis || '').toLowerCase().includes(q));
         } else {
             results = results.filter(m =>
@@ -4425,9 +4429,9 @@ function SearchViewComponent() {
         results.sort((a, b) => (b.year || 0) - (a.year || 0));
     } else if (sortBy === 'الأعلى تقييماً') {
         results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (sortBy === 'الأكثر فصولاً') {
+    } else if (sortBy === 'الأكثر ÙØµÙˆÙ„Ø§Ù‹') {
         results.sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
-    } else if (sortBy === 'الأقل فصولاً') {
+    } else if (sortBy === 'الأقل ÙØµÙˆÙ„Ø§Ù‹') {
         results.sort((a, b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
     }
 
@@ -4438,7 +4442,7 @@ function SearchViewComponent() {
 
     const itemsHtml = pageResults.map(m => {
         const lastCh = getLastChapterNum(m);
-        const chLabel = lastCh != null ? `الفصل ${lastCh}` : (m.chapters ? `${m.chapters.length} فصول` : '');
+        const chLabel = lastCh != null ? `Ø§Ù„ÙØµÙ„ ${lastCh}` : (m.chapters ? `${m.chapters.length} ÙØµÙˆÙ„` : '');
 
         if (viewMode === 'list') {
             return `
@@ -4491,17 +4495,17 @@ function SearchViewComponent() {
         }).join('')}</div>`;
     }
 
-    const scopeTabs = ['الكل', 'العنوان', 'المؤلف', 'الوسوم', 'الوصف'];
-    const filterStatuses = ['الكل', 'مستمرة', 'مكتملة', 'متوقفة'];
+    const scopeTabs = ['الكل', 'العنوان', 'Ø§Ù„Ù…Ø¤Ù„Ù', 'الوسوم', 'Ø§Ù„ÙˆØµÙ'];
+    const filterStatuses = ['الكل', 'مستمرة', 'مكتملة', 'Ù…ØªÙˆÙ‚ÙØ©'];
     const filterTypes = ['الكل', 'مانجا', 'مانهوا', 'مانها'];
-    const sortOptions = ['الأكثر شعبية', 'الأحدث', 'الأعلى تقييماً', 'الأكثر فصولاً', 'الأقل فصولاً'];
+    const sortOptions = ['الأكثر شعبية', 'الأحدث', 'الأعلى تقييماً', 'الأكثر ÙØµÙˆÙ„Ø§Ù‹', 'الأقل ÙØµÙˆÙ„Ø§Ù‹'];
 
     return `
     <div class="browse-page">
         <div class="browse-hero">
             <h1 class="browse-hero-title">عالم المانجا</h1>
-            <p class="browse-hero-sub">تصفّح عالم المانجا</p>
-            <p class="browse-hero-desc">اكتشف عملك التالي بين آلاف السلاسل</p>
+            <p class="browse-hero-sub">ØªØµÙÙ‘Ø­ عالم المانجا</p>
+            <p class="browse-hero-desc">Ø§ÙƒØªØ´Ù عملك التالي بين Ø¢Ù„Ø§Ù السلاسل</p>
         </div>
 
         <div class="browse-toolbar">
@@ -4538,7 +4542,7 @@ function SearchViewComponent() {
                 </select>
             </div>
             <div class="browse-filter-group">
-                <label>التصنيفات</label>
+                <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</label>
                 <select class="browse-filter-select" id="browse-filter-genre">
                     <option value="الكل" ${activeGenre === 'الكل' ? 'selected' : ''}>الكل</option>
                     ${allGenres.map(g => `<option value="${g}" ${g === activeGenre ? 'selected' : ''}>${g}</option>`).join('')}
@@ -4569,11 +4573,11 @@ function SearchViewComponent() {
                 <input type="number" class="browse-filter-input" id="browse-filter-rating-max" value="${filterRatingMax}" placeholder="5" min="0" max="5" step="0.5">
             </div>
             <div class="browse-filter-group">
-                <label>أقل فصول</label>
+                <label>أقل ÙØµÙˆÙ„</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-ch-min" value="${filterChaptersMin}" placeholder="0">
             </div>
             <div class="browse-filter-group">
-                <label>أكثر فصول</label>
+                <label>أكثر ÙØµÙˆÙ„</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-ch-max" value="${filterChaptersMax}" placeholder="1000">
             </div>
         </div>
@@ -4602,7 +4606,7 @@ async function LeaderboardViewComponent() {
         const data = await res.json();
         if (!data || data.length === 0) return '<div class="empty-state"><p>لا يوجد متصدرين بعد</p></div>';
 
-        // معرفة موقع المستخدم الحالي
+        // Ù…Ø¹Ø±ÙØ© موقع المستخدم الحالي
         let myRankHtml = '';
         if (state.sessionToken && state.userEmail) {
             const myUsername = getUserHandle(state.userEmail);
@@ -4642,7 +4646,7 @@ async function LeaderboardViewComponent() {
         const rest = displayData.slice(3);
         
         const medalEmojis = ['🥇', '🥈', '🥉'];
-        const stickers = ['✦', '✧', '⭐', '💫', '✨'];
+        const stickers = ['✦', '✧', 'â­', '💫', '✨'];
         const tabs = [
             { key: 'all', label: 'كل الوقت' },
             { key: 'monthly', label: 'شهري' },
@@ -4650,7 +4654,7 @@ async function LeaderboardViewComponent() {
         ];
         const activeTab = state.leaderboardTab || 'all';
         
-        const flt = (s) => `<span style="position:absolute;font-size:${1.5 + Math.random() * 1.5}rem;opacity:${0.2 + Math.random() * 0.3};color:var(--color-primary);pointer-events:none;user-select:none;${s}">${['★','✦','✧','⭐','💫','✨','⚡','🔥','💎','🎯'][Math.floor(Math.random()*10)]}</span>`;
+        const flt = (s) => `<span style="position:absolute;font-size:${1.5 + Math.random() * 1.5}rem;opacity:${0.2 + Math.random() * 0.3};color:var(--color-primary);pointer-events:none;user-select:none;${s}">${['★','✦','✧','â­','💫','✨','⚡','🔥','💎','🎯'][Math.floor(Math.random()*10)]}</span>`;
         return `
         <div class="leaderboard-page" style="position:relative;overflow:hidden;">
             ${flt('top:5%;left:3%;')}${flt('top:12%;right:5%;')}${flt('top:25%;left:6%;')}${flt('top:40%;right:3%;')}${flt('top:55%;left:4%;')}${flt('top:70%;right:6%;')}${flt('top:85%;left:5%;')}${flt('top:15%;right:8%;')}${flt('top:30%;left:8%;')}${flt('top:50%;right:4%;')}
@@ -4699,19 +4703,19 @@ async function LeaderboardViewComponent() {
                         <span class="lb-avatar" style="background:${getRankColor(u.level)}">${getUserInitial(u.username)}</span>
                         <span class="lb-name">${u.username}</span>
                         <span class="lb-rank-name">${u.rank_name}</span>
-                        <span class="lb-stats">${u.chapters_read} فصل</span>
+                        <span class="lb-stats">${u.chapters_read} ÙØµÙ„</span>
                         <span class="lb-points">${u.points.toLocaleString()} <i class="fa-solid fa-star" style="font-size:0.6rem;"></i></span>
                     </div>
                 `).join('')}
             </div>
             <div style="text-align:center;margin-top:24px;">
-                <button class="header-logo" id="lb-home-btn" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--color-secondary);">← العودة للرئيسية</button>
+                <button class="header-logo" id="lb-home-btn" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--color-secondary);">â† العودة للرئيسية</button>
             </div>
         </div>
         `;
     } catch (e) {
         console.error('Leaderboard error:', e);
-        return '<div class="empty-state"><p>حدث خطأ في تحميل المتصدرين</p></div>';
+        return '<div class="empty-state"><p>حدث خطأ ÙÙŠ تحميل المتصدرين</p></div>';
     }
 }
 
@@ -4760,11 +4764,11 @@ async function handleGoogleLogin(response) {
             renderApp();
             alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'فشل تسجيل الدخول بـ Google');
+            alert(result.error || 'ÙØ´Ù„ تسجيل الدخول بـ Google');
         }
     } catch (e) {
         console.error("Google Auth error:", e);
-        alert('خطأ في الاتصال بالخادم أثناء تسجيل الدخول بـ Google');
+        alert('خطأ ÙÙŠ الاتصال بالخادم أثناء تسجيل الدخول بـ Google');
     }
 }
 
@@ -4791,11 +4795,11 @@ async function verifyGoogleAccessToken(accessToken) {
             renderApp();
             alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'فشل تسجيل الدخول بـ Google');
+            alert(result.error || 'ÙØ´Ù„ تسجيل الدخول بـ Google');
         }
     } catch (e) {
         console.error("Google access token verification error:", e);
-        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Google');
+        alert('خطأ ÙÙŠ الاتصال Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± أثناء التحقق من حساب Google');
     }
 }
 
@@ -4820,17 +4824,17 @@ async function verifyFacebookAccessToken(accessToken) {
             renderApp();
             alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Facebook باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'فشل تسجيل الدخول بـ Facebook');
+            alert(result.error || 'ÙØ´Ù„ تسجيل الدخول بـ Facebook');
         }
     } catch (e) {
         console.error("Facebook access token verification error:", e);
-        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Facebook');
+        alert('خطأ ÙÙŠ الاتصال Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± أثناء التحقق من حساب Facebook');
     }
 }
 
 function handleFacebookLoginClick() {
     if (typeof FB === 'undefined') {
-        alert("مكتبة الفيسبوك لم يتم تحميلها بعد. يرجى المحاولة مرة أخرى.");
+        alert("مكتبة Ø§Ù„ÙÙŠØ³Ø¨ÙˆÙƒ لم يتم تحميلها بعد. يرجى المحاولة مرة أخرى.");
         return;
     }
     FB.login(function(response) {
@@ -4917,7 +4921,7 @@ function initSocialAuths() {
 // ==========================================
 
 function attachEventListeners() {
-    // تفعيل شعار الموقع
+    // ØªÙØ¹ÙŠÙ„ شعار الموقع
     const logoBtn = document.getElementById('logo-btn');
     if (logoBtn) logoBtn.onclick = () => {
         state.searchQuery = '';
@@ -5077,7 +5081,7 @@ function attachEventListeners() {
     });
 
 
-    // تصفية التصنيفات
+    // ØªØµÙÙŠØ© Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª
     const genreTags = document.querySelectorAll('.genre-tag');
     genreTags.forEach(tag => {
         tag.onclick = (e) => {
@@ -5140,7 +5144,7 @@ function attachEventListeners() {
         };
     });
 
-    // الضغط على بطاقة مانجا لفتحها
+    // الضغط على بطاقة مانجا Ù„ÙØªØ­Ù‡Ø§
     const mangaCards = document.querySelectorAll('.manga-card');
     mangaCards.forEach(card => {
         card.onclick = () => {
@@ -5149,7 +5153,7 @@ function attachEventListeners() {
         };
     });
 
-    // الضغط على سجلات القراءة لاستئناف القراءة
+    // الضغط على سجلات القراءة Ù„Ø§Ø³ØªØ¦Ù†Ø§Ù القراءة
     const historyCards = document.querySelectorAll('.history-item-card');
     historyCards.forEach(card => {
         card.onclick = () => {
@@ -5169,7 +5173,7 @@ function attachEventListeners() {
         };
     });
 
-    // أحداث صفحة السجل التفصيلي: زر متابعة القراءة
+    // أحداث ØµÙØ­Ø© السجل Ø§Ù„ØªÙØµÙŠÙ„ÙŠ: زر متابعة القراءة
     const resumeHistoryBtns = document.querySelectorAll('.resume-reading-history-btn');
     resumeHistoryBtns.forEach(btn => {
         btn.onclick = (e) => {
@@ -5190,7 +5194,7 @@ function attachEventListeners() {
         };
     });
 
-    // أحداث صفحة السجل التفصيلي: زر حذف عمل من السجل
+    // أحداث ØµÙØ­Ø© السجل Ø§Ù„ØªÙØµÙŠÙ„ÙŠ: زر Ø­Ø°Ù عمل من السجل
     const deleteHistoryEntryBtns = document.querySelectorAll('.delete-history-entry-btn');
     deleteHistoryEntryBtns.forEach(btn => {
         btn.onclick = (e) => {
@@ -5213,7 +5217,7 @@ function attachEventListeners() {
         };
     });
 
-    // صفحة التفاصيل: حجز المفضلة
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: حجز Ø§Ù„Ù…ÙØ¶Ù„Ø©
     const bookmarkPickers = document.querySelectorAll('.bookmark-picker');
     bookmarkPickers.forEach(picker => {
         const toggle = picker.querySelector('.bookmark-picker-toggle');
@@ -5259,7 +5263,7 @@ function attachEventListeners() {
         });
     });
 
-    // صفحة التفاصيل: الضغط على قراءة أول فصل
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: الضغط على قراءة أول ÙØµÙ„
     const startReadingBtn = document.querySelector('.start-reading-btn');
     if (startReadingBtn) {
         startReadingBtn.onclick = () => {
@@ -5268,7 +5272,7 @@ function attachEventListeners() {
         };
     }
 
-    // صفحة التفاصيل: الضغط على متابعة القراءة
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: الضغط على متابعة القراءة
     const continueReadingBtn = document.querySelector('.continue-reading-btn');
     if (continueReadingBtn) {
         continueReadingBtn.onclick = () => {
@@ -5277,7 +5281,7 @@ function attachEventListeners() {
         };
     }
 
-    // صفحة التفاصيل: الضغط على فصل لقراءته
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: الضغط على ÙØµÙ„ لقراءته
     const chapterItems = document.querySelectorAll('.chapter-item');
     chapterItems.forEach(item => {
         item.onclick = (e) => {
@@ -5288,7 +5292,7 @@ function attachEventListeners() {
         };
     });
 
-    // صفحة التفاصيل: البحث عن فصل
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: البحث عن ÙØµÙ„
     const chaptersSearch = document.getElementById('chapters-search-input');
     if (chaptersSearch) {
         chaptersSearch.oninput = (e) => {
@@ -5325,7 +5329,7 @@ function attachEventListeners() {
                     noResult = document.createElement('p');
                     noResult.className = 'chapters-search-noresult';
                     noResult.style.cssText = 'padding: 20px; color: var(--text-dark); text-align: center;';
-                    noResult.textContent = 'لا توجد فصول تطابق البحث.';
+                    noResult.textContent = 'لا توجد ÙØµÙˆÙ„ تطابق البحث.';
                     container.appendChild(noResult);
                 }
             } else if (noResult) {
@@ -5334,7 +5338,7 @@ function attachEventListeners() {
         };
     }
 
-    // صفحة التفاصيل: زر تحميل الفصل للأوفلاين
+    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: زر تحميل Ø§Ù„ÙØµÙ„ Ù„Ù„Ø£ÙˆÙÙ„Ø§ÙŠÙ†
     const downloadBtns = document.querySelectorAll('.download-btn');
     downloadBtns.forEach(btn => {
         btn.onclick = async (e) => {
@@ -5345,7 +5349,7 @@ function attachEventListeners() {
 
             const isDownloaded = btn.classList.contains('downloaded');
             if (isDownloaded) {
-                if (confirm("هل تريد إزالة هذا الفصل من قائمة التحميلات؟")) {
+                if (confirm("هل تريد إزالة هذا Ø§Ù„ÙØµÙ„ من قائمة التحميلات؟")) {
                     await deleteChapterOffline(mangaId, chapId);
                     renderApp();
                 }
@@ -5374,27 +5378,27 @@ function attachEventListeners() {
         };
     });
 
-    // مركز التحميلات: حذف الفصل
+    // مركز التحميلات: Ø­Ø°Ù  Ø§Ù„Ù صل
     const deleteDownloadBtns = document.querySelectorAll('.delete-download-btn');
     deleteDownloadBtns.forEach(btn => {
         btn.onclick = async (e) => {
             e.stopPropagation();
             const mangaId = btn.dataset.mangaId;
             const chapId = btn.dataset.chapId;
-            if (confirm("هل تريد إزالة هذا الفصل المحمل؟")) {
+            if (confirm("هل تريد إزالة هذا Ø§Ù„Ù صل المحمل؟")) {
                 await deleteChapterOffline(mangaId, chapId);
                 renderApp();
             }
         };
     });
 
-    // الإدارة: حذف منهوا (Admin Only)
+    // الإدارة: Ø­Ø°Ù منهوا (Admin Only)
     const deleteMangaBtns = document.querySelectorAll('.delete-manga-admin-btn');
     deleteMangaBtns.forEach(btn => {
         btn.onclick = async (e) => {
             e.stopPropagation();
             const mangaId = btn.dataset.id;
-            if (!confirm("هل أنت متأكد من حذف هذه المنهوا بالكامل؟\nهذا الإجراء لا يمكن التراجع عنه.")) return;
+            if (!confirm("هل أنت متأكد من Ø­Ø°Ù هذه المنهوا بالكامل؟\nهذا الإجراء لا يمكن التراجع عنه.")) return;
             try {
                 const response = await fetch('/api/delete_manga', {
                     method: 'POST',
@@ -5412,10 +5416,10 @@ function attachEventListeners() {
                     state.saveMangas();
                     navigate('home');
                 } else {
-                    alert(result.error || 'فشل الحذف');
+                    alert(result.error || 'ÙØ´Ù„ Ø§Ù„Ø­Ø°Ù');
                 }
             } catch (err) {
-                alert('خطأ في الاتصال بالخادم');
+                alert('خطأ ÙÙŠ الاتصال بالخادم');
             }
         };
     });
@@ -5431,7 +5435,7 @@ function attachEventListeners() {
         };
     });
 
-    // المفضلة: تبديل التبويبات
+    // Ø§Ù„Ù…ÙØ¶Ù„Ø©: تبديل التبويبات
     const bookmarkTabs = document.querySelectorAll('.bookmark-tab');
     bookmarkTabs.forEach(tab => {
         tab.onclick = (e) => {
@@ -5440,7 +5444,7 @@ function attachEventListeners() {
         };
     });
 
-    // القارئ: العودة لصفحة تفاصيل المانجا
+    // القارئ: العودة Ù„ØµÙØ­Ø© ØªÙØ§ØµÙŠÙ„ المانجا
     const returnBtns = document.querySelectorAll('.return-to-manga');
     returnBtns.forEach(btn => {
         btn.onclick = () => {
@@ -5568,7 +5572,7 @@ function attachEventListeners() {
         document.onkeydown = null;
     }
 
-    // القارئ: إدارة القائمة المنسدلة المخصصة للفصول
+    // القارئ: إدارة القائمة المنسدلة المخصصة Ù„Ù„ÙØµÙˆÙ„
     const dropdown = document.getElementById('chapter-dropdown');
     const dropdownTrigger = document.querySelector('.dropdown-trigger');
     if (dropdown && dropdownTrigger) {
@@ -5600,7 +5604,7 @@ function attachEventListeners() {
             };
         }
 
-        // اختيار فصل من القائمة المخصصة
+        // اختيار ÙØµÙ„ من القائمة المخصصة
         const options = dropdown.querySelectorAll('.dropdown-item-opt');
         options.forEach(opt => {
             opt.onclick = (e) => {
@@ -5611,7 +5615,7 @@ function attachEventListeners() {
             };
         });
 
-        // إغلاق المنسدلة عند الضغط في أي مكان آخر بالصفحة
+        // إغلاق المنسدلة عند الضغط ÙÙŠ أي مكان آخر Ø¨Ø§Ù„ØµÙØ­Ø©
         document.addEventListener('click', (e) => {
             if (dropdown && !dropdown.contains(e.target)) {
                 dropdown.classList.remove('open');
@@ -5619,7 +5623,7 @@ function attachEventListeners() {
         });
     }
 
-    // القارئ: الفصل السابق
+    // القارئ: Ø§Ù„ÙØµÙ„ السابق
     const prevBtns = document.querySelectorAll('.prev-chapter-btn');
     prevBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
@@ -5638,7 +5642,7 @@ function attachEventListeners() {
     }
     });
 
-    // القارئ: الفصل التالي
+    // القارئ: Ø§Ù„ÙØµÙ„ التالي
     const nextBtns = document.querySelectorAll('.next-chapter-btn');
     nextBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
@@ -5657,7 +5661,7 @@ function attachEventListeners() {
     }
     });
 
-    // القارئ: ترجمة الفصل
+    // القارئ: ترجمة Ø§Ù„ÙØµÙ„
     document.querySelectorAll('.translate-chapter-btn').forEach(btn => {
         btn.onclick = async function() {
             const url = this.dataset.url;
@@ -5676,19 +5680,19 @@ function attachEventListeners() {
                 });
                 const data = await res.json();
                 if (data.status === 'queued') {
-                    alert('تمت إضافة الفصل لطابور الترجمة');
+                    alert('تمت Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„ لطابور الترجمة');
                 } else {
-                    alert(data.error || 'فشلت الترجمة');
+                    alert(data.error || 'ÙØ´Ù„Øª الترجمة');
                 }
             } catch (e) {
-                alert('خطأ في الاتصال بالخادم');
+                alert('خطأ ÙÙŠ الاتصال بالخادم');
             }
             this.innerHTML = '<i class="fa-solid fa-language"></i>';
             this.disabled = false;
         };
     });
 
-    // --- التحميل التلقائي للفصل التالي عند التمرير (Infinite Scroll) ---
+    // --- التحميل التلقائي Ù„Ù„ÙØµÙ„ التالي عند التمرير (Infinite Scroll) ---
     var sentinel = document.getElementById('next-chapter-sentinel');
     if (sentinel && 'IntersectionObserver' in window) {
         var observer = new IntersectionObserver(function(entries) {
@@ -5707,7 +5711,7 @@ function attachEventListeners() {
         observer.observe(sentinel);
     }
 
-    // القارئ: فتح/إغلاق لوحة الإعدادات العائمة للتخصيص
+    // القارئ: ÙØªØ­/إغلاق لوحة الإعدادات العائمة للتخصيص
     const settingsToggle = document.getElementById('settings-panel-toggle');
     const settingsPanel = document.getElementById('settings-panel');
     if (settingsToggle && settingsPanel) {
@@ -5759,7 +5763,7 @@ function attachEventListeners() {
         };
     });
 
-    // القارئ الأفقي: التنقل بين الصفحات
+    // القارئ Ø§Ù„Ø£ÙÙ‚ÙŠ: التنقل بين Ø§Ù„ØµÙØ­Ø§Øª
     const hPrevZone = document.getElementById('h-prev-zone');
     const hNextZone = document.getElementById('h-next-zone');
     if (hPrevZone && hNextZone) {
@@ -5781,7 +5785,7 @@ function attachEventListeners() {
                     state.activePageIndex = 0;
                     navigate('reader', state.activeMangaId, prevChapId);
                 } else {
-                    alert("أنت في أول صفحة في أول فصل!");
+                    alert("أنت ÙÙŠ أول ØµÙØ­Ø© ÙÙŠ أول ÙØµÙ„!");
                 }
             }
         };
@@ -5798,13 +5802,13 @@ function attachEventListeners() {
                     state.activePageIndex = 0;
                     navigate('reader', state.activeMangaId, nextChapId);
                 } else {
-                    alert("لقد وصلت لآخر صفحة في آخر فصل متاح!");
+                    alert("لقد وصلت لآخر ØµÙØ­Ø© ÙÙŠ آخر ÙØµÙ„ متاح!");
                 }
             }
         };
     }
 
-    // القارئ: زر الإعجاب بالفصل
+    // القارئ: زر الإعجاب Ø¨Ø§Ù„ÙØµÙ„
     const chapterLikeBtn = document.getElementById('chapter-like-btn');
     if (chapterLikeBtn) {
         chapterLikeBtn.onclick = () => {
@@ -5815,7 +5819,7 @@ function attachEventListeners() {
             if (isLiked) {
                 chapterLikeBtn.classList.add('liked');
                 icon.className = 'fa-solid fa-heart';
-                text.innerText = 'أعجبني هذا الفصل!';
+                text.innerText = 'أعجبني هذا Ø§Ù„ÙØµÙ„!';
             } else {
                 chapterLikeBtn.classList.remove('liked');
                 icon.className = 'fa-regular fa-heart';
@@ -5824,7 +5828,7 @@ function attachEventListeners() {
         };
     }
 
-    // الإدارة: تبديل التبويبات وتفعيل التبويب المختار
+    // الإدارة: تبديل التبويبات ÙˆØªÙØ¹ÙŠÙ„ التبويب المختار
     const tabAddManga = document.getElementById('tab-add-manga');
     const tabAddChapter = document.getElementById('tab-add-chapter');
     const tabEditManga = document.getElementById('tab-edit-manga');
@@ -5998,13 +6002,13 @@ function attachEventListeners() {
             const type = document.getElementById('manga-type').value;
 
             state.addManga(title, alt, author, cover, banner, genres, synopsis, type);
-            alert("تم إدراج العمل الفني بنجاح!");
+            alert("تم إدراج العمل Ø§Ù„ÙÙ†ÙŠ بنجاح!");
             addMangaForm.reset();
             navigate('home');
         };
     }
 
-    // الإدارة: إرسال نموذج فصل
+    // الإدارة: إرسال نموذج ÙØµÙ„
     const addChapterForm = document.getElementById('add-chapter-form');
     if (addChapterForm) {
         addChapterForm.onsubmit = (e) => {
@@ -6015,13 +6019,13 @@ function attachEventListeners() {
             const images = document.getElementById('chap-images').value;
 
             state.addChapter(mangaId, title, chapterNo, images);
-            alert(`تم رفع ونشر الفصل ${chapterNo} بنجاح!`);
+            alert(`تم Ø±ÙØ¹ ونشر Ø§Ù„ÙØµÙ„ ${chapterNo} بنجاح!`);
             addChapterForm.reset();
             navigate('detail', mangaId);
         };
     }
 
-    // الشكاوى والاقتراحات: فتح وإغلاق النافذة
+    // الشكاوى والاقتراحات: ÙØªØ­ وإغلاق Ø§Ù„Ù†Ø§ÙØ°Ø©
     const openSuggestionsBtn = document.getElementById('open-suggestions-btn');
     if (openSuggestionsBtn) {
         openSuggestionsBtn.onclick = () => {
@@ -6089,13 +6093,13 @@ function attachEventListeners() {
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.innerText = 'خطأ ÙÙŠ الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
     }
 
-    // التوثيق: فتح النافذة المنبثقة
+    // التوثيق: ÙØªØ­ Ø§Ù„Ù†Ø§ÙØ°Ø© المنبثقة
     const openLoginBtn = document.getElementById('open-login-btn');
     if (openLoginBtn) {
         openLoginBtn.onclick = () => {
@@ -6154,7 +6158,7 @@ function attachEventListeners() {
         };
     }
 
-    // التوثيق: إغلاق النافذة
+    // التوثيق: إغلاق Ø§Ù„Ù†Ø§ÙØ°Ø©
     const closeAuthBtn = document.getElementById('close-auth-modal');
     if (closeAuthBtn) {
         closeAuthBtn.onclick = () => {
@@ -6178,13 +6182,13 @@ function attachEventListeners() {
     if (googleLoginBtn) {
         googleLoginBtn.onclick = () => {
             if (!isUsableGoogleClientId()) {
-                alert("⚠️ لم يتم تكوين Google Client ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بجوجل.");
+                alert("âš ï¸ لم يتم تكوين Google Client ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة â† إعدادات الموقع) لتحديث Ø§Ù„Ù…Ø¹Ø±Ù‘Ù Ø§Ù„ÙØ¹Ù„ÙŠ Ù„ØªÙØ¹ÙŠÙ„ تسجيل الدخول بجوجل.");
                 return;
             }
             if (typeof google !== 'undefined' && googleTokenClient) {
                 googleTokenClient.requestAccessToken();
             } else {
-                alert("مكتبة جوجل لم يتم تحميلها بعد أو المعرّف غير صحيح. يرجى المحاولة لاحقاً.");
+                alert("مكتبة جوجل لم يتم تحميلها بعد أو Ø§Ù„Ù…Ø¹Ø±Ù‘Ù غير صحيح. يرجى المحاولة لاحقاً.");
             }
         };
     }
@@ -6193,7 +6197,7 @@ function attachEventListeners() {
     if (facebookLoginBtn) {
         facebookLoginBtn.onclick = () => {
             if (!isUsableFacebookAppId()) {
-                alert("⚠️ لم يتم تكوين Facebook App ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بفيسبوك.");
+                alert("âš ï¸ لم يتم تكوين Facebook App ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة â† إعدادات الموقع) لتحديث Ø§Ù„Ù…Ø¹Ø±Ù‘Ù Ø§Ù„ÙØ¹Ù„ÙŠ Ù„ØªÙØ¹ÙŠÙ„ تسجيل الدخول Ø¨ÙÙŠØ³Ø¨ÙˆÙƒ.");
                 return;
             }
             handleFacebookLoginClick();
@@ -6274,11 +6278,11 @@ function attachEventListeners() {
                     successMsg.innerText = result.message || 'تم إرسال رابط استعادة كلمة المرور!';
                     successMsg.style.display = 'block';
                 } else {
-                    errorMsg.innerText = result.error || 'فشل إرسال الطلب';
+                    errorMsg.innerText = result.error || 'ÙØ´Ù„ إرسال الطلب';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.innerText = 'خطأ ÙÙŠ الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
@@ -6297,7 +6301,7 @@ function attachEventListeners() {
             successMsg.style.display = 'none';
             
             if (newPass.length < 6) {
-                errorMsg.innerText = 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
+                errorMsg.innerText = 'يجب أن تتكون كلمة المرور من 6 Ø£Ø­Ø±Ù على الأقل';
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -6326,11 +6330,11 @@ function attachEventListeners() {
                         navigate('home');
                     }, 2000);
                 } else {
-                    errorMsg.innerText = result.error || 'فشل تحديث كلمة المرور';
+                    errorMsg.innerText = result.error || 'ÙØ´Ù„ تحديث كلمة المرور';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
+                errorMsg.innerText = 'خطأ ÙÙŠ الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
@@ -6407,7 +6411,7 @@ function attachEventListeners() {
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'خطأ في الاتصال بالسيرفر';
+                errorMsg.innerText = 'خطأ ÙÙŠ الاتصال Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ±';
                 errorMsg.style.display = 'block';
             }
         };
@@ -6459,7 +6463,7 @@ function attachEventListeners() {
         }
     };
 
-    // مراجعات المنهوا: النجوم التفاعلية وإرسال المراجعة
+    // مراجعات المنهوا: النجوم Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠØ© وإرسال المراجعة
     const starOpts = document.querySelectorAll('.star-opt');
     let chosenRating = 5;
     if (starOpts.length > 0) {
@@ -6509,12 +6513,12 @@ function attachEventListeners() {
                     alert(result.error);
                 }
             } catch (err) {
-                alert("خطأ في الاتصال بالخادم");
+                alert("خطأ ÙÙŠ الاتصال بالخادم");
             }
         };
     }
 
-    // التعليق على الفصول: إرسال التعليق للسيرفر
+    // التعليق على Ø§Ù„ÙØµÙˆÙ„: إرسال التعليق Ù„Ù„Ø³ÙŠØ±ÙØ±
     const chapterCommentForm = document.getElementById('chapter-comment-form');
     if (chapterCommentForm) {
         chapterCommentForm.onsubmit = async (e) => {
@@ -6570,12 +6574,12 @@ function attachEventListeners() {
                     alert(result.error);
                 }
             } catch (err) {
-                alert("خطأ في الاتصال بالخادم");
+                alert("خطأ ÙÙŠ الاتصال بالخادم");
             }
         };
     }
 
-    // الإدارة: حفظ إعدادات الموقع ديناميكياً
+    // الإدارة: Ø­ÙØ¸ إعدادات الموقع ديناميكياً
     const siteSettingsForm = document.getElementById('site-settings-form');
     if (siteSettingsForm) {
         siteSettingsForm.onsubmit = async (e) => {
@@ -6618,14 +6622,14 @@ function attachEventListeners() {
                         smtp_pass: smtpPass,
                         smtp_sender: smtpSender
                     };
-                    alert("تم حفظ إعدادات الموقع بنجاح!");
+                    alert("تم Ø­ÙØ¸ إعدادات الموقع بنجاح!");
                     initSocialAuths();
                     renderApp();
                 } else {
-                    alert(result.error || "فشل حفظ الإعدادات");
+                    alert(result.error || "ÙØ´Ù„ Ø­ÙØ¸ الإعدادات");
                 }
             } catch (err) {
-                alert("خطأ في الاتصال بالخادم أثناء حفظ الإعدادات");
+                alert("خطأ ÙÙŠ الاتصال بالخادم أثناء Ø­ÙØ¸ الإعدادات");
             }
         };
     }
@@ -6656,7 +6660,7 @@ function attachEventListeners() {
                     <div style="padding:16px;border:1px solid var(--border-color);border-radius:var(--border-radius-md);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
                         <div>
                             <strong style="color:var(--text-main);">${r.title}</strong>
-                            <span style="display:block;font-size:0.85rem;color:var(--text-dark);">المصدر: ${r.source} • ${r.chapters ? r.chapters.length + ' فصل' : ''}</span>
+                            <span style="display:block;font-size:0.85rem;color:var(--text-dark);">المصدر: ${r.source} • ${r.chapters ? r.chapters.length + ' ÙØµÙ„' : ''}</span>
                         </div>
                         <button class="admin-submit-btn link-alt-source-btn" style="padding:8px 16px;font-size:0.85rem;" data-manga-id="${mangaId}" data-source="${r.source}" data-url="${r.url}">
                             <i class="fa-solid fa-link"></i> ربط
@@ -6680,17 +6684,17 @@ function attachEventListeners() {
                             alert(ldata.error || 'تم ربط المصدر البديل بنجاح!');
                             if (lresp.ok) btn.disabled = true;
                         } catch (err) {
-                            alert('خطأ في الاتصال');
+                            alert('خطأ ÙÙŠ الاتصال');
                         }
                     };
                 });
             } catch (err) {
-                if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:#ff007f;">خطأ في الاتصال بالخادم.</p>';
+                if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:#ff007f;">خطأ ÙÙŠ الاتصال بالخادم.</p>';
             }
         };
     }
 
-    // إعدادات المستخدم: حفظ اسم المستخدم
+    // إعدادات المستخدم: Ø­ÙØ¸ اسم المستخدم
     const btnSaveUsername = document.getElementById('btn-save-username');
     if (btnSaveUsername) {
         btnSaveUsername.onclick = async () => {
@@ -6698,10 +6702,10 @@ function attachEventListeners() {
             const msg = document.getElementById('username-msg');
             const username = input.value.trim();
             if (!username || username.length < 2) {
-                msg.innerHTML = '<span style="color:#ff007f;">اسم المستخدم يجب أن يكون حرفين على الأقل</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">اسم المستخدم يجب أن يكون Ø­Ø±ÙÙŠÙ† على الأقل</span>';
                 return;
             }
-            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري Ø§Ù„Ø­ÙØ¸...</span>';
             try {
                 const res = await fetch('/api/auth/change-username', {
                     method: 'POST',
@@ -6714,10 +6718,10 @@ function attachEventListeners() {
                     state.saveUserProfile();
                     msg.innerHTML = '<span style="color:#00ff7f;">تم تحديث اسم المستخدم بنجاح</span>';
                 } else {
-                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التحديث'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'ÙØ´Ù„ التحديث'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ ÙÙŠ الاتصال بالخادم</span>';
             }
         };
     }
@@ -6734,10 +6738,10 @@ function attachEventListeners() {
                 return;
             }
             if (!newPass.value || newPass.value.length < 6) {
-                msg.innerHTML = '<span style="color:#ff007f;">كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">كلمة المرور الجديدة يجب أن تكون 6 Ø£Ø­Ø±Ù على الأقل</span>';
                 return;
             }
-            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري Ø§Ù„Ø­ÙØ¸...</span>';
             try {
                 const res = await fetch('/api/auth/change-password', {
                     method: 'POST',
@@ -6750,15 +6754,15 @@ function attachEventListeners() {
                     currentPass.value = '';
                     newPass.value = '';
                 } else {
-                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التغيير'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'ÙØ´Ù„ التغيير'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ ÙÙŠ الاتصال بالخادم</span>';
             }
         };
     }
 
-    // الإدارة: تحميل بيانات المنهوا في نموذج التعديل عند اختيارها
+    // الإدارة: تحميل بيانات المنهوا ÙÙŠ نموذج التعديل عند اختيارها
     const editMangaSelect = document.getElementById('edit-manga-id');
     if (editMangaSelect) {
         editMangaSelect.onchange = () => {
@@ -6775,7 +6779,7 @@ function attachEventListeners() {
             document.getElementById('edit-manga-alt').value = manga.alternative || '';
             document.getElementById('edit-manga-author').value = manga.author || '';
             document.getElementById('edit-manga-synopsis').value = manga.synopsis || '';
-            const statusMap = { 'Ongoing': 'مستمر', 'مستمر': 'مستمر', 'Completed': 'مكتمل', 'مكتمل': 'مكتمل', 'متوقف': 'متوقف' };
+            const statusMap = { 'Ongoing': 'مستمر', 'مستمر': 'مستمر', 'Completed': 'مكتمل', 'مكتمل': 'مكتمل', 'Ù…ØªÙˆÙ‚Ù': 'Ù…ØªÙˆÙ‚Ù' };
             const statusSelect = document.getElementById('edit-manga-status');
             statusSelect.value = statusMap[manga.status] || 'مستمر';
             document.getElementById('edit-manga-fields').style.display = 'block';
@@ -6783,7 +6787,7 @@ function attachEventListeners() {
         };
     }
 
-    // الإدارة: حفظ تعديلات المنهوا
+    // الإدارة: Ø­ÙØ¸ تعديلات المنهوا
     const editMangaForm = document.getElementById('edit-manga-form');
     if (editMangaForm) {
         editMangaForm.onsubmit = async (e) => {
@@ -6791,7 +6795,7 @@ function attachEventListeners() {
             const mangaId = document.getElementById('edit-manga-id').value;
             if (!mangaId) return;
             const msg = document.getElementById('edit-manga-msg');
-            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري Ø§Ù„Ø­ÙØ¸...</span>';
             try {
                 const manga = state.mangas.find(m => m.id === mangaId);
                 if (!manga) {
@@ -6807,7 +6811,7 @@ function attachEventListeners() {
                 updated.author = document.getElementById('edit-manga-author').value || manga.author;
                 updated.synopsis = document.getElementById('edit-manga-synopsis').value || manga.synopsis || '';
                 const statusSelect = document.getElementById('edit-manga-status');
-                const statusMapRev = { 'مستمر': 'Ongoing', 'مكتمل': 'Completed', 'متوقف': 'Hiatus' };
+                const statusMapRev = { 'مستمر': 'Ongoing', 'مكتمل': 'Completed', 'Ù…ØªÙˆÙ‚Ù': 'Hiatus' };
                 updated.status = statusMapRev[statusSelect.value] || manga.status;
                 updated.type = document.getElementById('edit-manga-type').value || manga.type;
 
@@ -6817,16 +6821,16 @@ function attachEventListeners() {
                     body: JSON.stringify(updated)
                 });
                 if (res.ok) {
-                    msg.innerHTML = '<span style="color:#00ff7f;">تم حفظ التعديلات بنجاح! سيتم التحديث بعد إعادة تحميل الصفحة.</span>';
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم Ø­ÙØ¸ التعديلات بنجاح! سيتم التحديث بعد إعادة تحميل Ø§Ù„ØµÙØ­Ø©.</span>';
                     const idx = state.mangas.findIndex(m => m.id === mangaId);
                     if (idx !== -1) state.mangas[idx] = updated;
                     state.saveMangas();
                 } else {
                     const errData = await res.json();
-                    msg.innerHTML = `<span style="color:#ff007f;">${errData.error || 'فشل الحفظ'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${errData.error || 'ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ ÙÙŠ الاتصال بالخادم</span>';
             }
         };
     }
@@ -7083,13 +7087,13 @@ function attachEventListeners() {
                 } else {
                     alert(data.error || 'حدث خطأ');
                     claimBtn.disabled = false;
-                    claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
+                    claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©';
                 }
             } catch (e) {
                 console.error('Claim reward error:', e);
-                alert('خطأ في الاتصال بالخادم');
+                alert('خطأ ÙÙŠ الاتصال بالخادم');
                 claimBtn.disabled = false;
-                claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
+                claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©';
             }
         };
     }
@@ -7195,13 +7199,13 @@ function attachEventListeners() {
                     state.saveUserProfile();
                     renderApp();
                 } else {
-                    alert(result.error || 'فشل الشراء');
+                    alert(result.error || 'ÙØ´Ù„ الشراء');
                     btn.disabled = false;
                     btn.innerHTML = 'شراء';
                 }
             } catch (e) {
                 console.error('Buy error:', e);
-                alert('خطأ في الاتصال');
+                alert('خطأ ÙÙŠ الاتصال');
                 btn.disabled = false;
                 btn.innerHTML = 'شراء';
             }
@@ -7289,7 +7293,7 @@ function showImageError(container, src, exhausted) {
     var chapterId = state.activeChapterId || '';
     container.innerHTML = '<div class="reader-image-error" style="padding:40px 20px;text-align:center;color:var(--color-accent);display:flex;flex-direction:column;align-items:center;gap:8px;">' +
         '<i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:8px;"></i>' +
-        '<p style="font-weight:700;">' + (exhausted ? 'تعذر تحميل الصورة بعد عدة محاولات' : 'فشل تحميل هذه الصفحة') + '</p>' +
+        '<p style="font-weight:700;">' + (exhausted ? 'تعذر تحميل الصورة بعد عدة محاولات' : 'ÙØ´Ù„ تحميل هذه Ø§Ù„ØµÙØ­Ø©') + '</p>' +
         (exhausted ? '' : '<button class="retry-btn" style="background:var(--color-primary);color:white;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;">إعادة المحاولة</button>') +
         '<button class="alt-source-btn" data-manga-id="' + mangaId + '" data-chap-id="' + chapterId + '" style="background:var(--color-secondary);color:#07080c;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;margin-top:4px;"><i class="fa-solid fa-compass"></i> مصدر بديل</button>' +
         '</div>';
@@ -7316,9 +7320,9 @@ function showImageError(container, src, exhausted) {
                             }
                         }
                     } else {
-                        alert('لم نعثر على مصدر بديل لهذا الفصل.');
+                        alert('لم نعثر على مصدر بديل لهذا Ø§Ù„ÙØµÙ„.');
                     }
-                }).catch(function() { alert('خطأ في الاتصال بالخادم'); });
+                }).catch(function() { alert('خطأ ÙÙŠ الاتصال بالخادم'); });
             }
         };
     }
@@ -7328,7 +7332,7 @@ function showImageError(container, src, exhausted) {
             e.stopPropagation();
             container.innerHTML = '<div class="reader-image-placeholder">' +
                 '<i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>' +
-                '<span>جاري إعادة تحميل الصفحة...</span></div>';
+                '<span>جاري إعادة تحميل Ø§Ù„ØµÙØ­Ø©...</span></div>';
             var retrySrc = src;
             if (src.includes('/proxy-image')) {
                 retrySrc = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
@@ -7375,7 +7379,7 @@ function initProgressTracker() {
             state.saveReadingProgress(state.activeMangaId, state.activeChapterId, winScroll, scrolled);
         }
         
-        // التحميل الاستباقي الذكي للفصل القادم
+        // التحميل الاستباقي الذكي Ù„Ù„ÙØµÙ„ القادم
         if (scrolled > 70 && !window._hasPrefetchedNextChapter && window._nextChapterImages) {
             prefetchNextChapter(window._nextChapterImages);
         }
@@ -7453,7 +7457,7 @@ async function loadAdminSuggestions() {
             html += '</div>';
             container.innerHTML = html;
         } else {
-            container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">فشل تحميل الاقتراحات من السيرفر.</p>';
+            container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">ÙØ´Ù„ تحميل الاقتراحات من Ø§Ù„Ø³ÙŠØ±ÙØ±.</p>';
         }
     } catch(e) {
         container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">حدث خطأ أثناء الاتصال بالخادم.</p>';
@@ -7638,8 +7642,8 @@ async function ProfileViewComponent() {
     const rewardsHtml = `
         <div class="settings-card">
             <div class="flex-between" style="margin-bottom:15px;">
-                <div style="font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
-                <div style="font-size:0.85rem; color:var(--text-muted);">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
+                <div style="font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª اليومية</div>
+                <div style="font-size:0.85rem; color:var(--text-muted);">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم Ù…ØªØªØ§Ù„Ù</div>
             </div>
             <div class="rewards-grid">
                 <div class="reward-card completed">
@@ -7675,7 +7679,7 @@ async function ProfileViewComponent() {
                 <div class="reward-card wide locked">
                     <div>
                         <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">Ù…ÙƒØ§ÙØ£Ø© الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">Ù…Ø¶Ø§Ø¹Ù</span></div>
                         <div class="reward-prizes" style="margin-top:5px;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
                     </div>
                     <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
@@ -7729,7 +7733,7 @@ async function ProfileViewComponent() {
                     <div class="notif-tab active" onclick="window.switchProfileViewTab(this, 'activity')">نشاط الحساب</div>
                     <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'library')">المكتبة</div>
                     <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'reviews')">المراجعات</div>
-                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'chapters')">الفصول</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'chapters')">Ø§Ù„ÙØµÙˆÙ„</div>
                     <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'ratings')">التقييم</div>
                 </div>
                 
@@ -7753,7 +7757,7 @@ async function ProfileViewComponent() {
                         <div style="position:absolute; top:0; right:0; height:100%; width:10%; background:var(--primary-color); border-radius:4px;"></div>
                     </div>
                     <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">10% إلى مستوى 2</div>
-                    <p style="font-size:0.7rem; color:rgba(255,255,255,0.3); text-align:center; margin-top:10px;">وسام القراءة والمكافآت تعزز مستواك أعلى</p>
+                    <p style="font-size:0.7rem; color:rgba(255,255,255,0.3); text-align:center; margin-top:10px;">وسام القراءة ÙˆØ§Ù„Ù…ÙƒØ§ÙØ¢Øª تعزز مستواك أعلى</p>
                 </div>
 
                 ${rewardsHtml}
@@ -7771,19 +7775,19 @@ function SettingsViewComponent() {
 
     const profileHtml = `
         <div class="settings-tab-pane" id="settings-pane-profile" style="display:block;">
-            <div class="settings-section-title"><i class="fa-regular fa-user"></i> مظهر الملف الشخصي</div>
+            <div class="settings-section-title"><i class="fa-regular fa-user"></i> مظهر Ø§Ù„Ù…Ù„Ù الشخصي</div>
             <div class="settings-card">
                 <div class="flex-between">
                     <div>
-                        <div class="form-label">صورة الغلاف (Banner)</div>
-                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:400px; height:120px; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                        <div class="form-label">صورة Ø§Ù„ØºÙ„Ø§Ù (Banner)</div>
+                        <div onclick="alert('سيتم ØªÙØ¹ÙŠÙ„ Ø±ÙØ¹ الصور قريباً')" style="width:400px; height:120px; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
                             <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; margin-bottom:10px;"></i>
-                            <span>رفع صورة غلاف</span>
+                            <span>Ø±ÙØ¹ صورة ØºÙ„Ø§Ù</span>
                         </div>
                     </div>
                     <div>
                         <div class="form-label">الصورة الشخصية</div>
-                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:100px; height:100px; border-radius:50%; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                        <div onclick="alert('سيتم ØªÙØ¹ÙŠÙ„ Ø±ÙØ¹ الصور قريباً')" style="width:100px; height:100px; border-radius:50%; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
@@ -7794,8 +7798,8 @@ function SettingsViewComponent() {
                 <input type="text" class="form-control" value="${s.userEmail ? getUserHandle(s.userEmail) : ''}">
             </div>
             <div class="form-group">
-                <label class="form-label">النبذة التعريفية (Bio)</label>
-                <textarea class="form-control" placeholder="تحدث عن نفسك..."></textarea>
+                <label class="form-label">النبذة Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠØ© (Bio)</label>
+                <textarea class="form-control" placeholder="تحدث عن Ù†ÙØ³Ùƒ..."></textarea>
                 <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px; text-align:left;">0/500</div>
             </div>
         </div>
@@ -7830,8 +7834,8 @@ function SettingsViewComponent() {
             <div class="settings-card">
                 <div class="flex-between" style="margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
                     <div>
-                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات الفصول الجديدة</div>
-                        <div style="color:var(--text-muted); font-size:0.85rem;">تلقي إشعارات فورية عند صدور فصول للمانجا في مكتبتك.</div>
+                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات Ø§Ù„ÙØµÙˆÙ„ الجديدة</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">تلقي إشعارات ÙÙˆØ±ÙŠØ© عند صدور ÙØµÙˆÙ„ للمانجا ÙÙŠ مكتبتك.</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" checked>
@@ -7841,7 +7845,7 @@ function SettingsViewComponent() {
                 <div class="flex-between">
                     <div>
                         <div style="font-weight:bold; margin-bottom:5px;">إشعارات النظام</div>
-                        <div style="color:var(--text-muted); font-size:0.85rem;">إشعارات تخص التحديثات والهدايا والمكافآت.</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">إشعارات تخص التحديثات والهدايا ÙˆØ§Ù„Ù…ÙƒØ§ÙØ¢Øª.</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" checked>
@@ -7857,7 +7861,7 @@ function SettingsViewComponent() {
             <div class="settings-section-title"><i class="fa-solid fa-shield-halved"></i> الخصوصية والبيانات</div>
             <div class="settings-card flex-between">
                 <div>
-                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">إخفاء قائمة القراءة</div>
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">Ø¥Ø®ÙØ§Ø¡ قائمة القراءة</div>
                     <div style="color:var(--text-muted); font-size:0.85rem;">السماح للآخرين بمشاهدة قائمة الأعمال التي تقرأها.</div>
                 </div>
                 <label class="toggle-switch">
@@ -7871,14 +7875,14 @@ function SettingsViewComponent() {
     return `
     <div class="settings-container">
         <div style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;">الإعدادات</div>
-        <div style="color:var(--text-muted); margin-bottom:30px;">إدارة إعدادات حسابك وتفضيلاتك.</div>
+        <div style="color:var(--text-muted); margin-bottom:30px;">إدارة إعدادات حسابك ÙˆØªÙØ¶ÙŠÙ„Ø§ØªÙƒ.</div>
         
         <div class="settings-layout">
             <div class="settings-sidebar">
                 <div class="settings-sidebar-title"><i class="fa-regular fa-user"></i> الإعدادات العامة</div>
-                <div class="settings-sidebar-subtitle">تحكم بملفك الشخصي والأمان</div>
+                <div class="settings-sidebar-subtitle">تحكم Ø¨Ù…Ù„ÙÙƒ الشخصي والأمان</div>
                 <div class="settings-nav-item active" onclick="window.switchSettingsTab(this, 'profile')">
-                    <i class="fa-regular fa-user"></i> مظهر الملف الشخصي
+                    <i class="fa-regular fa-user"></i> مظهر Ø§Ù„Ù…Ù„Ù الشخصي
                 </div>
                 <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'security')">
                     <i class="fa-solid fa-lock"></i> الأمان
@@ -7940,11 +7944,11 @@ if (typeof window.switchProfileViewTab === 'undefined') {
         if(tabName === 'activity') {
             contentBox.innerHTML = '<i class="fa-solid fa-ghost"></i><div>لا يوجد أي نشاط حتى الآن</div>';
         } else if(tabName === 'library') {
-            contentBox.innerHTML = '<i class="fa-solid fa-book-open"></i><div>المكتبة فارغة</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-book-open"></i><div>المكتبة ÙØ§Ø±ØºØ©</div>';
         } else if(tabName === 'reviews') {
             contentBox.innerHTML = '<i class="fa-solid fa-star"></i><div>لا توجد مراجعات</div>';
         } else if(tabName === 'chapters') {
-            contentBox.innerHTML = '<i class="fa-solid fa-file-lines"></i><div>لم تقم بقراءة أي فصول بعد</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-file-lines"></i><div>لم تقم بقراءة أي ÙØµÙˆÙ„ بعد</div>';
         } else if(tabName === 'ratings') {
             contentBox.innerHTML = '<i class="fa-solid fa-thumbs-up"></i><div>لم تقم بتقييم أي مانجا</div>';
         }
@@ -8018,7 +8022,7 @@ function SuggestionsViewComponent() {
             <h1 style="font-size:2.2rem; margin-bottom:12px; color:var(--color-primary);">
                 <i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي
             </h1>
-            <p style="color:var(--text-muted); font-size:1rem;">نحن نستمع إليك! أرسل لنا أفكارك لتطوير الموقع، أو أي مشكلة تواجهك وسنقوم بحلها فوراً.</p>
+            <p style="color:var(--text-muted); font-size:1rem;">نحن نستمع إليك! أرسل لنا Ø£ÙÙƒØ§Ø±Ùƒ لتطوير الموقع، أو أي مشكلة تواجهك وسنقوم بحلها ÙÙˆØ±Ø§Ù‹.</p>
         </div>
         
         <div style="background:var(--secondary-color); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
@@ -8026,13 +8030,13 @@ function SuggestionsViewComponent() {
                 <label style="display:block; margin-bottom:10px; font-weight:bold;">نوع الرسالة</label>
                 <select id="sug-type" style="width:100%; padding:15px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none;">
                     <option value="suggestion" style="background:var(--secondary-color);">💡 اقتراح لتطوير الموقع</option>
-                    <option value="complaint" style="background:var(--secondary-color);">⚠️ شكوى أو مشكلة فنية</option>
+                    <option value="complaint" style="background:var(--secondary-color);">âš ï¸ شكوى أو مشكلة ÙÙ†ÙŠØ©</option>
                 </select>
             </div>
             
             <div class="form-group" style="margin-bottom:25px;">
                 <label style="display:block; margin-bottom:10px; font-weight:bold;">نص الرسالة</label>
-                <textarea id="sug-content" rows="6" placeholder="اكتب رسالتك هنا بالتفصيل..." style="width:100%; padding:15px; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none; resize:vertical;"></textarea>
+                <textarea id="sug-content" rows="6" placeholder="اكتب رسالتك هنا Ø¨Ø§Ù„ØªÙØµÙŠÙ„..." style="width:100%; padding:15px; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none; resize:vertical;"></textarea>
             </div>
             
             <button id="sug-submit-btn" class="primary-btn" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;" onclick="window.submitSuggestion()">
@@ -8072,7 +8076,7 @@ window.submitSuggestion = async function() {
             alert(data.error || 'حدث خطأ أثناء الإرسال');
         }
     } catch (e) {
-        alert('خطأ في الاتصال بالخادم');
+        alert('خطأ ÙÙŠ الاتصال بالخادم');
     }
     
     btn.disabled = false;
@@ -8130,7 +8134,7 @@ window.checkAutoUpdaterStatus = async function() {
             statusText.style.color = '#00E676';
         } else {
             toggle.checked = false;
-            statusText.textContent = 'متوقف (Paused)';
+            statusText.textContent = 'Ù…ØªÙˆÙ‚Ù (Paused)';
             statusText.style.color = '#ff4444';
         }
     } catch(e) {}
@@ -8141,7 +8145,7 @@ window.toggleAutoUpdater = async function() {
     const newState = toggle.checked;
     const statusText = document.getElementById('auto-updater-status');
     
-    statusText.textContent = 'جاري الحفظ...';
+    statusText.textContent = 'جاري Ø§Ù„Ø­ÙØ¸...';
     
     try {
         const res = await fetch('/api/admin/updater_toggle', {
@@ -8158,7 +8162,7 @@ window.toggleAutoUpdater = async function() {
             statusText.textContent = 'يعمل الآن (Active)';
             statusText.style.color = '#00E676';
         } else {
-            statusText.textContent = 'متوقف (Paused)';
+            statusText.textContent = 'Ù…ØªÙˆÙ‚Ù (Paused)';
             statusText.style.color = '#ff4444';
         }
     } catch (e) {
