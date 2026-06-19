@@ -1,3 +1,8 @@
+import sys
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
 #!/usr/bin/env python3
 """
 محرك السحب الشامل والذكي (Global Scraper Engine)
@@ -133,12 +138,41 @@ class GlobalExtractor:
             "url": url
         }
 
-    def extract_chapters(self, soup, theme):
+    def extract_chapters(self, soup, theme, url):
         chapters = []
         links = []
         
         if theme == "madara":
-            links = soup.select("li.wp-manga-chapter a")
+            # Attempt to find manga_id for AJAX fetch
+            manga_id = None
+            rating = soup.select_one('.rating-post-id')
+            if rating: manga_id = rating.get('value')
+            if not manga_id:
+                data_id = soup.select_one('#manga-chapters-holder')
+                if data_id and data_id.has_attr('data-id'): manga_id = data_id['data-id']
+            if not manga_id:
+                wp_manga = re.search(r'manga_id[\"\']?\s*[:=]\s*[\"\']?(\d+)', str(soup))
+                if wp_manga: manga_id = wp_manga.group(1)
+            
+            if manga_id:
+                try:
+                    # Construct AJAX URL
+                    base_url = '/'.join(url.split('/')[:3])
+                    ajax_url = base_url + '/wp-admin/admin-ajax.php'
+                    print(f"[*] جلب القائمة الكاملة للفصول المخفية (AJAX) للمعرف: {manga_id}...")
+                    payload = {'action': 'manga_get_chapters', 'manga': manga_id}
+                    res = self.bypasser.session.post(ajax_url, data=payload, headers=self.bypasser.headers, timeout=30)
+                    if res.status_code == 200 and len(res.text) > 100:
+                        soup_ajax = BeautifulSoup(res.text, 'html.parser')
+                        links = soup_ajax.select("li.wp-manga-chapter a")
+                        if links:
+                            print(f"[*] نجح الجلب العميق! تم العثور على {len(links)} فصل عبر AJAX.")
+                except Exception as e:
+                    print(f"[-] فشل الجلب العميق: {e}")
+
+            # Fallback to initial HTML if AJAX failed or returned empty
+            if not links:
+                links = soup.select("li.wp-manga-chapter a")
         elif theme == "mangastream":
             links = soup.select("div.eplister ul li a, #chapterlist ul li a")
         else:
@@ -242,7 +276,7 @@ class GlobalScraperEngine:
         manga_id = hashlib.md5(manga_url.encode()).hexdigest()[:10]
         self.update_index(manga_id, meta)
 
-        chapters = self.extractor.extract_chapters(soup, theme)
+        chapters = self.extractor.extract_chapters(soup, theme, manga_url)
         total_chaps = len(chapters)
         print(f"[*] تم العثور على {total_chaps} فصل.")
         if total_chaps == 0: return

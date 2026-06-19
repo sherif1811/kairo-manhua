@@ -3092,7 +3092,7 @@ def scrape_stream():
         env["PYTHONUNBUFFERED"] = "1"
         
         process = subprocess.Popen(
-            ['python', 'add_manga.py', url],
+            ['python', 'global_scraper.py', url],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
