@@ -6,7 +6,7 @@ self.options = {
 self.lary = ""
 importScripts('https://5gvci.com/act/files/service-worker.min.js?r=sw')
 
-const CACHE_NAME = 'kairo-cache-v34';
+const CACHE_NAME = 'kairo-cache-v35';
 const STATIC_ASSETS = [
     '/',
     '/index.html',
