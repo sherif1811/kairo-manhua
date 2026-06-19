@@ -42,7 +42,7 @@ window.generateHomeGridHtml = async function() {
                     <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
                     <div>
                         <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
-                        <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> Ø§Ù„Ø±ØªØ¨Ø©: ${u.rank || 'Ù…Ø¨ØªØ¯Ø¦'}</span>
+                        <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
                     </div>
                     <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
                         ${u.points || 0} XP
@@ -52,14 +52,14 @@ window.generateHomeGridHtml = async function() {
             
             usersHtml = `
             <div style="margin-bottom: 30px;">
-                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem;"><i class="fa-solid fa-user-group" style="color:var(--primary-color);"></i> Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙˆÙ†</h2>
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem;"><i class="fa-solid fa-user-group" style="color:var(--primary-color);"></i> المستخدمون</h2>
                 <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">
                     ${usersCards}
                 </div>
             </div>
             `;
         } else if (s.searchType === 'username') {
-             usersHtml = '<div class="empty-state"><h3>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ø¨Ù‡Ø°Ø§ Ø§Ù„Ø§Ø³Ù…</h3></div>';
+             usersHtml = '<div class="empty-state"><h3>لا يوجد مستخدمين بهذا الاسم</h3></div>';
         }
     }
 
@@ -67,13 +67,13 @@ window.generateHomeGridHtml = async function() {
     if (showMangas) {
         let filtered = [...s.mangas];
 
-        if (s.activeGenre && s.activeGenre !== 'Ø§Ù„ÙƒÙ„') {
+        if (s.activeGenre && s.activeGenre !== 'الكل') {
             filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
         }
-        if (s.filterStatus && s.filterStatus !== 'Ø§Ù„ÙƒÙ„') {
-            filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'Ù…Ø³ØªÙ…Ø±Ø©' && m.status === 'Ongoing'));
+        if (s.filterStatus && s.filterStatus !== 'الكل') {
+            filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
         }
-        if (s.filterType && s.filterType !== 'Ø§Ù„ÙƒÙ„') {
+        if (s.filterType && s.filterType !== 'الكل') {
             filtered = filtered.filter(m => m.type === s.filterType);
         }
         if (s.filterYearMin) {
@@ -115,15 +115,15 @@ window.generateHomeGridHtml = async function() {
             });
         }
 
-        if (s.filterSort === 'Ø§Ù„Ø£Ø­Ø¯Ø«' || !s.filterSort) {
+        if (s.filterSort === 'الأحدث' || !s.filterSort) {
             filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-        } else if (s.filterSort === 'Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª') {
+        } else if (s.filterSort === 'أحدث التحديثات') {
             filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
-        } else if (s.filterSort === 'Ø£-ÙŠ') {
+        } else if (s.filterSort === 'أ-ي') {
             filtered.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
-        } else if (s.filterSort === 'Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹') {
+        } else if (s.filterSort === 'الأعلى تقييماً') {
             filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
-        } else if (s.filterSort === 'Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©') {
+        } else if (s.filterSort === 'الأكثر شعبية') {
             filtered.sort((a,b) => (b.views||0) - (a.views||0));
         }
 
@@ -135,13 +135,13 @@ window.generateHomeGridHtml = async function() {
             const cardsHtml = filtered.map(m => MangaCardComponent(m)).join('');
             mangasHtml = `
             <div style="margin-bottom: 20px;">
-                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem; display:${s.searchType==='all' && usersHtml ? 'block' : 'none'};"><i class="fa-solid fa-layer-group" style="color:var(--primary-color);"></i> Ø§Ù„Ø³Ù„Ø§Ø³Ù„</h2>
+                <h2 style="color:#fff; margin-bottom:15px; font-size:1.4rem; display:${s.searchType==='all' && usersHtml ? 'block' : 'none'};"><i class="fa-solid fa-layer-group" style="color:var(--primary-color);"></i> السلاسل</h2>
                 <div class="${isList ? 'manga-list-view' : 'manga-grid'}">
                     ${cardsHtml}
                 </div>
             </div>`;
         } else if (s.searchType !== 'username') {
-            mangasHtml = '<div class="empty-state"><h3>Ù„Ù… ÙŠØªÙ… Ø§Ù„Ø¹Ø«ÙˆØ± Ø¹Ù„Ù‰ Ù†ØªØ§Ø¦Ø¬</h3></div>';
+            mangasHtml = '<div class="empty-state"><h3>لم يتم العثور على نتائج</h3></div>';
         }
     }
     
@@ -160,12 +160,12 @@ window.generateHomeGridHtml = async function() {
 };
 
 /* ----------------------------------------------------
-   KAIRO/Ù…Ù†Ù‡ÙˆØ§ - MAIN APPLICATION JS CONTROLLER (PRO UPGRADE)
+   KAIRO/منهوا - MAIN APPLICATION JS CONTROLLER (PRO UPGRADE)
    VERSION: 2.5
 ------------------------------------------------------- */
 
 // ==========================================
-// 1. Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª ÙˆØ§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© (IndexedDB & State)
+// 1. قاعدة البيانات والبيانات الافتراضية (IndexedDB & State)
 // ==========================================
 
 const APP_VERSION = '2.5';
@@ -202,7 +202,7 @@ const BOOKMARK_STATUS_META = {
 };
 const BOOKMARK_STATUS_ORDER = ['', 'reading', 'plan', 'completed'];
 
-// Ù…Ø¹Ø±ÙØ§Øª Ø§Ù„ØªØ·Ø¨ÙŠÙ‚Ø§Øª Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠ (ØªÙØ­Ù…Ù‘Ù„ Ù…Ù† Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª)
+// معرفات التطبيقات لتسجيل الدخول الاجتماعي (تُحمّل من قاعدة البيانات)
 let GOOGLE_CLIENT_ID = '';
 let FACEBOOK_APP_ID = '';
 
@@ -295,7 +295,7 @@ function timeAgo(timestamp) {
     return '\u0645\u0646\u0630 ' + Math.floor(diff / 86400) + ' \u064a\u0648\u0645';
 }
 
-// ØªÙ‡ÙŠØ¦Ø© Ù‚Ø§Ø¹Ø¯Ø© Ø¨ÙŠØ§Ù†Ø§Øª IndexedDB Ù„Ø­ÙØ¸ Ø§Ù„ÙØµÙˆÙ„ Ù„Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„
+// تهيئة قاعدة بيانات IndexedDB لحفظ الفصول للقراءة دون اتصال
 function initDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -310,7 +310,7 @@ function initDB() {
     });
 }
 
-// Ø­ÙØ¸ Ø§Ù„ÙØµÙ„ ÙÙŠ IndexedDB (Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„)
+// حفظ الفصل في IndexedDB (القراءة دون اتصال)
 async function saveChapterOffline(mangaId, chapterId, images) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -329,7 +329,7 @@ async function saveChapterOffline(mangaId, chapterId, images) {
     });
 }
 
-// Ø¬Ù„Ø¨ Ø§Ù„ÙØµÙ„ Ø§Ù„Ù…Ø­ÙÙˆØ¸ Ù…Ù† IndexedDB
+// جلب الفصل المحفوظ من IndexedDB
 async function getChapterOffline(mangaId, chapterId) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -341,7 +341,7 @@ async function getChapterOffline(mangaId, chapterId) {
     });
 }
 
-// Ø¬Ù„Ø¨ ÙƒØ§ÙØ© Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ù…Ø­Ù…Ù„Ø©
+// جلب كافة الفصول المحملة
 async function getAllDownloadsOffline() {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -353,7 +353,7 @@ async function getAllDownloadsOffline() {
     });
 }
 
-// Ø­Ø°Ù ÙØµÙ„ Ù…Ø­Ù…Ù„
+// حذف فصل محمل
 async function deleteChapterOffline(mangaId, chapterId) {
     const db = await initDB();
     return new Promise((resolve, reject) => {
@@ -365,7 +365,7 @@ async function deleteChapterOffline(mangaId, chapterId) {
     });
 }
 
-// Ø¥Ù†ØªØ§Ø¬ ØµÙØ­Ø§Øª Ù…Ø§Ù†Ø¬Ø§ ØªØ¬Ø±ÙŠØ¨ÙŠØ© Ù…Ù…ÙŠØ²Ø© Ø¨ØªØµÙ…ÙŠÙ… Ù…ØªØ¬Ù‡ (SVG Pages) Ù„ØªØ¹Ù…Ù„ Ø£ÙˆÙÙ„Ø§ÙŠÙ† 100% ÙˆØ¨Ø³Ø±Ø¹Ø© ÙØ§Ø¦Ù‚Ø©
+// إنتاج صفحات مانجا تجريبية مميزة بتصميم متجه (SVG Pages) لتعمل أوفلاين 100% وبسرعة فائقة
 function generateMockPages(mangaTitle, chapNum, count = 5) {
     const pages = [];
     for (let i = 1; i <= count; i++) {
@@ -380,20 +380,20 @@ function generateMockPages(mangaTitle, chapNum, count = 5) {
                 </linearGradient>
             </defs>
             <rect width="100%" height="100%" fill="url(#g_${chapNum}_${i})"/>
-            <!-- Ø¥Ø·Ø§Ø± Ø¬Ù…Ø§Ù„ÙŠ -->
+            <!-- إطار جمالي -->
             <rect x="20" y="20" width="760" height="1160" rx="15" fill="none" stroke="#222638" stroke-width="2"/>
             <circle cx="400" cy="550" r="140" fill="#161924" stroke="#8a2be2" stroke-width="3" stroke-dasharray="12 6"/>
             
-            <!-- Ù†Øµ Ù…Ø­ØªÙˆÙ‰ Ø§Ù„ØµÙØ­Ø© -->
-            <text x="400" y="520" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="28" font-weight="bold" text-anchor="middle">KAIRO / Ù…Ù†Ù‡ÙˆØ§</text>
+            <!-- نص محتوى الصفحة -->
+            <text x="400" y="520" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="28" font-weight="bold" text-anchor="middle">KAIRO / منهوا</text>
             <text x="400" y="570" fill="#00f0ff" font-family="'Cairo', sans-serif" font-size="24" font-weight="600" text-anchor="middle">${mangaTitle}</text>
-            <text x="400" y="620" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="20" text-anchor="middle">Ø§Ù„ÙØµÙ„ ${chapNum} - Ø§Ù„ØµÙØ­Ø© ${i}</text>
+            <text x="400" y="620" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="20" text-anchor="middle">الفصل ${chapNum} - الصفحة ${i}</text>
             
-            <!-- Ù„ÙˆØ­Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ Ø§Ù„Ø²Ø®Ø±ÙÙŠØ© -->
+            <!-- لوحة المانجا الزخرفية -->
             <path d="M 300 800 L 500 800 L 450 950 L 350 950 Z" fill="#8a2be2" fill-opacity="0.1" stroke="#8a2be2" stroke-width="1"/>
             <line x1="50" y1="1100" x2="750" y2="1100" stroke="#222638" stroke-width="1"/>
             
-            <text x="400" y="1130" fill="#62667d" font-family="'Cairo', sans-serif" font-size="14" text-anchor="middle">Ø§Ø³ØªÙ…ØªØ¹ Ø¨Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ø³Ù„Ø³Ø© ÙˆØ§Ù„Ù…Ø­Ù…Ù„Ø© Ø¹Ù„Ù‰ Ø¬Ù‡Ø§Ø²Ùƒ</text>
+            <text x="400" y="1130" fill="#62667d" font-family="'Cairo', sans-serif" font-size="14" text-anchor="middle">استمتع بالقراءة السلسة والمحملة على جهازك</text>
         </svg>
         `;
         const encoded = btoa(unescape(encodeURIComponent(svg)));
@@ -402,7 +402,7 @@ function generateMockPages(mangaTitle, chapNum, count = 5) {
     return pages;
 }
 
-// Ø¥Ù†ØªØ§Ø¬ ØµÙØ­Ø§Øª Ù…Ø§Ù†Ø¬Ø§ Ù…Ù„ÙˆÙ†Ø© ÙˆØ­ØµØ±ÙŠØ© Ù„Ù€ Kingdom ØªØ­Ù…Ù„ Ø¹Ù„Ø§Ù…Ø© Ù…Ø§Ø¦ÙŠØ© Ù„Ù€ KAIRO/Ù…Ù†Ù‡ÙˆØ§
+// إنتاج صفحات مانجا ملونة وحصرية لـ Kingdom تحمل علامة مائية لـ KAIRO/منهوا
 function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
     const pages = [];
     for (let i = 1; i <= count; i++) {
@@ -418,37 +418,37 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
             </defs>
             <rect width="100%" height="100%" fill="url(#gk_${chapNum}_${i})"/>
             
-            <!-- Ø¥Ø·Ø§Ø± Ø¹Ø³ÙƒØ±ÙŠ Ø²Ø®Ø±ÙÙŠ -->
+            <!-- إطار عسكري زخرفي -->
             <rect x="25" y="25" width="750" height="1150" rx="10" fill="none" stroke="#ff9900" stroke-width="2" stroke-opacity="0.4"/>
             <rect x="35" y="35" width="730" height="1130" rx="6" fill="none" stroke="#22263b" stroke-width="1"/>
             
-            <!-- Ù„ÙˆØ­Ø§Øª Ù…Ø§Ù†Ø¬Ø§ Ù…Ù„ÙˆÙ†Ø© (Manga Panels Mockup) -->
-            <!-- Ù„ÙˆØ­Ø© 1: Ù…Ø´Ù‡Ø¯ Ø­ÙˆØ§Ø±ÙŠ -->
+            <!-- لوحات مانجا ملونة (Manga Panels Mockup) -->
+            <!-- لوحة 1: مشهد حواري -->
             <rect x="60" y="80" width="680" height="300" rx="8" fill="#161924" stroke="#cc0022" stroke-width="2"/>
             <path d="M 60 80 L 740 380" stroke="#cc0022" stroke-width="1" stroke-opacity="0.1"/>
-            <text x="400" y="200" fill="#f8f9fa" font-family="'Cairo', sans-serif" font-size="24" font-weight="bold" text-anchor="middle">Ù…ÙˆÙ‚Ø¹Ø© ØªÙˆØ­ÙŠØ¯ Ø§Ù„Ù…Ù‚Ø§Ø·Ø¹Ø§Øª Ø§Ù„ÙƒØ¨Ø±Ù‰</text>
-            <text x="400" y="240" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="18" font-weight="700" text-anchor="middle">Ø´ÙŠÙ†: "Ø³Ø£ÙƒÙˆÙ† Ø£Ø¹Ø¸Ù… Ø¬Ù†Ø±Ø§Ù„ ØªØ­Øª Ù‡Ø°Ù‡ Ø§Ù„Ø³Ù…Ø§Ø¡!"</text>
+            <text x="400" y="200" fill="#f8f9fa" font-family="'Cairo', sans-serif" font-size="24" font-weight="bold" text-anchor="middle">موقعة توحيد المقاطعات الكبرى</text>
+            <text x="400" y="240" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="18" font-weight="700" text-anchor="middle">شين: "سأكون أعظم جنرال تحت هذه السماء!"</text>
             
-            <!-- Ù„ÙˆØ­Ø© 2: Ù„ÙˆØ­Ø© ØªØ¹Ø¨ÙŠØ±ÙŠØ© Ù„Ù„Ù‚ØªØ§Ù„ -->
+            <!-- لوحة 2: لوحة تعبيرية للقتال -->
             <rect x="60" y="410" width="320" height="400" rx="8" fill="#241a22" stroke="#8a2be2" stroke-width="1"/>
-            <text x="220" y="600" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">ØµÙˆØª Ø§Ù„Ø³ÙŠÙˆÙ! *ÙƒÙ„Ø§Ø´*</text>
+            <text x="220" y="600" fill="#ff007f" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">صوت السيوف! *كلاش*</text>
             
-            <!-- Ù„ÙˆØ­Ø© 3: ÙˆØ¬Ù‡ Ø´ÙŠÙ† Ø§Ù„ØºØ§Ø¶Ø¨ -->
+            <!-- لوحة 3: وجه شين الغاضب -->
             <rect x="420" y="410" width="320" height="400" rx="8" fill="#162029" stroke="#00f0ff" stroke-width="1"/>
-            <text x="580" y="600" fill="#00f0ff" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">Ù‡Ø¬ÙˆÙ… ÙƒØªÙŠØ¨Ø© Ø§Ù„Ù‡ÙŠ Ø´ÙŠÙ†!</text>
+            <text x="580" y="600" fill="#00f0ff" font-family="'Cairo', sans-serif" font-size="22" font-weight="800" text-anchor="middle">هجوم كتيبة الهي شين!</text>
             
-            <!-- Ù„ÙˆØ­Ø© 4: Ù…Ø´Ù‡Ø¯ Ø§Ø³ØªØ±Ø§ØªÙŠØ¬ÙŠ -->
+            <!-- لوحة 4: مشهد استراتيجي -->
             <rect x="60" y="840" width="680" height="250" rx="8" fill="#161924" stroke="#ff9900" stroke-width="1"/>
-            <text x="400" y="965" fill="#9ba0b4" font-family="'Cairo', sans-serif" font-size="18" text-anchor="middle">Ø®Ø±ÙŠØ·Ø© Ø§Ù„ØªÙ‚Ø¯Ù… Ø§Ù„ØªÙƒØªÙŠÙƒÙŠ Ù„Ø¬ÙŠØ´ ØªØ´ÙŠÙ†</text>
+            <text x="400" y="965" fill="#9ba0b4" font-family="'Cairo', sans-serif" font-size="18" text-anchor="middle">خريطة التقدم التكتيكي لجيش تشين</text>
 
-            <!-- Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ø§Ù„Ù…Ø§Ø¦ÙŠØ© Ø§Ù„Ø­ØµØ±ÙŠØ© Ø§Ù„ÙƒØ¨ÙŠØ±Ø© (Glowing Neon Watermark) -->
+            <!-- العلامة المائية الحصرية الكبيرة (Glowing Neon Watermark) -->
             <g transform="rotate(-30 400 600)" opacity="0.12">
                 <rect x="100" y="540" width="600" height="120" fill="#cc0022" rx="15"/>
-                <text x="400" y="615" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="40" font-weight="900" text-anchor="middle" letter-spacing="2">KAIRO / Ù…Ù†Ù‡ÙˆØ§ - Ø­ØµØ±ÙŠ</text>
+                <text x="400" y="615" fill="#ffffff" font-family="'Cairo', sans-serif" font-size="40" font-weight="900" text-anchor="middle" letter-spacing="2">KAIRO / منهوا - حصري</text>
             </g>
             
-            <!-- Ø¹Ù„Ø§Ù…Ø© Ù…Ø§Ø¦ÙŠØ© ØµØºÙŠØ±Ø© Ø«Ø§Ø¨ØªØ© Ø¨Ø§Ù„Ø£Ø³ÙÙ„ -->
-            <text x="400" y="1125" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="16" font-weight="bold" text-anchor="middle">Ø­ØµØ±ÙŠ ÙˆÙ…ØªØ±Ø¬Ù… Ù„Ù€ KAIRO/Ù…Ù†Ù‡ÙˆØ§ - Ø§Ù„ÙØµÙ„ ${chapNum} - Ø§Ù„ØµÙØ­Ø© ${i}</text>
+            <!-- علامة مائية صغيرة ثابتة بالأسفل -->
+            <text x="400" y="1125" fill="#ff9900" font-family="'Cairo', sans-serif" font-size="16" font-weight="bold" text-anchor="middle">حصري ومترجم لـ KAIRO/منهوا - الفصل ${chapNum} - الصفحة ${i}</text>
         </svg>
         `;
         const encoded = btoa(unescape(encodeURIComponent(svg)));
@@ -457,41 +457,41 @@ function generateKingdomMockPages(mangaTitle, chapNum, count = 5) {
     return pages;
 }
 
-// Ù…ÙˆÙ„Ø¯ Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠ Ù„ØªÙ‚Ù„ÙŠÙ„ Ø­Ø¬Ù… Ø§Ù„ÙƒÙˆØ¯ Ø§Ù„Ø¨Ø±Ù…Ø¬ÙŠ ÙˆØªÙˆÙÙŠØ± Ù‚Ø§Ø¹Ø¯Ø© Ø¨ÙŠØ§Ù†Ø§Øª ÙƒØ§Ù…Ù„Ø©
+// مولد الفصول التلقائي التفاعلي لتقليل حجم الكود البرمجي وتوفير قاعدة بيانات كاملة
 function populateDefaultChapters(maxChapters, isKingdom = false) {
     const chapters = [];
     for (let i = maxChapters; i >= 1; i--) {
         chapters.push({
             id: String(i),
-            title: `Ø§Ù„ÙØµÙ„ ${i}: ${isKingdom ? 'Ù…ÙˆÙ‚Ø¹Ø© ØªÙˆØ­ÙŠØ¯ Ø§Ù„ØµÙŠÙ† Ø§Ù„Ø¹Ø¸Ù…Ù‰' : 'Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ù…ØºØ§Ù…Ø±Ø© ÙˆØ§Ù„Ù‚ØªØ§Ù„'} ${isKingdom ? '(Ù…Ù„ÙˆÙ† ÙˆØ­ØµØ±ÙŠ)' : ''}`,
-            date: new Date(Date.now() - (maxChapters - i) * 8 * 60 * 60 * 1000).toISOString().split('T')[0], // ØªÙˆØ§Ø±ÙŠØ® ÙˆØ§Ù‚Ø¹ÙŠØ© Ù…ØªØ³Ù„Ø³Ù„Ø©
-            images: [] // Ù…ØµÙÙˆÙØ© ÙØ§Ø±ØºØ© Ø³ÙŠØªÙ… ØªÙˆÙ„ÙŠØ¯ ØµÙˆØ±Ù‡Ø§ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ§Ù‹ Ø¹Ù„Ù‰ Ø§Ù„Ø·Ø§ÙŠØ± ÙÙŠ Ø§Ù„Ù‚Ø§Ø±Ø¦
+            title: `الفصل ${i}: ${isKingdom ? 'موقعة توحيد الصين العظمى' : 'بداية المغامرة والقتال'} ${isKingdom ? '(ملون وحصري)' : ''}`,
+            date: new Date(Date.now() - (maxChapters - i) * 8 * 60 * 60 * 1000).toISOString().split('T')[0], // تواريخ واقعية متسلسلة
+            images: [] // مصفوفة فارغة سيتم توليد صورها ديناميكياً على الطاير في القارئ
         });
     }
     return chapters;
 }
 
-// Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ù„Ù„Ù…ÙˆÙ‚Ø¹
+// البيانات الافتراضية للموقع
 const DEFAULT_MANGAS = [
     {
         id: "1",
-        title: "Ø³ÙˆÙ„Ùˆ Ù„ÙŠÙÙŠÙ„ÙŠÙ†Øº (Solo Leveling)",
+        title: "سولو ليفيلينغ (Solo Leveling)",
         alternative: "Na Honjaman Level Up",
         author: "Chugong",
         cover: "solo_leveling_cover.jpg",
         banner: "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=1200&auto=format&fit=crop&q=80",
         rating: 4.9,
-        status: "Ù…ÙƒØªÙ…Ù„",
-        type: "Ù…Ù†Ù‡ÙˆØ§",
+        status: "مكتمل",
+        type: "منهوا",
         views: 0,
-        genres: ["Ø£ÙƒØ´Ù†", "Ù…ØºØ§Ù…Ø±Ø©", "Ø®ÙŠØ§Ù„", "Ù‚ÙˆÙ‰ Ø®Ø§Ø±Ù‚Ø©"],
-        synopsis: "ÙÙŠ Ø¹Ø§Ù„Ù… ÙŠØ±Ø¨Ø· ÙÙŠÙ‡ Ø¨ÙˆØ§Ø¨Ø© ØºØ§Ù…Ø¶Ø© Ø¹Ø§Ù„Ù… Ø§Ù„Ø¨Ø´Ø± Ø¨Ø¹Ø§Ù„Ù… Ø§Ù„ÙˆØ­ÙˆØ´ØŒ ÙŠÙƒØªØ´Ù Ø§Ù„ØµÙŠØ§Ø¯ Ø§Ù„Ø£Ø¶Ø¹Ù Ø³ÙˆÙ†Øº Ø¬ÙŠÙ† ÙˆÙˆ Ù†Ø¸Ø§Ù…Ø§Ù‹ ØºØ§Ù…Ø¶Ø§Ù‹ ÙŠÙ…Ù†Ø­Ù‡ Ø§Ù„Ù‚Ø¯Ø±Ø© Ø§Ù„ÙØ±ÙŠØ¯Ø© Ø¹Ù„Ù‰ Ø±ÙØ¹ Ù…Ø³ØªÙˆØ§Ù‡ Ø¨Ù„Ø§ Ø­Ø¯ÙˆØ¯.",
+        genres: ["أكشن", "مغامرة", "خيال", "قوى خارقة"],
+        synopsis: "في عالم يربط فيه بوابة غامضة عالم البشر بعالم الوحوش، يكتشف الصياد الأضعف سونغ جين وو نظاماً غامضاً يمنحه القدرة الفريدة على رفع مستواه بلا حدود.",
         chapters: populateDefaultChapters(200, false)
     }
 ];
 
 // ==========================================
-// 1.5. Ø§Ù„Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ù…Ø³Ø§Ø¹Ø¯Ø© (Utilities)
+// 1.5. الأدوات المساعدة (Utilities)
 // ==========================================
 
 function showToast(msg, type = 'info', duration = 3500) {
@@ -540,7 +540,7 @@ function getRelatedMangas(manga, count = 6) {
 }
 
 // ==========================================
-// 2. Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø­Ø§Ù„Ø© Ø§Ù„Ø¹Ø§Ù…Ø© ÙˆØ§Ù„ØªØ®Ø²ÙŠÙ† (State Management)
+// 2. إدارة الحالة العامة والتخزين (State Management)
 // ==========================================
 
 class AppState {
@@ -571,16 +571,16 @@ class AppState {
         this.searchQuery = '';
         this.showSearchSuggestions = false;
         this.chapterSearchQuery = '';
-        this.activeGenre = 'Ø§Ù„ÙƒÙ„';
-        this.filterStatus = 'Ø§Ù„ÙƒÙ„';
-        this.filterType = 'Ø§Ù„ÙƒÙ„';
+        this.activeGenre = 'الكل';
+        this.filterStatus = 'الكل';
+        this.filterType = 'الكل';
         this.filterYearMin = '';
         this.filterYearMax = '';
         this.filterRatingMin = '';
         this.filterRatingMax = '';
         this.filterChaptersMin = '';
         this.filterChaptersMax = '';
-        this.filterSort = 'Ø§Ù„Ø£Ø­Ø¯Ø«';
+        this.filterSort = 'الأحدث';
         this.filterTime = 'all';
         this.chapterSortOrder = 'newest';
         this.leaderboardTab = 'all';
@@ -610,7 +610,7 @@ class AppState {
         this.dailyRewardLoading = false;
         this.searchViewMode = 'grid';
         this.searchPage = 1;
-        this.searchScope = 'Ø§Ù„ÙƒÙ„';
+        this.searchScope = 'الكل';
         this.browseShowFilters = false;
         
         if (this.sessionToken) {
@@ -890,11 +890,11 @@ class AppState {
         toast.id = 'level-up-toast';
         toast.innerHTML = `
             <div class="level-up-content">
-                <div class="level-up-icon">ðŸŽ‰</div>
+                <div class="level-up-icon">🎉</div>
                 <div class="level-up-text">
-                    <h3>ØªÙ‡Ø§Ù†ÙŠÙ†Ø§!</h3>
-                    <p>Ù„Ù‚Ø¯ ØµØ¹Ø¯Øª Ù„Ù„Ù…Ø³ØªÙˆÙ‰ <strong>${newLevel}</strong></p>
-                    <p class="level-up-rank">Ø±ØªØ¨ØªÙƒ: ${rankName}</p>
+                    <h3>تهانينا!</h3>
+                    <p>لقد صعدت للمستوى <strong>${newLevel}</strong></p>
+                    <p class="level-up-rank">رتبتك: ${rankName}</p>
                 </div>
             </div>
         `;
@@ -916,7 +916,7 @@ class AppState {
         const key = `${mangaId}_${chapterId}`;
         if (!this.comments[key]) this.comments[key] = [];
         this.comments[key].push({
-            user: username || 'Ù…Ø¬Ù‡ÙˆÙ„',
+            user: username || 'مجهول',
             text,
             date: new Date().toLocaleDateString('ar-EG')
         });
@@ -940,7 +940,7 @@ class AppState {
     loadUserProfile() {
         const stored = localStorage.getItem('kairo_user_profile');
         this.userProfile = this.safeParse(stored, {
-            username: 'Ø£ÙˆØªÙ„Ø§ÙŠÙ†Ø± Ù…Ù…ÙŠØ²',
+            username: 'أوتلاينر مميز',
             points: 0,
             level: 1
         });
@@ -980,10 +980,10 @@ class AppState {
     }
 
     getRankName(level) {
-    if (level <= 30) return 'Ù…Ø¨ØªØ¯Ø¦';
-    if (level <= 60) return 'Ù‚Ø§Ø±Ø¦ Ù…Ù…ØªØ§Ø²';
-    if (level <= 99) return 'Ù‚Ø§Ø±Ø¦ Ø£Ø³Ø·ÙˆØ±ÙŠ';
-    return 'Ù…Ø¯ÙŠØ± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹';
+    if (level <= 30) return 'مبتدئ';
+    if (level <= 60) return 'قارئ ممتاز';
+    if (level <= 99) return 'قارئ أسطوري';
+    return 'مدير المشروع';
     }
 
     async fetchUserProfile() {
@@ -1094,8 +1094,8 @@ class AppState {
             cover: cleanCover,
             banner: cleanBanner,
             rating: 5.0,
-            status: 'Ù…Ø³ØªÙ…Ø±',
-            type: type || 'Ù…Ù†Ù‡ÙˆØ§',
+            status: 'مستمر',
+            type: type || 'منهوا',
             views: 0,
             genres: genres.split(/[,\u060C]+/).map(g => g.trim()).filter(g => g !== ''),
             synopsis,
@@ -1116,19 +1116,19 @@ class AppState {
                 if (response.ok) {
                     this.mangas.unshift(newManga);
                     this.saveMangas();
-                    alert("ØªÙ… Ø¥Ø¯Ø±Ø§Ø¬ Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„ÙÙ†ÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙŠØ±ÙØ± Ø¨Ù†Ø¬Ø§Ø­!");
+                    alert("تم إدراج العمل الفني على السيرفر بنجاح!");
                     navigate('home');
                 } else {
                     const err = await response.json();
-                    alert(`ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸: ${err.error || 'Ø®Ø·Ø£ ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ'}`);
+                    alert(`فشل الحفظ: ${err.error || 'خطأ غير معروف'}`);
                 }
             } catch (e) {
-                alert("Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù… ÙˆØ­ÙØ¸ Ø§Ù„Ù…Ù†Ù‡ÙˆØ§.");
+                alert("خطأ في الاتصال بالخادم وحفظ المنهوا.");
             }
         } else {
             this.mangas.unshift(newManga);
             this.saveMangas();
-            alert("ØªÙ… Ø­ÙØ¸ Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù…Ø­Ù„ÙŠØ§Ù‹ (ØºÙŠØ± Ù…Ø³Ø¬Ù„Ø© Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙŠØ±ÙØ± Ù„Ø£Ù†Ùƒ Ù„Ø³Øª Ø§Ù„Ù…Ø¯ÙŠØ±).");
+            alert("تم حفظ المنهوا محلياً (غير مسجلة على السيرفر لأنك لست المدير).");
             navigate('home');
         }
     }
@@ -1146,7 +1146,7 @@ class AppState {
 
         const newChapter = {
             id: String(chapterNo),
-            title: title || `Ø§Ù„ÙØµÙ„ ${chapterNo}`,
+            title: title || `الفصل ${chapterNo}`,
             date: new Date().toISOString().split('T')[0],
             images
         };
@@ -1172,20 +1172,20 @@ class AppState {
                 });
                 if (response.ok) {
                     this.saveMangas();
-                    alert(`ØªÙ… Ø±ÙØ¹ ÙˆÙ†Ø´Ø± Ø§Ù„ÙØµÙ„ ${chapterNo} Ø¨Ù†Ø¬Ø§Ø­!`);
+                    alert(`تم رفع ونشر الفصل ${chapterNo} بنجاح!`);
                     navigate('detail', mangaId);
                 } else {
                     manga.chapters = originalChapters;
                     const err = await response.json();
-                    alert(`ÙØ´Ù„ Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„: ${err.error || 'Ø®Ø·Ø£ ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙ'}`);
+                    alert(`فشل إضافة الفصل: ${err.error || 'خطأ غير معروف'}`);
                 }
             } catch (e) {
                 manga.chapters = originalChapters;
-                alert("Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± ÙˆØ¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„.");
+                alert("خطأ في الاتصال بالسيرفر وإضافة الفصل.");
             }
         } else {
             this.saveMangas();
-            alert(`ØªÙ… Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„ ${chapterNo} Ù…Ø­Ù„ÙŠØ§Ù‹.`);
+            alert(`تم إضافة الفصل ${chapterNo} محلياً.`);
             navigate('detail', mangaId);
         }
     }
@@ -1222,15 +1222,15 @@ class AppState {
 const state = new AppState();
 
 // ==========================================
-// 3. Ù…Ø­Ø±Ùƒ Ø§Ù„ØªÙ†Ù‚Ù„ ÙˆØ§Ù„ØªØ­ÙƒÙ… ÙˆØ§Ù„ÙˆØ§Ø¬Ù‡Ø§Øª (Routing & Views)
+// 3. محرك التنقل والتحكم والواجهات (Routing & Views)
 // ==========================================
 
-// Ø¯Ø§Ù„Ø© Ù…ÙˆØ­Ø¯Ø© Ù„Ù…Ù‚Ø§Ø±Ù†Ø© ÙˆØªØ·Ø¨ÙŠØ¹ Ù…Ø¹Ø±ÙØ§Øª Ø§Ù„ÙØµÙˆÙ„ Ù„Ù…Ù†Ø¹ Ø£ÙŠ ØªØ¹Ø§Ø±Ø¶ ÙÙŠ Ø§Ù„Ø£Ù†ÙˆØ§Ø¹ Ø£Ùˆ Ø§Ù„ØªÙ†Ø³ÙŠÙ‚Ø§Øª
+// دالة موحدة لمقارنة وتطبيع معرفات الفصول لمنع أي تعارض في الأنواع أو التنسيقات
 function normalizeChapterId(id) {
     if (id === null || id === undefined) return '';
-    // Ø¥Ø²Ø§Ù„Ø© Ø£ÙŠ Ù…Ø¹Ø§Ù…Ù„Ø§Øª Ø¥Ø¶Ø§ÙÙŠØ© Ø¨Ø¹Ø¯ Ø¹Ù„Ø§Ù…Ø© Ø§Ù„Ø§Ø³ØªÙÙ‡Ø§Ù… Ø¥Ù† ÙˆØ¬Ø¯Øª (Ù…Ø«Ù„ ?v=1.9)
+    // إزالة أي معاملات إضافية بعد علامة الاستفهام إن وجدت (مثل ?v=1.9)
     let cleanId = String(id).split('?')[0].trim();
-    // ØªØ­ÙˆÙŠÙ„ Ø§Ù„Ø£Ø±Ù‚Ø§Ù… Ø§Ù„Ø¹Ø´Ø±ÙŠØ© Ø§Ù„ØµØ§ÙÙŠØ© Ù…Ø«Ù„ 200.0 Ø¥Ù„Ù‰ 200
+    // تحويل الأرقام العشرية الصافية مثل 200.0 إلى 200
     if (!isNaN(cleanId) && cleanId.includes('.')) {
         const parsed = parseFloat(cleanId);
         if (parsed % 1 === 0) {
@@ -1263,7 +1263,7 @@ function navigate(view, param1 = null, param2 = null) {
 }
 
 async function handleRouting() {
-    // Ø§Ù„ØªØ­ÙˆÙŠÙ„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ù„Ù„Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ù†Ø¸ÙŠÙØ© (Clean URLs) Ø¥Ù„Ù‰ Ù…Ø³Ø§Ø±Ø§Øª Ø§Ù„Ù‡Ø§Ø´ (Hash URLs) Ù„Ù…Ù†Ø¹ Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ø§Ù„Ø®Ø§Ø·Ø¦
+    // التحويل التلقائي للمسارات النظيفة (Clean URLs) إلى مسارات الهاش (Hash URLs) لمنع التوجيه الخاطئ
     const path = window.location.pathname;
     if (path.startsWith('/manga/') || path.startsWith('/reader/')) {
         window.location.replace('/#' + path + window.location.search);
@@ -1333,15 +1333,15 @@ async function handleRouting() {
     state.activePageIndex = 0;
     state.chapterSearchQuery = '';
     
-    // SEO: ØªØ­Ø¯ÙŠØ« meta tags Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ§Ù‹ Ø­Ø³Ø¨ Ø§Ù„Ù…Ø³Ø§Ø±
-    var seoTitle = 'KAIRO / Ù…Ù†Ù‡ÙˆØ§ - Ù…Ù†ØµØ© Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ø£ÙˆÙ„Ù‰';
-    var seoDesc = 'Ù…Ù†ØµØ© KAIRO/Ù…Ù†Ù‡ÙˆØ§ - Ø§Ù‚Ø±Ø£ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù„Ø¯ÙŠÙƒ Ø¨Ø¬ÙˆØ¯Ø© Ø¹Ø§Ù„ÙŠØ© ÙˆØ¨Ø¯ÙˆÙ† Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ù…Ø²Ø¹Ø¬Ø©.';
+    // SEO: تحديث meta tags ديناميكياً حسب المسار
+    var seoTitle = 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
+    var seoDesc = 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة.';
     var seoImg = '';
     
     if (state.currentView === 'detail' && state.activeMangaId) {
         var manga = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
         if (manga) {
-            seoTitle = manga.title + ' | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
+            seoTitle = manga.title + ' | KAIRO / منهوا';
             seoDesc = manga.synopsis ? manga.synopsis.substring(0, 200) : seoDesc;
             seoImg = getDisplayCover(manga);
         }
@@ -1349,46 +1349,46 @@ async function handleRouting() {
         var mangaR = state.mangas.find(function(m) { return m.id === state.activeMangaId; });
         if (mangaR && Array.isArray(mangaR.chapters)) {
             var chapter = mangaR.chapters.find(function(c) { return normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId); });
-            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'ÙØµÙ„ ' + state.activeChapterId) + ' | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-            seoDesc = 'Ø§Ù‚Ø±Ø£ ' + mangaR.title + ' Ø§Ù„ÙØµÙ„ ' + state.activeChapterId + ' Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+            seoTitle = mangaR.title + ' - ' + (chapter ? chapter.title : 'فصل ' + state.activeChapterId) + ' | KAIRO / منهوا';
+            seoDesc = 'اقرأ ' + mangaR.title + ' الفصل ' + state.activeChapterId + ' على KAIRO/منهوا';
             seoImg = getDisplayCover(mangaR);
         }
     } else if (state.currentView === 'bookmarks') {
-        seoTitle = 'Ø§Ù„Ù…ÙØ¶Ù„Ø© | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù„Ø¯ÙŠÙƒ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'المفضلة | KAIRO / منهوا';
+        seoDesc = 'قائمة المانجا والمنهوا المفضلة لديك على KAIRO/منهوا';
     } else if (state.currentView === 'history') {
-        seoTitle = 'Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ø³Ø¬Ù„ Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'سجل القراءة | KAIRO / منهوا';
+        seoDesc = 'سجل قراءة المانجا والمنهوا على KAIRO/منهوا';
     } else if (state.currentView === 'downloads') {
-        seoTitle = 'Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ù…Ø­Ù…Ù„Ø© | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ù…Ø­Ù…Ù„Ø© Ù„Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'الفصول المحملة | KAIRO / منهوا';
+        seoDesc = 'الفصول المحملة للقراءة دون اتصال على KAIRO/منهوا';
     } else if (state.currentView === 'admin') {
-        seoTitle = 'Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ù„ÙˆØ­Ø© ØªØ­ÙƒÙ… ÙˆØ¥Ø¯Ø§Ø±Ø© Ù…ÙˆÙ‚Ø¹ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'لوحة الإدارة | KAIRO / منهوا';
+        seoDesc = 'لوحة تحكم وإدارة موقع KAIRO/منهوا';
     } else if (state.currentView === 'profile') {
-        seoTitle = (state.profileUsername || 'Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…') + ' | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ù…Ù„Ù ØªØ¹Ø±ÙŠÙ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = (state.profileUsername || 'المستخدم') + ' | KAIRO / منهوا';
+        seoDesc = 'ملف تعريف المستخدم على KAIRO/منهوا';
     } else if (state.currentView === 'leaderboard') {
-        seoTitle = 'Ø§Ù„Ù…ØªØµØ¯Ø±ÙŠÙ† | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ù‚Ø§Ø¦Ù…Ø© Ø£ÙƒØ«Ø± Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù†Ø´Ø§Ø·Ø§Ù‹ ÙˆÙ†Ù‚Ø§Ø·Ø§Ù‹ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'المتصدرين | KAIRO / منهوا';
+        seoDesc = 'قائمة أكثر المستخدمين نشاطاً ونقاطاً على KAIRO/منهوا';
     } else if (state.currentView === 'suggestions') {
         root.innerHTML = `<div class="page-fade-enter">${SuggestionsViewComponent()}</div>`;
     } else if (state.currentView === 'announcements') {
-        seoTitle = 'Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ø¢Ø®Ø± Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª ÙˆØ§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'الإعلانات | KAIRO / منهوا';
+        seoDesc = 'آخر الإعلانات والتحديثات على KAIRO/منهوا';
     } else if (state.currentView === 'store') {
-        seoTitle = 'Ø§Ù„Ù…ØªØ¬Ø± | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ø§Ø³ØªØ¨Ø¯Ù„ Ù†Ù‚Ø§Ø·Ùƒ Ø¨Ø¹Ù†Ø§ØµØ± Ø­ØµØ±ÙŠØ© ÙÙŠ Ù…ØªØ¬Ø± KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'المتجر | KAIRO / منهوا';
+        seoDesc = 'استبدل نقاطك بعناصر حصرية في متجر KAIRO/منهوا';
     } else if (state.currentView === 'search') {
         const q = state.searchQuery || '';
-        seoTitle = q ? `Ø¨Ø­Ø«: ${q} | KAIRO / Ù…Ù†Ù‡ÙˆØ§` : 'Ø¨Ø­Ø« Ù…ØªÙ‚Ø¯Ù… | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = q ? `Ù†ØªØ§Ø¦Ø¬ Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† "${q}" ÙÙŠ KAIRO/Ù…Ù†Ù‡ÙˆØ§` : 'Ø§Ø¨Ø­Ø« Ø¹Ù† Ù…Ø§Ù†Ø¬Ø§ØŒ Ù…Ø§Ù†Ù‡ÙˆØ§ØŒ ÙˆÙ…Ø³ØªØ®Ø¯Ù…ÙŠÙ† ÙÙŠ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = q ? `بحث: ${q} | KAIRO / منهوا` : 'بحث متقدم | KAIRO / منهوا';
+        seoDesc = q ? `نتائج البحث عن "${q}" في KAIRO/منهوا` : 'ابحث عن مانجا، مانهوا، ومستخدمين في KAIRO/منهوا';
     } else if (state.currentView === 'chat') {
-        seoTitle = 'Ø§Ù„Ø´Ø§Øª Ø§Ù„Ø¹Ø§Ù… | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'ØªØ­Ø¯Ø« Ù…Ø¹ Ù…Ø¬ØªÙ…Ø¹ Ø§Ù„Ù‚Ø±Ø§Ø¡ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'الشات العام | KAIRO / منهوا';
+        seoDesc = 'تحدث مع مجتمع القراء على KAIRO/منهوا';
     } else if (state.currentView === 'reset-password') {
-        seoTitle = 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± | KAIRO / Ù…Ù†Ù‡ÙˆØ§';
-        seoDesc = 'Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù„Ø­Ø³Ø§Ø¨Ùƒ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§';
+        seoTitle = 'استعادة كلمة المرور | KAIRO / منهوا';
+        seoDesc = 'استعادة كلمة المرور لحسابك على KAIRO/منهوا';
     }
     
     updateSEOMeta(seoTitle, seoDesc, seoImg);
@@ -1401,12 +1401,12 @@ async function handleRouting() {
     renderApp();
 }
 
-// Ø§Ø³ØªÙ…Ø§Ø¹ Ù„ØªØºÙŠØ±Ø§Øª Ø§Ù„Ù‡Ø§Ø´ ÙÙŠ Ø§Ù„Ù…ØªØµÙØ­ Ù„Ù„ØªÙ†Ù‚Ù„
+// استماع لتغيرات الهاش في المتصفح للتنقل
 window.addEventListener('hashchange', handleRouting);
 
 function updateSEOMeta(title, description, image) {
-    document.title = title || 'KAIRO / Ù…Ù†Ù‡ÙˆØ§ - Ù…Ù†ØµØ© Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ø£ÙˆÙ„Ù‰';
-    let desc = description || 'Ù…Ù†ØµØ© KAIRO/Ù…Ù†Ù‡ÙˆØ§ - Ø§Ù‚Ø±Ø£ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø§Ù„Ù…ÙØ¶Ù„Ø© Ù„Ø¯ÙŠÙƒ Ø¨Ø¬ÙˆØ¯Ø© Ø¹Ø§Ù„ÙŠØ© ÙˆØ¨Ø¯ÙˆÙ† Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ù…Ø²Ø¹Ø¬Ø©. ØªØ¯Ø¹Ù… Ø§Ù„ØªØ­Ù…ÙŠÙ„ ÙˆØ§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø¥Ù†ØªØ±Ù†Øª.';
+    document.title = title || 'KAIRO / منهوا - منصة قراءة المانجا والمنهوا الأولى';
+    let desc = description || 'منصة KAIRO/منهوا - اقرأ المانجا والمنهوا المفضلة لديك بجودة عالية وبدون إعلانات مزعجة. تدعم التحميل والقراءة دون اتصال بالإنترنت.';
     let img = image || '';
     let setMeta = function(name, value) {
         document.querySelectorAll('meta[name="' + name + '"], meta[property="' + name + '"]').forEach(function(el) { el.remove(); });
@@ -1453,15 +1453,15 @@ function prefetchNextChapter(images) {
 }
 
 // ==========================================
-// 4. Ø¨Ù†Ø§Ø¡ Ø§Ù„Ù…ÙƒÙˆÙ†Ø§Øª (UI Components Rendering)
+// 4. بناء المكونات (UI Components Rendering)
 // ==========================================
 
-// Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ†Ù‚Ù„ Ø§Ù„Ø¹Ù„ÙˆÙŠ
+// شريط التنقل العلوي
 function HeaderComponent() {
     const activeView = state.currentView;
     const s = state;
     const isAdmin = state.userRole === 'admin';
-    const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-sliders"></i> Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©</button>` : '';
+    const adminButton = isAdmin ? `<button class="admin-btn" id="nav-admin"><i class="fa-solid fa-sliders"></i> الإدارة</button>` : '';
 
     let rightSection = '';
     
@@ -1472,8 +1472,8 @@ function HeaderComponent() {
         <div id="rewards-dropdown" class="top-dropdown">
             <div class="close-modal-btn" onclick="window.toggleTopDropdown('rewards-dropdown')"><i class="fa-solid fa-xmark"></i></div>
             <div class="rewards-header">
-                <div class="rewards-title"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</div>
-                <div class="rewards-subtitle">Ø§Ù„ÙŠÙˆÙ… 2 Ù…Ù† 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> ÙŠÙˆÙ… Ù…ØªØªØ§Ù„Ù</div>
+                <div class="rewards-title"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
+                <div class="rewards-subtitle">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
             </div>
             <div class="rewards-grid">
                 <div class="reward-card completed">
@@ -1508,8 +1508,8 @@ function HeaderComponent() {
                 </div>
                 <div class="reward-card wide locked">
                     <div>
-                        <div class="reward-day" style="font-weight:bold; color:#fff;">Ø§Ù„ÙŠÙˆÙ… 7</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">Ù…ÙƒØ§ÙØ£Ø© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">Ù…Ø¶Ø§Ø¹Ù</span></div>
+                        <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
                         <div class="reward-prizes" style="margin-top:5px; font-size:1rem;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
                     </div>
                     <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
@@ -1522,15 +1522,15 @@ function HeaderComponent() {
         <div id="theme-dropdown" class="top-dropdown">
             <div class="close-modal-btn" onclick="window.toggleTopDropdown('theme-dropdown')"><i class="fa-solid fa-xmark"></i></div>
             <div class="theme-header">
-                <div style="font-weight:bold;"><i class="fa-solid fa-palette" style="color:var(--primary-color);"></i> Ø§Ù„Ù…Ø¸Ù‡Ø±</div>
-                <div style="font-size:0.8rem; color:var(--text-muted);">Ø§Ø®ØªØ± Ø§Ù„Ù…Ø¸Ù‡Ø± Ø§Ù„Ø°ÙŠ ÙŠÙ†Ø§Ø³Ø¨Ùƒ</div>
+                <div style="font-weight:bold;"><i class="fa-solid fa-palette" style="color:var(--primary-color);"></i> المظهر</div>
+                <div style="font-size:0.8rem; color:var(--text-muted);">اختر المظهر الذي يناسبك</div>
             </div>
             <div class="theme-tabs">
-                <div class="theme-tab active" onclick="setThemeMode('dark')"><i class="fa-regular fa-moon"></i> Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„Ø¯Ø§ÙƒÙ†</div>
-                <div class="theme-tab" onclick="setThemeMode('light')"><i class="fa-regular fa-sun"></i> Ø§Ù„ÙˆØ¶Ø¹ Ø§Ù„ÙØ§ØªØ­</div>
+                <div class="theme-tab active" onclick="setThemeMode('dark')"><i class="fa-regular fa-moon"></i> الوضع الداكن</div>
+                <div class="theme-tab" onclick="setThemeMode('light')"><i class="fa-regular fa-sun"></i> الوضع الفاتح</div>
             </div>
             <div style="padding:0 15px; font-weight:bold; font-size:0.9rem; color:var(--primary-color); display:flex; align-items:center; gap:8px;">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø§Øª Ø§Ù„Ø¯Ø§ÙƒÙ†Ø©
+                <i class="fa-solid fa-wand-magic-sparkles"></i> المجموعات الداكنة
             </div>
             <div class="themes-grid">
                 <div class="theme-preview-card active" onclick="applyTheme('default')">
@@ -1562,23 +1562,23 @@ function HeaderComponent() {
         <div id="notifications-dropdown" class="top-dropdown">
             <div class="close-modal-btn" onclick="window.toggleTopDropdown('notifications-dropdown')"><i class="fa-solid fa-xmark"></i></div>
             <div class="notif-header">
-                <div style="font-weight:bold;">Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª</div>
+                <div style="font-weight:bold;">الإشعارات</div>
                 <div style="display:flex; gap:15px; color:var(--text-muted); cursor:pointer; margin-left:30px;">
-                    <i class="fa-solid fa-check-double" title="ØªØ­Ø¯ÙŠØ¯ Ø§Ù„ÙƒÙ„ ÙƒÙ…Ù‚Ø±ÙˆØ¡"></i>
-                    <i class="fa-solid fa-trash-can" title="Ø­Ø°Ù Ø§Ù„ÙƒÙ„"></i>
-                    <i class="fa-solid fa-gear" onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('settings'); state.settingsTab='notifications'; renderApp();" title="Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª"></i>
+                    <i class="fa-solid fa-check-double" title="تحديد الكل كمقروء"></i>
+                    <i class="fa-solid fa-trash-can" title="حذف الكل"></i>
+                    <i class="fa-solid fa-gear" onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('settings'); state.settingsTab='notifications'; renderApp();" title="الإعدادات"></i>
                 </div>
             </div>
             <div class="notif-tabs">
-                <div class="notif-tab active">Ø§Ù„ÙƒÙ„</div>
-                <div class="notif-tab">ØºÙŠØ± Ù…Ù‚Ø±ÙˆØ¡</div>
+                <div class="notif-tab active">الكل</div>
+                <div class="notif-tab">غير مقروء</div>
             </div>
             <div class="notif-empty">
                 <i class="fa-regular fa-bell"></i>
-                <div>Ù„Ø§ Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†</div>
+                <div>لا إشعارات حتى الآن</div>
             </div>
             <div class="notif-footer">
-                <a onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('profile');" style="cursor:pointer;">Ø¹Ø±Ø¶ Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+                <a onclick="window.toggleTopDropdown('notifications-dropdown'); window.navigateView('profile');" style="cursor:pointer;">عرض جميع الإشعارات <i class="fa-solid fa-arrow-up-right-from-square"></i></a>
             </div>
         </div>
     `;
@@ -1596,20 +1596,20 @@ function HeaderComponent() {
                     <p>@${s.sessionToken ? getUserHandle(s.userEmail) : 'guest'}</p>
                 </div>
             </div>
-            <a class="user-menu-link" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');">Ø§ÙØªØ­ Ù…Ù„ÙÙƒ Ù„Ø±Ø¤ÙŠØ© Ø§Ù„Ù†Ø´Ø§Ø·ØŒ Ø§Ù„Ù…ÙƒØªØ¨Ø©ØŒ ÙˆØ§Ù„Ø¥Ù†Ø¬Ø§Ø²Ø§Øª.</a>
+            <a class="user-menu-link" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');">افتح ملفك لرؤية النشاط، المكتبة، والإنجازات.</a>
             
             <div style="padding:10px 0;">
-                <div style="padding:0 20px 5px; font-size:0.75rem; color:var(--text-muted);">Ø­Ø³Ø§Ø¨ÙŠ</div>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');"><i class="fa-regular fa-user"></i> Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('bookmarks');"><i class="fa-solid fa-book-open"></i> Ù…ÙƒØªØ¨ØªÙŠ</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.toggleTopDropdown('notifications-dropdown');"><i class="fa-regular fa-bell"></i> Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-award"></i> Ø¥Ù†Ø¬Ø§Ø²Ø§ØªÙŠ</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-crown" style="color:#f1c40f;"></i> Ø§Ø´ØªØ±Ø§ÙƒÙŠ</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text" style="color:#ff007f;"></i> Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª ÙˆØ§Ù„Ø´ÙƒØ§ÙˆÙŠ</a>
-                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('settings');"><i class="fa-solid fa-gear"></i> Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª</a>
+                <div style="padding:0 20px 5px; font-size:0.75rem; color:var(--text-muted);">حسابي</div>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('profile');"><i class="fa-regular fa-user"></i> الملف الشخصي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('bookmarks');"><i class="fa-solid fa-book-open"></i> مكتبتي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.toggleTopDropdown('notifications-dropdown');"><i class="fa-regular fa-bell"></i> الإشعارات</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-award"></i> إنجازاتي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown');"><i class="fa-solid fa-crown" style="color:#f1c40f;"></i> اشتراكي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text" style="color:#ff007f;"></i> الاقتراحات والشكاوي</a>
+                <a class="user-menu-item" style="cursor:pointer;" onclick="window.toggleTopDropdown('user-dropdown'); window.navigateView('settings');"><i class="fa-solid fa-gear"></i> الإعدادات</a>
             </div>
             <div style="border-top:1px solid rgba(255,255,255,0.05); padding:10px 0;">
-                <a class="user-menu-item danger" style="cursor:pointer;" onclick="window.performLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬</a>
+                <a class="user-menu-item danger" style="cursor:pointer;" onclick="window.performLogout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> تسجيل الخروج</a>
             </div>
         </div>
     `;
@@ -1653,7 +1653,7 @@ function HeaderComponent() {
         rightSection = `
             <button class="login-navbar-btn" id="open-login-btn">
                 <i class="fa-solid fa-right-to-bracket"></i>
-                <span>ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</span>
+                <span>تسجيل الدخول</span>
             </button>
         `;
     }
@@ -1669,7 +1669,7 @@ function HeaderComponent() {
         if (mangaMatches.length > 0) {
             suggestionsHtml = `
             <div class="search-suggestions-dropdown" id="search-suggestions">
-                <div class="suggestions-category">Ø§Ù„Ù†ØªØ§Ø¦Ø¬</div>
+                <div class="suggestions-category">النتائج</div>
                 ${mangaMatches.map(m => `
                     <div class="suggestion-item" data-id="${m.id}" data-action="manga">
                         <img src="${getDisplayCover(m)}" class="suggestion-cover" alt="${m.title}">
@@ -1681,7 +1681,7 @@ function HeaderComponent() {
                 `).join('')}
                 <div class="suggestion-item suggestion-view-all" data-action="search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <span>Ø¹Ø±Ø¶ ÙƒÙ„ Ø§Ù„Ù†ØªØ§Ø¦Ø¬ Ø¹Ù† "${state.searchQuery}"</span>
+                    <span>عرض كل النتائج عن "${state.searchQuery}"</span>
                 </div>
             </div>
             `;
@@ -1690,7 +1690,7 @@ function HeaderComponent() {
             <div class="search-suggestions-dropdown" id="search-suggestions">
                 <div class="suggestion-item suggestion-view-all" data-action="search">
                     <i class="fa-solid fa-magnifying-glass"></i>
-                    <span>Ø¨Ø­Ø« Ø¹Ù† "${state.searchQuery}"</span>
+                    <span>بحث عن "${state.searchQuery}"</span>
                 </div>
             </div>
             `;
@@ -1699,24 +1699,24 @@ function HeaderComponent() {
 
     return `
     <header class="header">
-        <a class="header-logo" id="logo-btn" onclick="window.navigateView('home');" style="cursor:pointer;">KAIRO<span>/Ù…Ù†Ù‡ÙˆØ§</span></a>
+        <a class="header-logo" id="logo-btn" onclick="window.navigateView('home');" style="cursor:pointer;">KAIRO<span>/منهوا</span></a>
         
         <nav class="header-nav">
-            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home" onclick="window.navigateView('home');"><i class="fa-solid fa-house-chimney"></i> Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</span>
-            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks" onclick="window.navigateView('bookmarks');"><i class="fa-solid fa-heart"></i> Ù…ÙƒØªØ¨ØªÙŠ</span>
-            <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads" onclick="window.navigateView('downloads');"><i class="fa-solid fa-circle-down"></i> Ø§Ù„ØªÙ†Ø²ÙŠÙ„Ø§Øª</span>
-            <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history" onclick="window.navigateView('history');"><i class="fa-solid fa-clock-rotate-left"></i> Ø§Ù„Ø³Ø¬Ù„</span>
+            <span class="nav-link ${activeView === 'home' ? 'active' : ''}" id="nav-home" onclick="window.navigateView('home');"><i class="fa-solid fa-house-chimney"></i> الرئيسية</span>
+            <span class="nav-link ${activeView === 'bookmarks' ? 'active' : ''}" id="nav-bookmarks" onclick="window.navigateView('bookmarks');"><i class="fa-solid fa-heart"></i> مكتبتي</span>
+            <span class="nav-link ${activeView === 'downloads' ? 'active' : ''}" id="nav-downloads" onclick="window.navigateView('downloads');"><i class="fa-solid fa-circle-down"></i> التنزيلات</span>
+            <span class="nav-link ${activeView === 'history' ? 'active' : ''}" id="nav-history" onclick="window.navigateView('history');"><i class="fa-solid fa-clock-rotate-left"></i> السجل</span>
             <div style="position:relative;display:inline-block;">
-                <span class="nav-link ${activeView === 'leaderboard' || activeView === 'store' || activeView === 'announcements' || activeView === 'chat' ? 'active' : ''}" id="nav-community"><i class="fa-solid fa-users"></i> Ø§Ù„Ù…Ø¬ØªÙ…Ø¹ <i class="fa-solid fa-caret-down" style="font-size:0.6rem;"></i></span>
+                <span class="nav-link ${activeView === 'leaderboard' || activeView === 'store' || activeView === 'announcements' || activeView === 'chat' ? 'active' : ''}" id="nav-community"><i class="fa-solid fa-users"></i> المجتمع <i class="fa-solid fa-caret-down" style="font-size:0.6rem;"></i></span>
                 <div class="community-dropdown" id="community-dropdown">
-                    <div class="community-dropdown-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</div>
-                    <div class="community-dropdown-item" id="nav-store"><i class="fa-solid fa-store"></i> Ø§Ù„Ù…ØªØ¬Ø±</div>
-                    <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª</div>
-                    <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> Ø§Ù„Ø¯Ø±Ø¯Ø´Ø©</div>
+                    <div class="community-dropdown-item" id="nav-leaderboard"><i class="fa-solid fa-trophy"></i> التصنيفات</div>
+                    <div class="community-dropdown-item" id="nav-store"><i class="fa-solid fa-store"></i> المتجر</div>
+                    <div class="community-dropdown-item" id="nav-announcements"><i class="fa-solid fa-bullhorn"></i> الإعلانات</div>
+                    <div class="community-dropdown-item" id="nav-chat"><i class="fa-solid fa-comment-dots"></i> الدردشة</div>
                 </div>
             </div>
-            <span class="nav-link ${activeView === 'suggestions' ? 'active' : ''}" id="nav-suggestions" onclick="window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text"></i> Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª ÙˆØ§Ù„Ø´ÙƒØ§ÙˆÙŠ</span>
-            <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> Ù‚Ù†Ø§ØªÙ†Ø§</a>
+            <span class="nav-link ${activeView === 'suggestions' ? 'active' : ''}" id="nav-suggestions" onclick="window.navigateView('suggestions');"><i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي</span>
+            <a class="nav-link youtube-nav-link" href="https://www.youtube.com/@kairo_909" target="_blank"><i class="fa-brands fa-youtube"></i> قناتنا</a>
         </nav>
         
         <div class="header-actions">
@@ -1737,16 +1737,16 @@ function AuthModalComponent() {
         bodyHtml = `
         <form id="forgot-password-form" class="auth-form" style="text-align: right;">
             <div class="form-group" style="margin-bottom: 20px;">
-                <label for="forgot-email">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø§Ù„Ù…Ø³Ø¬Ù„</label>
+                <label for="forgot-email">البريد الإلكتروني المسجل</label>
                 <input type="email" id="forgot-email" required placeholder="example@gmail.com" autocomplete="email" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
             </div>
             <div id="forgot-error-msg" class="auth-error-msg" style="display:none; margin-bottom: 12px; color: var(--color-accent); font-weight: 700;"></div>
             <div id="forgot-success-msg" class="auth-success-msg" style="display:none; margin-bottom: 12px; color: #00ff7f; font-weight: 700;"></div>
             <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%;">
-                <i class="fa-solid fa-paper-plane"></i> Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ù„Ø§Ø³ØªØ¹Ø§Ø¯Ø©
+                <i class="fa-solid fa-paper-plane"></i> إرسال رابط الاستعادة
             </button>
             <div style="text-align: center; margin-top: 18px;">
-                <a href="javascript:void(0)" id="back-to-login-btn" style="color: var(--color-secondary); font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</a>
+                <a href="javascript:void(0)" id="back-to-login-btn" style="color: var(--color-secondary); font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">العودة لتسجيل الدخول</a>
             </div>
         </form>
         `;
@@ -1754,24 +1754,24 @@ function AuthModalComponent() {
         bodyHtml = `
         <form id="auth-form" class="auth-form">
             <div class="form-group">
-                <label for="auth-email">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ (Gmail)</label>
+                <label for="auth-email">البريد الإلكتروني (Gmail)</label>
                 <input type="email" id="auth-email" required placeholder="example@gmail.com" autocomplete="email">
             </div>
             <div class="form-group">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label for="auth-password" style="margin: 0;">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</label>
-                    <a href="javascript:void(0)" id="forgot-password-trigger" style="color: var(--color-secondary); font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">Ù†Ø³ÙŠØª ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±ØŸ</a>
+                    <label for="auth-password" style="margin: 0;">كلمة المرور</label>
+                    <a href="javascript:void(0)" id="forgot-password-trigger" style="color: var(--color-secondary); font-size: 0.8rem; font-weight: 700; text-decoration: none; transition: var(--transition-fast);">نسيت كلمة المرور؟</a>
                 </div>
                 <input type="password" id="auth-password" required placeholder="********" autocomplete="current-password">
             </div>
             <div id="auth-error-msg" class="auth-error-msg" style="display:none;"></div>
             <div id="auth-success-msg" class="auth-success-msg" style="display:none;"></div>
             <button type="submit" class="auth-submit-btn neon-pulse-hover">
-                ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> Ø¯Ø®ÙˆÙ„' : '<i class="fa-solid fa-user-plus"></i> Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨'}
+                ${isLogin ? '<i class="fa-solid fa-right-to-bracket"></i> دخول' : '<i class="fa-solid fa-user-plus"></i> إنشاء الحساب'}
             </button>
             
             <div class="auth-divider">
-                <span>Ø£Ùˆ Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù…</span>
+                <span>أو سجّل الدخول باستخدام</span>
             </div>
             
             <div class="social-login-grid">
@@ -1792,12 +1792,12 @@ function AuthModalComponent() {
             <button class="auth-modal-close" id="close-auth-modal">&times;</button>
             ${!isForgot ? `
             <div class="auth-modal-tabs">
-                <button class="auth-tab-btn ${isLogin ? 'active' : ''}" id="auth-tab-login" data-tab="login">ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</button>
-                <button class="auth-tab-btn ${isRegister ? 'active' : ''}" id="auth-tab-register" data-tab="register">Ø­Ø³Ø§Ø¨ Ø¬Ø¯ÙŠØ¯</button>
+                <button class="auth-tab-btn ${isLogin ? 'active' : ''}" id="auth-tab-login" data-tab="login">تسجيل الدخول</button>
+                <button class="auth-tab-btn ${isRegister ? 'active' : ''}" id="auth-tab-register" data-tab="register">حساب جديد</button>
             </div>
             ` : `
             <div style="text-align: center; margin-bottom: 20px;">
-                <span style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;"><i class="fa-solid fa-key" style="color: var(--color-secondary);"></i> Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ø­Ø³Ø§Ø¨</span>
+                <span style="font-size: 1.25rem; font-weight: 800; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px;"><i class="fa-solid fa-key" style="color: var(--color-secondary);"></i> استعادة الحساب</span>
             </div>
             `}
             
@@ -1817,34 +1817,34 @@ function SuggestionsModalComponent() {
         <div class="auth-modal-card glass-card" style="max-width: 500px;">
             <button class="auth-modal-close" id="close-suggestions-modal">&times;</button>
             <h3 style="font-size: 1.4rem; font-weight: 800; color: var(--text-main); margin-bottom: 12px; text-align: right; border-right: 4px solid var(--color-secondary); padding-right: 10px;">
-                <i class="fa-solid fa-comments" style="color: var(--color-secondary);"></i> ØªÙ‚Ø¯ÙŠÙ… Ø§Ù‚ØªØ±Ø§Ø­ Ø£Ùˆ Ø´ÙƒÙˆÙ‰
+                <i class="fa-solid fa-comments" style="color: var(--color-secondary);"></i> تقديم اقتراح أو شكوى
             </h3>
             <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; text-align: right; line-height: 1.6;">
-                Ø±Ø£ÙŠÙƒ ÙŠÙ‡Ù…Ù†Ø§ Ù„ØªØ·ÙˆÙŠØ± Ù…ÙˆÙ‚Ø¹ KAIRO/Ù…Ù†Ù‡ÙˆØ§. ÙŠÙ…ÙƒÙ†Ùƒ ÙƒØªØ§Ø¨Ø© Ø§Ù‚ØªØ±Ø§Ø­ Ù„ØªØ­Ø³ÙŠÙ† Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø£Ùˆ ØªÙ‚Ø¯ÙŠÙ… Ø´ÙƒÙˆÙ‰ Ø¹Ù† Ø£ÙŠ Ù…Ø´ÙƒÙ„Ø© ÙÙ†ÙŠØ©.
+                رأيك يهمنا لتطوير موقع KAIRO/منهوا. يمكنك كتابة اقتراح لتحسين الموقع أو تقديم شكوى عن أي مشكلة فنية.
             </p>
             
             <form id="suggestions-form" class="auth-form" style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="form-group" style="text-align: right;">
-                    <label style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">Ù†ÙˆØ¹ Ø§Ù„Ø±Ø³Ø§Ù„Ø©</label>
+                    <label style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">نوع الرسالة</label>
                     <div style="display: flex; gap: 20px; justify-content: flex-start; direction: rtl;">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-weight: 600;">
                             <input type="radio" name="sug-type" value="suggestion" checked style="cursor: pointer; accent-color: var(--color-secondary);">
-                            <span>Ø§Ù‚ØªØ±Ø§Ø­ <i class="fa-solid fa-lightbulb" style="color: #ffb703;"></i></span>
+                            <span>اقتراح <i class="fa-solid fa-lightbulb" style="color: #ffb703;"></i></span>
                         </label>
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-weight: 600;">
                             <input type="radio" name="sug-type" value="complaint" style="cursor: pointer; accent-color: var(--color-accent);">
-                            <span>Ø´ÙƒÙˆÙ‰ <i class="fa-solid fa-circle-exclamation" style="color: var(--color-accent);"></i></span>
+                            <span>شكوى <i class="fa-solid fa-circle-exclamation" style="color: var(--color-accent);"></i></span>
                         </label>
                     </div>
                 </div>
                 <div class="form-group" style="text-align: right;">
-                    <label for="sug-content" style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©</label>
-                    <textarea id="sug-content" required rows="4" placeholder="Ø§ÙƒØªØ¨ ØªÙØ§ØµÙŠÙ„ Ø§Ù‚ØªØ±Ø§Ø­Ùƒ Ø£Ùˆ Ø´ÙƒÙˆØ§Ùƒ Ù‡Ù†Ø§..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;"></textarea>
+                    <label for="sug-content" style="display: block; font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">تفاصيل الرسالة</label>
+                    <textarea id="sug-content" required rows="4" placeholder="اكتب تفاصيل اقتراحك أو شكواك هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;"></textarea>
                 </div>
                 <div id="sug-error-msg" class="auth-error-msg" style="display:none; color: #ff007f; font-size: 0.85rem; text-align: right;"></div>
                 <div id="sug-success-msg" class="auth-success-msg" style="display:none; color: #00ff7f; font-size: 0.85rem; text-align: right;"></div>
                 <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), #00b0ff); margin-top: 10px;">
-                    Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø§Ù„Ø¢Ù† <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>
+                    إرسال الرسالة الآن <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i>
                 </button>
             </form>
         </div>
@@ -1854,7 +1854,7 @@ function SuggestionsModalComponent() {
 
 function SettingsModalComponent() {
     if (!state.showSettingsModal) return '';
-    const info = state.getUserLevelInfo ? state.getUserLevelInfo() : { points: 0, level: 1, rankTitle: 'Ù…Ø¨ØªØ¯Ø¦' };
+    const info = state.getUserLevelInfo ? state.getUserLevelInfo() : { points: 0, level: 1, rankTitle: 'مبتدئ' };
     const isAdmin = state.userRole === 'admin';
     const tab = state.settingsTab || 'account';
     return `
@@ -1863,15 +1863,15 @@ function SettingsModalComponent() {
             <button class="settings-close-btn" id="close-settings-modal" style="position:absolute;top:12px;left:12px;z-index:10;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
             <div style="background:linear-gradient(135deg,var(--color-primary),var(--color-accent));padding:24px 24px 16px;text-align:center;">
                 <div style="font-size:2.2rem;margin-bottom:4px;"><i class="fa-solid fa-user-gear"></i></div>
-                <h3 style="margin:0;font-size:1.3rem;font-weight:800;color:#fff;">Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª</h3>
+                <h3 style="margin:0;font-size:1.3rem;font-weight:800;color:#fff;">الإعدادات</h3>
                 <p style="margin:4px 0 0;font-size:0.8rem;color:rgba(255,255,255,0.7);">${state.userEmail || ''}</p>
             </div>
             <div style="display:flex;border-bottom:1px solid var(--border-color);">
                 ${[
-                    { key:'account', label:'Ø§Ù„Ø­Ø³Ø§Ø¨', icon:'fa-user' },
-                    { key:'profile', label:'Ø§Ù„Ù…Ù„Ù', icon:'fa-pen' },
-                    { key:'security', label:'Ø§Ù„Ø£Ù…Ø§Ù†', icon:'fa-lock' },
-                    { key:'appearance', label:'Ø§Ù„Ù…Ø¸Ù‡Ø±', icon:'fa-palette' }
+                    { key:'account', label:'الحساب', icon:'fa-user' },
+                    { key:'profile', label:'الملف', icon:'fa-pen' },
+                    { key:'security', label:'الأمان', icon:'fa-lock' },
+                    { key:'appearance', label:'المظهر', icon:'fa-palette' }
                 ].map(t => `
                     <button class="settings-tab-btn ${tab === t.key ? 'active' : ''}" data-tab="${t.key}" style="flex:1;padding:12px 6px;border:none;background:${tab === t.key ? 'var(--bg-surface)' : 'transparent'};color:${tab === t.key ? 'var(--color-primary)' : 'var(--text-muted)'};font-weight:${tab === t.key ? '800' : '600'};font-size:0.72rem;cursor:pointer;transition:var(--transition-fast);border-bottom:2px solid ${tab === t.key ? 'var(--color-primary)' : 'transparent'};">
                         <i class="fa-solid ${t.icon}" style="display:block;font-size:1rem;margin-bottom:2px;"></i>
@@ -1884,55 +1884,55 @@ function SettingsModalComponent() {
                     <div class="settings-info-row" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">
                         <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
                             <i class="fa-solid fa-star" style="color:var(--color-secondary);font-size:1.2rem;"></i>
-                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? 'âˆž' : info.points}</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Ø§Ù„Ù†Ù‚Ø§Ø·</div>
+                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? '∞' : info.points}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">النقاط</div>
                         </div>
                         <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
                             <i class="fa-solid fa-crown" style="color:var(--color-primary);font-size:1.2rem;"></i>
-                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? 'Ø§Ù„Ù…Ø¯ÙŠØ±' : 'Lv.' + info.level}</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Ø§Ù„Ù…Ø³ØªÙˆÙ‰</div>
+                            <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${isAdmin ? 'المدير' : 'Lv.' + info.level}</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">المستوى</div>
                         </div>
                         <div class="settings-info-card" style="text-align:center;background:var(--bg-card);border-radius:10px;padding:14px 8px;">
                             <i class="fa-solid fa-fire" style="color:var(--color-accent);font-size:1.2rem;"></i>
                             <div style="font-size:1.1rem;font-weight:800;margin:4px 0;">${state.userProfile?.streak_days || 0}</div>
-                            <div style="font-size:0.7rem;color:var(--text-muted);">Ø§Ù„ØªØªØ§Ø¨Ø¹</div>
+                            <div style="font-size:0.7rem;color:var(--text-muted);">التتابع</div>
                         </div>
                     </div>
                 ` : ''}
                 ${tab === 'profile' ? `
                     <div class="settings-section" style="margin-bottom:0;">
-                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-pen"></i> ØªØºÙŠÙŠØ± Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</h4>
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-pen"></i> تغيير اسم المستخدم</h4>
                         <div class="form-group">
-                            <input type="text" id="settings-new-username" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø§Ù„Ø¬Ø¯ÙŠØ¯" value="${state.userProfile?.username || ''}" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                            <input type="text" id="settings-new-username" placeholder="أدخل اسم المستخدم الجديد" value="${state.userProfile?.username || ''}" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
-                        <button class="auth-submit-btn" id="btn-save-username" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));color:#07080c;margin-top:8px;">Ø­ÙØ¸ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…</button>
+                        <button class="auth-submit-btn" id="btn-save-username" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));color:#07080c;margin-top:8px;">حفظ اسم المستخدم</button>
                         <div id="username-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
                     </div>
                 ` : ''}
                 ${tab === 'security' ? `
                     <div class="settings-section" style="margin-bottom:0;">
-                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-lock"></i> ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</h4>
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-lock"></i> تغيير كلمة المرور</h4>
                         <div class="form-group" style="margin-bottom:12px;">
-                            <input type="password" id="settings-current-password" placeholder="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                            <input type="password" id="settings-current-password" placeholder="كلمة المرور الحالية" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
                         <div class="form-group" style="margin-bottom:12px;">
-                            <input type="password" id="settings-new-password" placeholder="ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© (6 Ø£Ø­Ø±Ù)" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
+                            <input type="password" id="settings-new-password" placeholder="كلمة المرور الجديدة (6 أحرف)" style="width:100%;padding:10px 14px;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;color:var(--text-main);outline:none;">
                         </div>
-                        <button class="auth-submit-btn" id="btn-save-password" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-secondary),var(--color-primary));color:#07080c;margin-top:4px;">ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</button>
+                        <button class="auth-submit-btn" id="btn-save-password" style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:800;cursor:pointer;background:linear-gradient(135deg,var(--color-secondary),var(--color-primary));color:#07080c;margin-top:4px;">تغيير كلمة المرور</button>
                         <div id="password-msg" style="margin-top:8px;font-size:0.85rem;text-align:center;"></div>
                     </div>
                 ` : ''}
                 ${tab === 'appearance' ? `
                     <div class="settings-section" style="margin-bottom:0;">
-                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-palette"></i> ØªØ®ØµÙŠØµ Ø§Ù„Ù…Ø¸Ù‡Ø±</h4>
+                        <h4 style="font-size:0.9rem;margin:0 0 12px;"><i class="fa-solid fa-palette"></i> تخصيص المظهر</h4>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                             <div style="text-align:center;padding:16px;background:var(--bg-card);border-radius:12px;border:2px solid var(--color-primary);cursor:pointer;" id="theme-dark-btn">
                                 <div style="font-size:1.5rem;"><i class="fa-solid fa-moon"></i></div>
-                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">Ø¯Ø§ÙƒÙ†</div>
+                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">داكن</div>
                             </div>
                             <div style="text-align:center;padding:16px;background:var(--bg-card);border-radius:12px;border:2px solid var(--border-color);cursor:pointer;opacity:0.5;" id="theme-light-btn">
                                 <div style="font-size:1.5rem;"><i class="fa-solid fa-sun"></i></div>
-                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">ÙØ§ØªØ­ (Ù‚Ø±ÙŠØ¨Ø§Ù‹)</div>
+                                <div style="font-size:0.8rem;font-weight:700;margin-top:4px;">فاتح (قريباً)</div>
                             </div>
                         </div>
                     </div>
@@ -1943,7 +1943,7 @@ function SettingsModalComponent() {
     `;
 }
 
-// Ø§Ù„Ø³Ù„Ø§ÙŠØ¯Ø± Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠ (Hero Slider)
+// السلايدر الرئيسي (Hero Slider)
 let activeSlideIndex = 0;
 let sliderInterval = null;
 
@@ -1978,15 +1978,15 @@ function HeroSliderComponent() {
         <div class="hero-slide ${idx === activeSlideIndex ? 'active' : ''}" style="background-image: ${cssImageUrl(getMangaBanner(manga))}" data-id="${manga.id}">
             <div class="hero-overlay"></div>
             <div class="hero-content">
-                <span class="hero-badge">${manga.type || 'Ù…Ù†Ù‡ÙˆØ§'} Ø§Ù„Ù…Ù…ÙŠØ²Ø©</span>
+                <span class="hero-badge">${manga.type || 'منهوا'} المميزة</span>
                 <h2 class="hero-title">${manga.title}</h2>
                 <div class="hero-meta">
                     <span class="rating-stars"><i class="fa-solid fa-star"></i> ${manga.rating}</span>
-                    <span>â€¢</span>
-                    <span>Ø§Ù„Ù…Ø´Ø§Ù‡Ø¯Ø§Øª: ${manga.views}</span>
+                    <span>•</span>
+                    <span>المشاهدات: ${manga.views}</span>
                 </div>
                 <p class="hero-desc">${manga.synopsis}</p>
-                <button class="hero-btn read-now-hero" data-id="${manga.id}"><i class="fa-solid fa-book-open"></i> Ø§Ù‚Ø±Ø£ Ø§Ù„Ø¢Ù†</button>
+                <button class="hero-btn read-now-hero" data-id="${manga.id}"><i class="fa-solid fa-book-open"></i> اقرأ الآن</button>
             </div>
         </div>
         `;
@@ -2003,7 +2003,7 @@ function HeroSliderComponent() {
     `;
 }
 
-// ÙƒØ±Øª Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ù…ØµØºØ± Ø¨Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ© (Ø¨Ø­Ø¯ Ø£Ù‚ØµÙ‰ 5 Ø¹Ù†Ø§ØµØ±)
+// كرت سجل القراءة المصغر بالرئيسية (بحد أقصى 5 عناصر)
 function ReadingHistoryComponent() {
     if (state.history.length === 0) return '';
 
@@ -2039,10 +2039,10 @@ function ReadingHistoryComponent() {
             </div>
             <div class="history-item-details">
                 <h4 class="history-item-title">${manga.title}</h4>
-                <span class="history-item-chapter">Ø§Ù„ÙØµÙ„ ${numClean}</span>
+                <span class="history-item-chapter">الفصل ${numClean}</span>
                 <div style="margin-top:4px;">
                     <div class="level-progress-info" style="margin-bottom: 2px;">
-                        <span class="history-item-progress-text">ØªÙ‚Ø¯Ù… Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</span>
+                        <span class="history-item-progress-text">تقدم القراءة</span>
                         <span>${percentage}%</span>
                     </div>
                     <div class="history-progress-track">
@@ -2057,7 +2057,7 @@ function ReadingHistoryComponent() {
     return `
     <div class="history-section-wrapper">
         <div class="section-header" style="margin-bottom:12px;">
-            <h3 class="section-title" style="font-size:1.2rem;border-right-color:var(--color-secondary);"><i class="fa-solid fa-clock-rotate-left" style="color:var(--color-secondary);margin-left:5px;"></i> Ø§Ø³ØªÙƒÙ…Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© <span>(Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©)</span></h3>
+            <h3 class="section-title" style="font-size:1.2rem;border-right-color:var(--color-secondary);"><i class="fa-solid fa-clock-rotate-left" style="color:var(--color-secondary);margin-left:5px;"></i> استكمل القراءة <span>(سجل القراءة)</span></h3>
         </div>
         <div class="history-scroll">
             ${historyCardsHtml}
@@ -2066,14 +2066,14 @@ function ReadingHistoryComponent() {
     `;
 }
 
-// ØµÙØ­Ø© Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„ØªÙØµÙŠÙ„ÙŠ
+// صفحة سجل القراءة التفصيلي
 function HistoryViewComponent() {
     if (state.history.length === 0) {
         return `
         <div class="empty-state">
             <i class="fa-solid fa-clock-rotate-left" style="color:var(--border-color)"></i>
-            <h3>Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© ÙØ§Ø±Øº</h3>
-            <p>Ø§Ø¨Ø¯Ø£ Ø¨Ù‚Ø±Ø§Ø¡Ø© Ø£ÙŠ Ù…Ø§Ù†Ø¬Ø§ Ø£Ùˆ Ù…Ù†Ù‡ÙˆØ§ ÙˆØ³ÙŠØªÙ… ØªØ³Ø¬ÙŠÙ„ ØªÙ‚Ø¯Ù…Ùƒ Ù‡Ù†Ø§ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† Ø§Ù„Ø¹ÙˆØ¯Ø© ÙˆØ§Ø³ØªÙƒÙ…Ø§Ù„Ù‡Ø§ ÙÙŠ Ø£ÙŠ ÙˆÙ‚Øª.</p>
+            <h3>سجل القراءة فارغ</h3>
+            <p>ابدأ بقراءة أي مانجا أو منهوا وسيتم تسجيل تقدمك هنا لتتمكن من العودة واستكمالها في أي وقت.</p>
         </div>
         `;
     }
@@ -2081,8 +2081,8 @@ function HistoryViewComponent() {
     let listHtml = `
     <div class="chapters-section">
         <div class="chapters-header">
-            <h3>Ø³Ø¬Ù„ Ù‚Ø±Ø§Ø¡ØªÙƒ Ù„Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ (Ø­ØªÙ‰ 30 Ù…Ù†Ù‡ÙˆØ§/Ù…Ø§Ù†Ø¬Ø§)</h3>
-            <span>Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø£Ø¹Ù…Ø§Ù„: ${state.history.length}</span>
+            <h3>سجل قراءتك لجميع الأعمال (حتى 30 منهوا/مانجا)</h3>
+            <span>إجمالي الأعمال: ${state.history.length}</span>
         </div>
         <div class="chapters-list">
     `;
@@ -2102,12 +2102,12 @@ function HistoryViewComponent() {
                 <div style="min-width:0; flex:1;">
                     <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--text-main);">${manga.title}</h4>
                     <span style="font-size:0.85rem; color:var(--text-muted); display:inline-block; margin-bottom:4px;">
-                        Ø§Ù„ÙØµÙ„ Ø§Ù„Ø°ÙŠ ØªÙ‚Ù Ø¹Ù†Ø¯Ù‡: <strong style="color:var(--color-secondary);">Ø§Ù„ÙØµÙ„ ${hist.chapterId}</strong> (${percentage}%)
+                        الفصل الذي تقف عنده: <strong style="color:var(--color-secondary);">الفصل ${hist.chapterId}</strong> (${percentage}%)
                     </span>
                     ${hasNewChapters ? `
                         <div style="display:inline-block; margin-right:10px;">
                             <span class="badge-new-chapters" style="background:rgba(0,255,127,0.1); border:1px solid #00ff7f; color:#00ff7f; padding:2px 8px; border-radius:10px; font-size:0.75rem; font-weight:700; white-space:nowrap;">
-                                <i class="fa-solid fa-bell"></i> ØªÙˆØ¬Ø¯ ÙØµÙˆÙ„ Ø¬Ø¯ÙŠØ¯Ø©! (Ø£Ø­Ø¯Ø« ÙØµÙ„: ${latestChapter.id})
+                                <i class="fa-solid fa-bell"></i> توجد فصول جديدة! (أحدث فصل: ${latestChapter.id})
                             </span>
                         </div>
                     ` : ''}
@@ -2115,9 +2115,9 @@ function HistoryViewComponent() {
             </div>
             <div class="chapter-actions-inline" style="gap:10px;">
                 <button class="detail-btn btn-read resume-reading-history-btn" style="padding:8px 16px; font-size:0.85rem; border-radius:20px;" data-manga-id="${hist.mangaId}" data-chap-id="${hist.chapterId}" data-scroll="${hist.scrollY}" data-page="${hist.activePageIndex}">
-                    <i class="fa-solid fa-play"></i> Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+                    <i class="fa-solid fa-play"></i> متابعة القراءة
                 </button>
-                <button class="download-btn delete-history-entry-btn" data-manga-id="${hist.mangaId}" title="Ø­Ø°Ù Ù…Ù† Ø§Ù„Ø³Ø¬Ù„" style="border-color:rgba(255,255,255,0.05); color:var(--text-dark);">
+                <button class="download-btn delete-history-entry-btn" data-manga-id="${hist.mangaId}" title="حذف من السجل" style="border-color:rgba(255,255,255,0.05); color:var(--text-dark);">
                     <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
@@ -2133,7 +2133,7 @@ function HistoryViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© <span>Ø§Ù„ØªÙØµÙŠÙ„ÙŠ ÙˆØ§Ù„Ù…ØªØ§Ø¨Ø¹Ø©</span></h2>
+            <h2 class="section-title">سجل القراءة <span>التفصيلي والمتابعة</span></h2>
         </div>
         ${listHtml}
     </div>
@@ -2141,20 +2141,20 @@ function HistoryViewComponent() {
 }
 
 function MangaCardComponent(manga) {
-    const title = manga.title || 'Ù…Ø§Ù†Ù‡ÙˆØ§ Ù…Ø¬Ù‡ÙˆÙ„Ø©';
+    const title = manga.title || 'مانهوا مجهولة';
     const chapters = manga.chapters || [];
     const latestChapter = manga.latestChapter || (chapters.length > 0 ? chapters[0] : null);
     const chaptersCount = manga.chaptersCount || chapters.length;
     const coverUrl = getDisplayCover(manga) || 'https://via.placeholder.com/300x450/1a1a2e/ffffff?text=No+Cover';
     const id = manga.id;
-    const type = manga.type || 'Ù…Ø§Ù†Ù‡ÙˆØ§';
+    const type = manga.type || 'مانهوا';
     const rating = manga.rating || (Math.random() * (9.9 - 8.0) + 8.0).toFixed(1);
 
-    let displayChapterText = chaptersCount > 0 ? chaptersCount + " ÙØµÙ„" : "Ù…Ø³ØªÙ…Ø±Ø©";
+    let displayChapterText = chaptersCount > 0 ? chaptersCount + " فصل" : "مستمرة";
     if (latestChapter && latestChapter.id) {
         const numMatch = latestChapter.id.match(/\d+(?:\.\d+)?/);
         if (numMatch) {
-            displayChapterText = "ÙØµÙ„ " + parseFloat(numMatch[0]);
+            displayChapterText = "فصل " + parseFloat(numMatch[0]);
         }
     }
 
@@ -2167,8 +2167,8 @@ function MangaCardComponent(manga) {
             </div>
             <div class="mt-list-card-content">
                 <h3 style="margin-bottom:10px; color:#fff; font-size:1.2rem;">${title}</h3>
-                <div style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">${manga.genres ? manga.genres.slice(0,3).join('ØŒ ') : ''}</div>
-                <div style="color:var(--primary-color); font-weight:bold;">${type} â€¢ ${displayChapterText}</div>
+                <div style="color:var(--text-muted); font-size:0.9rem; margin-bottom:10px;">${manga.genres ? manga.genres.slice(0,3).join('، ') : ''}</div>
+                <div style="color:var(--primary-color); font-weight:bold;">${type} • ${displayChapterText}</div>
             </div>
         </div>
         `;
@@ -2202,7 +2202,7 @@ function MangaGridComponent(title, mangasFiltered) {
         return `
         <div class="empty-state">
             <i class="fa-regular fa-folder-open" style="font-size:3rem; margin-bottom:15px; color:var(--text-muted);"></i>
-            <h3>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù…Ø·Ø§Ø¨Ù‚Ø© Ù„Ù„Ø¨Ø­Ø«</h3>
+            <h3>لا توجد نتائج مطابقة للبحث</h3>
         </div>
         `;
     }
@@ -2214,9 +2214,9 @@ function MangaGridComponent(title, mangasFiltered) {
         ${paginated.map(m => MangaCardComponent(m)).join('')}
     </div>
     <div class="mangatime-pagination">
-        <button class="mangatime-page-btn" disabled><i class="fa-solid fa-chevron-right"></i> Ø§Ù„Ø³Ø§Ø¨Ù‚</button>
+        <button class="mangatime-page-btn" disabled><i class="fa-solid fa-chevron-right"></i> السابق</button>
         <button class="mangatime-page-btn active" style="background:var(--primary-color);color:#fff;">1</button>
-        <button class="mangatime-page-btn" disabled>Ø§Ù„ØªØ§Ù„ÙŠ <i class="fa-solid fa-chevron-left"></i></button>
+        <button class="mangatime-page-btn" disabled>التالي <i class="fa-solid fa-chevron-left"></i></button>
     </div>
     `;
 }
@@ -2266,12 +2266,12 @@ function AdvancedFiltersComponent() {
     if (!s.activeTab) s.activeTab = 'series';
     if (!s.searchType) s.searchType = 'all';
 
-    const allGenres = ['Ø§Ù„ÙƒÙ„'];
+    const allGenres = ['الكل'];
     if (s.mangas) s.mangas.forEach(m => { if (m.genres) m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }); });
 
     const searchTypes = [
-        {id:'all', label:'Ø§Ù„ÙƒÙ„'}, {id:'username', label:'Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…'}, {id:'title', label:'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†'}, {id:'author', label:'Ø§Ù„Ù…Ø¤Ù„Ù'},
-        {id:'tags', label:'Ø§Ù„Ø±Ø³ÙˆÙ…'}, {id:'desc', label:'Ø§Ù„ÙˆØµÙ'}
+        {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+        {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
     ];
 
     const searchTypeHtml = searchTypes.map(t => 
@@ -2282,97 +2282,97 @@ function AdvancedFiltersComponent() {
     <div class="mangatime-browse-container">
         
         <div class="mangatime-hero-section">
-            <h1 class="mangatime-hero-title">ØªØµÙØ­ Ø¹Ø§Ù„Ù… Ø§Ù„Ù…Ø§Ù†Ø¬Ø§</h1>
-            <p class="mangatime-hero-subtitle">Ø§ÙƒØªØ´Ù Ø¹Ù…Ù„Ùƒ Ø§Ù„ØªØ§Ù„ÙŠ Ø¨ÙŠÙ† Ø¢Ù„Ø§Ù Ø§Ù„Ø³Ù„Ø§Ø³Ù„</p>
+            <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+            <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
         </div>
 
         <div class="mangatime-search-wrapper">
-            <input type="text" class="mangatime-search-input" placeholder="Ø§Ø¨Ø­Ø« Ø¹Ù† Ø£ÙŠ Ø´ÙŠØ¡..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+            <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
             <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
             <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
         </div>
 
         <div class="mangatime-search-filters">
-            <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">Ø§Ù„Ø¨Ø­Ø« Ø¨Ù€:</span>
+            <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
             ${searchTypeHtml}
         </div>
 
         
 
         <div class="mangatime-dropdowns-row">
-            <!-- Ø§Ù„ØªØµÙ†ÙŠÙ -->
+            <!-- التصنيف -->
             <div class="glass-select-wrapper">
                 <i class="fa-solid fa-tags glass-icon"></i>
                 <select class="glass-select" onchange="toggleFilter('genre', this.value)">
-                    <option value="">ÙƒÙ„ Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</option>
+                    <option value="">كل التصنيفات</option>
                     ${allGenres.map(g => `<option value="${g}" ${s.activeGenre===g?'selected':''}>${g}</option>`).join('')}
                 </select>
             </div>
 
-            <!-- Ø§Ù„Ù†ÙˆØ¹ -->
+            <!-- النوع -->
             <div class="glass-select-wrapper">
                 <i class="fa-solid fa-book-open glass-icon"></i>
                 <select class="glass-select" onchange="toggleFilter('type', this.value)">
-                    <option value="Ø§Ù„ÙƒÙ„" ${s.filterType==='Ø§Ù„ÙƒÙ„'?'selected':''}>ÙƒÙ„ Ø§Ù„Ø£Ù†ÙˆØ§Ø¹</option>
-                    <option value="Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©</option>
-                    <option value="Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©</option>
-                    <option value="Ù…Ø§Ù†Ù‡ÙˆØ§ ØµÙŠÙ†ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ù‡ÙˆØ§ ØµÙŠÙ†ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ù‡ÙˆØ§ ØµÙŠÙ†ÙŠØ©</option>
-                    <option value="Ø±ÙˆØ§ÙŠØ©" ${s.filterType==='Ø±ÙˆØ§ÙŠØ©'?'selected':''}>Ø±ÙˆØ§ÙŠØ©</option>
+                    <option value="الكل" ${s.filterType==='الكل'?'selected':''}>كل الأنواع</option>
+                    <option value="مانهوا كورية" ${s.filterType==='مانهوا كورية'?'selected':''}>مانهوا كورية</option>
+                    <option value="مانجا يابانية" ${s.filterType==='مانجا يابانية'?'selected':''}>مانجا يابانية</option>
+                    <option value="مانهوا صينية" ${s.filterType==='مانهوا صينية'?'selected':''}>مانهوا صينية</option>
+                    <option value="رواية" ${s.filterType==='رواية'?'selected':''}>رواية</option>
                 </select>
             </div>
 
-            <!-- Ø§Ù„Ø­Ø§Ù„Ø© -->
+            <!-- الحالة -->
             <div class="glass-select-wrapper">
                 <i class="fa-solid fa-circle-check glass-icon"></i>
                 <select class="glass-select" onchange="toggleFilter('status', this.value)">
-                    <option value="Ø§Ù„ÙƒÙ„" ${s.filterStatus==='Ø§Ù„ÙƒÙ„'?'selected':''}>ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª</option>
-                    <option value="Ù…Ø³ØªÙ…Ø±Ø©" ${s.filterStatus==='Ù…Ø³ØªÙ…Ø±Ø©'?'selected':''}>Ù…Ø³ØªÙ…Ø±Ø©</option>
-                    <option value="Ù…ÙƒØªÙ…Ù„Ø©" ${s.filterStatus==='Ù…ÙƒØªÙ…Ù„Ø©'?'selected':''}>Ù…ÙƒØªÙ…Ù„Ø©</option>
-                    <option value="Ù…ØªÙˆÙ‚ÙØ©" ${s.filterStatus==='Ù…ØªÙˆÙ‚ÙØ©'?'selected':''}>Ù…ØªÙˆÙ‚ÙØ©</option>
+                    <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                    <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                    <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                    <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
                 </select>
             </div>
 
-            <!-- Ø§Ù„ØªØ±ØªÙŠØ¨ -->
+            <!-- الترتيب -->
             <div class="glass-select-wrapper">
                 <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
                 <select class="glass-select" onchange="toggleFilter('sort', this.value)">
-                    <option value="Ø§Ù„Ø£Ø­Ø¯Ø«" ${s.filterSort==='Ø§Ù„Ø£Ø­Ø¯Ø«'?'selected':''}>Ø§Ù„Ø£Ø­Ø¯Ø«</option>
-                    <option value="Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©" ${s.filterSort==='Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©'?'selected':''}>Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©</option>
-                    <option value="Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹" ${s.filterSort==='Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹'?'selected':''}>Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹</option>
-                    <option value="Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª" ${s.filterSort==='Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª'?'selected':''}>Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª</option>
-                    <option value="Ø£-ÙŠ" ${s.filterSort==='Ø£-ÙŠ'?'selected':''}>Ø£Ø¨Ø¬Ø¯ÙŠØ§Ù‹</option>
-                    <option value="Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹" ${s.filterSort==='Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹'?'selected':''}>Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹</option>
-                    <option value="Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹" ${s.filterSort==='Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹'?'selected':''}>Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹</option>
+                    <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                    <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                    <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                    <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                    <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                    <option value="الأكثر فصولاً" ${s.filterSort==='الأكثر فصولاً'?'selected':''}>الأكثر فصولاً</option>
+                    <option value="الأقل فصولاً" ${s.filterSort==='الأقل فصولاً'?'selected':''}>الأقل فصولاً</option>
                 </select>
             </div>
 
-            <!-- Ø§Ù„Ø³Ù†Ø© -->
+            <!-- السنة -->
             <div class="glass-input-group">
                 <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
-                <input type="number" class="glass-input" placeholder="Ù…Ù† Ø³Ù†Ø©" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
                 <span class="glass-separator">-</span>
-                <input type="number" class="glass-input" placeholder="Ø¥Ù„Ù‰" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
             </div>
 
-            <!-- Ø§Ù„ØªÙ‚ÙŠÙŠÙ… -->
+            <!-- التقييم -->
             <div class="glass-input-group">
                 <i class="fa-solid fa-star glass-icon" style="margin-left:5px;"></i>
-                <input type="number" class="glass-input" placeholder="Ù…Ù† ØªÙ‚ÙŠÙŠÙ…" value="${s.filterRatingMin||''}" step="0.1" oninput="handleNumberInput('filterRatingMin', this.value)">
+                <input type="number" class="glass-input" placeholder="من تقييم" value="${s.filterRatingMin||''}" step="0.1" oninput="handleNumberInput('filterRatingMin', this.value)">
                 <span class="glass-separator">-</span>
-                <input type="number" class="glass-input" placeholder="Ø¥Ù„Ù‰" value="${s.filterRatingMax||''}" step="0.1" oninput="handleNumberInput('filterRatingMax', this.value)">
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterRatingMax||''}" step="0.1" oninput="handleNumberInput('filterRatingMax', this.value)">
             </div>
 
-            <!-- Ø§Ù„ÙØµÙˆÙ„ -->
+            <!-- الفصول -->
             <div class="glass-input-group">
                 <i class="fa-solid fa-list-ol glass-icon" style="margin-left:5px;"></i>
-                <input type="number" class="glass-input" placeholder="Ù…Ù† ÙØµÙˆÙ„" value="${s.filterChaptersMin||''}" oninput="handleNumberInput('filterChaptersMin', this.value)">
+                <input type="number" class="glass-input" placeholder="من فصول" value="${s.filterChaptersMin||''}" oninput="handleNumberInput('filterChaptersMin', this.value)">
                 <span class="glass-separator">-</span>
-                <input type="number" class="glass-input" placeholder="Ø¥Ù„Ù‰" value="${s.filterChaptersMax||''}" oninput="handleNumberInput('filterChaptersMax', this.value)">
+                <input type="number" class="glass-input" placeholder="إلى" value="${s.filterChaptersMax||''}" oninput="handleNumberInput('filterChaptersMax', this.value)">
             </div>
 
-            <!-- Ø£Ø¯ÙˆØ§Øª Ø§Ù„Ø¹Ø±Ø¶ ÙˆØ§Ù„ØªÙ‚Ø³ÙŠÙ… -->
+            <!-- أدوات العرض والتقسيم -->
             <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
-                <span style="color:var(--text-muted); font-size:0.85rem;">Ø¹Ø±Ø¶:</span>
+                <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
                 <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
                     <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
                         <option value="12" ${s.limit===12?'selected':''}>12</option>
@@ -2380,14 +2380,14 @@ function AdvancedFiltersComponent() {
                         <option value="48" ${s.limit===48?'selected':''}>48</option>
                     </select>
                 </div>
-                <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="Ø¹Ø±Ø¶ Ø´Ø¨ÙƒÙŠ" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
-                <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="Ø¹Ø±Ø¶ Ø±Ø£Ø³ÙŠ" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+                <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض رأسي" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
             </div>
         </div>
     </div>
     `;
 }
-// ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„ Ø§Ù„ÙƒØ§Ù…Ù„Ø©
+// صفحة التفاصيل الكاملة
 async function DetailViewComponent() {
     if (state.isLoading) {
         return `
@@ -2404,7 +2404,7 @@ async function DetailViewComponent() {
     }
 
     const manga = state.mangas.find(m => m.id === state.activeMangaId);
-    if (!manga) return '<p>Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©</p>';
+    if (!manga) return '<p>المانجا غير موجودة</p>';
 
     if (manga.id === "1" && !state.soloLevelingLoaded) {
         await state.loadSoloLevelingChapters();
@@ -2426,7 +2426,7 @@ async function DetailViewComponent() {
         `;
     }).join('');
     
-    // Ø¬Ù„Ø¨ Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ù…Ø­Ù…Ù„Ø© Ù„Ù„ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø§Ù„Ø© Ø§Ù„ØªØ­Ù…ÙŠÙ„
+    // جلب الفصول المحملة للتأكد من حالة التحميل
     const localDownloads = await getAllDownloadsOffline();
     const downloadedIds = localDownloads
         .filter(d => d.mangaId === manga.id)
@@ -2457,7 +2457,7 @@ async function DetailViewComponent() {
     });
     let chaptersHtml = '';
     if (filteredChapters.length === 0) {
-        chaptersHtml = `<p style="padding: 20px; color: var(--text-dark); text-align: center;">${searchQ ? 'Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØµÙˆÙ„ ØªØ·Ø§Ø¨Ù‚ Ø§Ù„Ø¨Ø­Ø«.' : 'Ù„Ø§ ØªØªÙˆÙØ± Ø£ÙŠ ÙØµÙˆÙ„ Ø­Ø§Ù„ÙŠØ§Ù‹ Ù„Ù‡Ø°Ù‡ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§.'}</p>`;
+        chaptersHtml = `<p style="padding: 20px; color: var(--text-dark); text-align: center;">${searchQ ? 'لا توجد فصول تطابق البحث.' : 'لا تتوفر أي فصول حالياً لهذه المانجا.'}</p>`;
     } else {
         filteredChapters.forEach(ch => {
             const isDownloaded = downloadedIds.includes(ch.id);
@@ -2489,7 +2489,7 @@ async function DetailViewComponent() {
                     <span class="chapter-item-date"><i class="fa-regular fa-calendar"></i> ${ch.date}</span>
                     <div class="chapter-actions-inline">
                         ${isDownloading ? `<span style="font-size: 0.8rem; color: var(--color-secondary);">${progress}%</span>` : ''}
-                        <button class="download-btn ${downloadClass}" data-chap-id="${ch.id}" title="${isDownloaded ? 'Ù…Ø­Ù…Ù„ Ø£ÙˆÙÙ„Ø§ÙŠÙ† (Ø§Ø¶ØºØ· Ù„Ù„Ø­Ø°Ù)' : 'ØªØ­Ù…ÙŠÙ„ Ù„Ù„Ù‚Ø±Ø§Ø¡Ø© Ø¨Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„'}">
+                        <button class="download-btn ${downloadClass}" data-chap-id="${ch.id}" title="${isDownloaded ? 'محمل أوفلاين (اضغط للحذف)' : 'تحميل للقراءة بدون اتصال'}">
                             ${downloadIcon}
                         </button>
                     </div>
@@ -2499,7 +2499,7 @@ async function DetailViewComponent() {
         });
     }
 
-    // Ø¬Ù„Ø¨ Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª ÙˆØ§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø§Øª Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±
+    // جلب التقييمات والمراجعات من السيرفر
     let reviewsListHtml = '';
     let userReview = null;
     let avgRating = 0;
@@ -2535,18 +2535,18 @@ async function DetailViewComponent() {
                 });
                 avgRating = (sum / reviews.length).toFixed(1);
             } else {
-                reviewsListHtml = '<p style="color: var(--text-dark); text-align: center; padding: 20px;">Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø±Ø§Ø¬Ø¹Ø§Øª Ù„Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„ Ø­Ø§Ù„ÙŠØ§Ù‹. ÙƒÙ† Ø£ÙˆÙ„ Ù…Ù† ÙŠÙƒØªØ¨ Ù…Ø±Ø§Ø¬Ø¹Ø©!</p>';
+                reviewsListHtml = '<p style="color: var(--text-dark); text-align: center; padding: 20px;">لا توجد مراجعات لهذا العمل حالياً. كن أول من يكتب مراجعة!</p>';
             }
         }
     } catch (e) {
         console.error("Error loading reviews:", e);
-        reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ù…Ø±Ø§Ø¬Ø¹Ø§Øª Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„.</p>';
+        reviewsListHtml = '<p style="color: #ff007f; text-align: center; padding: 20px;">فشل تحميل مراجعات هذا العمل.</p>';
     }
 
     manga.rating = hasReviews ? parseFloat(avgRating) : 0;
-    const displayRating = hasReviews ? `${manga.rating} / 10` : 'Ù„Ù… ØªÙÙ‚ÙŠÙ… Ø¨Ø¹Ø¯';
+    const displayRating = hasReviews ? `${manga.rating} / 10` : 'لم تُقيم بعد';
 
-    // Ù†Ù…ÙˆØ°Ø¬ Ø¥Ø¶Ø§ÙØ© Ù…Ø±Ø§Ø¬Ø¹Ø©
+    // نموذج إضافة مراجعة
     let reviewFormHtml = '';
     if (state.sessionToken) {
         const userRating = userReview ? userReview.rating : 10;
@@ -2561,29 +2561,29 @@ async function DetailViewComponent() {
         reviewFormHtml = `
         <div class="review-form-container glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 255, 255, 0.02); display: flex; flex-direction: column; gap: 16px; text-align: right;">
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px;">
-                ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> ØªØ¹Ø¯ÙŠÙ„ ØªÙ‚ÙŠÙŠÙ…Ùƒ ÙˆÙ…Ø±Ø§Ø¬Ø¹ØªÙƒ' : '<i class="fa-solid fa-star-half-stroke"></i> Ø£Ø¶Ù ØªÙ‚ÙŠÙŠÙ…Ùƒ ÙˆÙ…Ø±Ø§Ø¬Ø¹ØªÙƒ Ù„Ù„Ø¹Ù…Ù„'}
+                ${userReview ? '<i class="fa-solid fa-pen-to-square"></i> تعديل تقييمك ومراجعتك' : '<i class="fa-solid fa-star-half-stroke"></i> أضف تقييمك ومراجعتك للعمل'}
             </h4>
             <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 14px; direction: rtl;">
-                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ù…Ù† 10:</span>
+                <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">التقييم من 10:</span>
                 <div class="stars-picker" id="manga-stars-picker" style="display: flex; direction: ltr; flex-wrap: nowrap;">
                     ${starsPickerHtml}
                 </div>
                 <span id="manga-selected-rating-val" style="font-size: 1.1rem; font-weight: 800; color: #ffb703;">${userRating} / 10</span>
             </div>
             <div style="display: flex; flex-direction: column; gap: 8px;">
-                <label for="manga-review-text" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Ø±Ø£ÙŠÙƒ Ø£Ùˆ Ù…Ø±Ø§Ø¬Ø¹ØªÙƒ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ):</label>
-                <textarea id="manga-review-text" rows="3" placeholder="Ø§ÙƒØªØ¨ Ø±Ø£ÙŠÙƒ Ø£Ùˆ Ù…Ø±Ø§Ø¬Ø¹ØªÙƒ Ø§Ù„Ù†ØµÙŠØ© Ù‡Ù†Ø§..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;">${userText}</textarea>
+                <label for="manga-review-text" style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">رأيك أو مراجعتك (اختياري):</label>
+                <textarea id="manga-review-text" rows="3" placeholder="اكتب رأيك أو مراجعتك النصية هنا..." style="width: 100%; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-main); outline: none; font-family: var(--font-family); resize: none; text-align: right;">${userText}</textarea>
             </div>
             <button class="detail-btn btn-read" id="submit-manga-review-btn" style="padding: 10px 24px; font-size: 0.95rem; font-weight: 800; border-radius: 30px; width: fit-content; align-self: flex-start;">
-                ${userReview ? 'ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø© ÙˆØ§Ù„ØªÙ‚ÙŠÙŠÙ…' : 'Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªÙ‚ÙŠÙŠÙ… ÙˆØ§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©'}
+                ${userReview ? 'تحديث المراجعة والتقييم' : 'إرسال التقييم والمراجعة'}
             </button>
         </div>
         `;
     } else {
         reviewFormHtml = `
         <div class="glass-card" style="padding: 20px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 0, 127, 0.03); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
-            <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;"><i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ø§Ù„Ø¬ÙŠÙ…ÙŠÙ„ Ø§Ù„Ø®Ø§Øµ Ø¨Ùƒ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† ØªÙ‚ÙŠÙŠÙ… Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ÙˆØªØ±Ùƒ Ù…Ø±Ø§Ø¬Ø¹Ø©.</p>
-            <button class="login-navbar-btn" id="review-auth-prompt-btn" style="padding: 8px 20px; font-size: 0.85rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø¢Ù†</button>
+            <p style="font-size: 0.95rem; font-weight: 700; color: var(--text-main); margin: 0;"><i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من تقييم المنهوا وترك مراجعة.</p>
+            <button class="login-navbar-btn" id="review-auth-prompt-btn" style="padding: 8px 20px; font-size: 0.85rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول الآن</button>
         </div>
         `;
     }
@@ -2601,7 +2601,7 @@ async function DetailViewComponent() {
                 <div class="detail-actions">
                     ${latestChapter ? `
                         <button class="detail-btn btn-read start-reading-btn" data-chap-id="${latestChapter.id}">
-                            <i class="fa-solid fa-play"></i> Ù‚Ø±Ø§Ø¡Ø© Ø£ÙˆÙ„ ÙØµÙ„
+                            <i class="fa-solid fa-play"></i> قراءة أول فصل
                         </button>
                     ` : ''}
                     
@@ -2618,16 +2618,16 @@ async function DetailViewComponent() {
                     
                     ${state.userRole === 'admin' ? `
                         <button class="detail-btn edit-manga-btn" data-id="${manga.id}" style="margin-top:12px; background:rgba(0,255,127,0.1); border:1px solid #00ff7f; color:#00ff7f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
-                            <i class="fa-solid fa-pen-to-square"></i> ØªØ¹Ø¯ÙŠÙ„ Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„
+                            <i class="fa-solid fa-pen-to-square"></i> تعديل هذا العمل
                         </button>
                         <button class="detail-btn delete-manga-admin-btn" data-id="${manga.id}" style="margin-top:6px; background:rgba(255,0,127,0.1); border:1px solid #ff007f; color:#ff007f; display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer;">
-                            <i class="fa-solid fa-trash-can"></i> Ø­Ø°Ù Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„
+                            <i class="fa-solid fa-trash-can"></i> حذف هذا العمل
                         </button>
                     ` : ''}
                     
                     ${state.sessionToken ? `
                         <div class="overall-progress-container">
-                            <div class="overall-progress-label"><i class="fa-solid fa-chart-simple"></i> ØªÙ‚Ø¯Ù… Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ: ${state.getOverallProgress(manga.id)}%</div>
+                            <div class="overall-progress-label"><i class="fa-solid fa-chart-simple"></i> تقدم القراءة الإجمالي: ${state.getOverallProgress(manga.id)}%</div>
                             <div class="overall-progress-track">
                                 <div class="overall-progress-fill" style="width:${state.getOverallProgress(manga.id)}%"></div>
                             </div>
@@ -2635,20 +2635,20 @@ async function DetailViewComponent() {
                     ` : ''}
                     ${state.progress[manga.id] ? `
                         <button class="detail-btn btn-continue continue-reading-btn" data-chap-id="${state.progress[manga.id].chapterId}">
-                            <i class="fa-solid fa-arrow-rotate-right"></i> Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+                            <i class="fa-solid fa-arrow-rotate-right"></i> متابعة القراءة
                         </button>
                     ` : ''}
                 </div>
             </div>
             <div class="detail-content">
                 <h1 class="detail-title">${manga.title}</h1>
-                <p class="detail-author">Ø§Ø³Ù… Ø¢Ø®Ø±: ${manga.alternative} â€¢ Ø§Ù„Ù…Ø¤Ù„Ù: ${manga.author}</p>
+                <p class="detail-author">اسم آخر: ${manga.alternative} • المؤلف: ${manga.author}</p>
                 
                 <div class="detail-meta-grid">
-                    <div class="meta-item"><strong>Ø§Ù„Ù†ÙˆØ¹:</strong> ${manga.type || 'Ù…Ù†Ù‡ÙˆØ§'}</div>
-                    <div class="meta-item"><strong>Ø§Ù„Ø­Ø§Ù„Ø©:</strong> ${manga.status === 'Ongoing' ? 'Ù…Ø³ØªÙ…Ø±Ø©' : manga.status === 'Completed' ? 'Ù…ÙƒØªÙ…Ù„Ø©' : manga.status}</div>
-                    <div class="meta-item"><strong>Ø§Ù„Ù…Ø´Ø§Ù‡Ø¯Ø§Øª:</strong> <i class="fa-solid fa-eye" style="color:var(--color-secondary)"></i> ${manga.views || 0}</div>
-                    <div class="meta-item"><strong>Ø§Ù„ØªÙ‚ÙŠÙŠÙ…:</strong> <i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</div>
+                    <div class="meta-item"><strong>النوع:</strong> ${manga.type || 'منهوا'}</div>
+                    <div class="meta-item"><strong>الحالة:</strong> ${manga.status === 'Ongoing' ? 'مستمرة' : manga.status === 'Completed' ? 'مكتملة' : manga.status}</div>
+                    <div class="meta-item"><strong>المشاهدات:</strong> <i class="fa-solid fa-eye" style="color:var(--color-secondary)"></i> ${manga.views || 0}</div>
+                    <div class="meta-item"><strong>التقييم:</strong> <i class="fa-solid fa-star" style="color:#ffb703"></i> ${manga.rating}</div>
                 </div>
                 
                 <div class="genres-list">
@@ -2656,15 +2656,15 @@ async function DetailViewComponent() {
                 </div>
                 
                 <div class="detail-synopsis">
-                    <h3>Ø§Ù„Ù‚ØµØ© ÙˆØ§Ù„ÙˆØµÙ</h3>
+                    <h3>القصة والوصف</h3>
                     <p>${manga.synopsis}</p>
                 </div>
                 
-                <!-- Ù‚Ø³Ù… Ù…Ø±Ø§Ø¬Ø¹Ø§Øª Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ÙˆØ§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª -->
+                <!-- قسم مراجعات المنهوا والتقييمات -->
                 <div class="chapters-section" style="margin-top: 30px;">
                     <div class="chapters-header" style="margin-bottom: 20px;">
-                        <h3>ØªÙ‚ÙŠÙŠÙ…Ø§Øª ÙˆÙ…Ø±Ø§Ø¬Ø¹Ø§Øª Ø§Ù„Ù…ØªØ§Ø¨Ø¹ÙŠÙ†</h3>
-                        <span>Ù…ØªÙˆØ³Ø· Ø§Ù„ØªÙ‚ÙŠÙŠÙ…: <i class="fa-solid fa-star" style="color: #ffb703;"></i> ${manga.rating}</span>
+                        <h3>تقييمات ومراجعات المتابعين</h3>
+                        <span>متوسط التقييم: <i class="fa-solid fa-star" style="color: #ffb703;"></i> ${manga.rating}</span>
                     </div>
                     
                     <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -2678,16 +2678,16 @@ async function DetailViewComponent() {
                 
                 <div class="chapters-section">
                     <div class="chapters-header">
-                        <h3>ÙØµÙˆÙ„ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ Ø§Ù„Ù…ØªØ§Ø­Ø©</h3>
+                        <h3>فصول المانجا المتاحة</h3>
                         <div class="chapters-search-box">
-                            <input type="text" id="chapters-search-input" placeholder="Ø§Ø¨Ø­Ø« Ø¹Ù† Ø±Ù‚Ù… Ø§Ù„ÙØµÙ„ Ø£Ùˆ Ø§Ù„Ø¹Ù†ÙˆØ§Ù†..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
+                            <input type="text" id="chapters-search-input" placeholder="ابحث عن رقم الفصل أو العنوان..." value="${state.chapterSearchQuery || ''}" autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <select id="chapter-sort-select" style="background:var(--bg-surface);border:1px solid var(--border-color);color:var(--text-main);padding:6px 12px;border-radius:8px;font-size:0.8rem;outline:none;cursor:pointer;">
-                            <option value="newest" ${state.chapterSortOrder === 'newest' ? 'selected' : ''}>Ø§Ù„Ø£Ø­Ø¯Ø« Ø£ÙˆÙ„Ø§Ù‹</option>
-                            <option value="oldest" ${state.chapterSortOrder === 'oldest' ? 'selected' : ''}>Ø§Ù„Ø£Ù‚Ø¯Ù… Ø£ÙˆÙ„Ø§Ù‹</option>
+                            <option value="newest" ${state.chapterSortOrder === 'newest' ? 'selected' : ''}>الأحدث أولاً</option>
+                            <option value="oldest" ${state.chapterSortOrder === 'oldest' ? 'selected' : ''}>الأقدم أولاً</option>
                         </select>
-                        <span>Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØµÙˆÙ„: ${manga.chapters.length}</span>
+                        <span>إجمالي الفصول: ${manga.chapters.length}</span>
                     </div>
                     <div class="chapters-list">
                         ${chaptersHtml}
@@ -2705,49 +2705,49 @@ function renderRelatedMangas(manga) {
     if (related.length === 0) return '';
     return `
     <div class="related-section">
-        <div class="section-header"><h2 class="section-title">Ù‚Ø¯ ÙŠØ¹Ø¬Ø¨Ùƒ Ø£ÙŠØ¶Ø§Ù‹ <span>ØªÙˆØµÙŠØ§Øª</span></h2></div>
+        <div class="section-header"><h2 class="section-title">قد يعجبك أيضاً <span>توصيات</span></h2></div>
         <div class="related-grid">
             ${related.map(m => `
                 <div class="related-card" onclick="navigate('detail','${m.id}')" role="button">
                     <img src="${m.cover || DEFAULT_COVER_URL}" alt="${m.title}" loading="lazy">
                     <div class="related-title">${m.title}</div>
-                    <div class="related-rating">${m.rating ? 'â­ '.repeat(Math.round(m.rating)) : ''}</div>
+                    <div class="related-rating">${m.rating ? '⭐ '.repeat(Math.round(m.rating)) : ''}</div>
                 </div>
             `).join('')}
         </div>
     </div>`;
 }
 
-// Ù‚Ø§Ø±Ø¦ Ø§Ù„ÙØµÙˆÙ„
+// قارئ الفصول
 async function ReaderViewComponent() {
     const manga = state.mangas.find(m => m.id === state.activeMangaId);
-    if (!manga) return '<p>Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ ØºÙŠØ± Ù…ØªÙˆÙØ±Ø©</p>';
+    if (!manga) return '<p>المانجا غير متوفرة</p>';
 
     if (manga.id === "1" && !state.soloLevelingLoaded) {
         await state.loadSoloLevelingChapters();
     }
     
     const chapterIndex = manga.chapters.findIndex(c => normalizeChapterId(c.id) === normalizeChapterId(state.activeChapterId));
-    if (chapterIndex === -1) return '<p>Ø§Ù„ÙØµÙ„ ØºÙŠØ± Ù…ØªÙˆÙØ±</p>';
+    if (chapterIndex === -1) return '<p>الفصل غير متوفر</p>';
     
     const chapter = manga.chapters[chapterIndex];
     
-    // Ø²ÙŠØ§Ø¯Ø© Ø§Ù„Ù…Ø´Ø§Ù‡Ø¯Ø§Øª Ù…Ø­Ù„ÙŠØ§Ù‹
+    // زيادة المشاهدات محلياً
     manga.views = (manga.views || 0) + 1;
     
-    // Ù†Ù‚Ø§Ø· Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+    // نقاط القراءة
     state.addPoints(3);
 
-    // ÙØ­Øµ Ù…Ø§ Ø¥Ø°Ø§ ÙƒØ§Ù† Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„ Ù…Ø­Ù…Ù„ Ø£ÙˆÙÙ„Ø§ÙŠÙ†
+    // فحص ما إذا كان هذا الفصل محمل أوفلاين
     let pages = chapter.images;
     const offlineData = await getChapterOffline(manga.id, chapter.id);
     const isOfflineAvailable = !!offlineData;
     if (isOfflineAvailable) {
         pages = offlineData.images;
-        console.log("ØªÙ… ØªØ­Ù…ÙŠÙ„ ØµÙØ­Ø§Øª Ø§Ù„ÙØµÙ„ Ø§Ù„Ù…Ø­ÙÙˆØ¸Ø© Ù…Ù† Ø§Ù„Ù€ IndexedDB Ù…Ø­Ù„ÙŠØ§Ù‹.");
+        console.log("تم تحميل صفحات الفصل المحفوظة من الـ IndexedDB محلياً.");
     }
 
-    // Ø§Ù„ØªÙˆÙ„ÙŠØ¯ Ø§Ù„Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ø·Ø§ÙŠØ± Ù„ØªØ®ÙÙŠÙ Ø§Ù„Ø°Ø§ÙƒØ±Ø© ÙˆØ§Ù„Ù…Ù„ÙØ§Øª
+    // التوليد الديناميكي على الطاير لتخفيف الذاكرة والملفات
     if (!pages || pages.length === 0) {
         if (manga.id === "4") {
             pages = generateKingdomMockPages(manga.title, chapter.id);
@@ -2756,7 +2756,7 @@ async function ReaderViewComponent() {
         }
     }
 
-    // Ø¥Ø¹Ø¯Ø§Ø¯ Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³Ø¨Ù‚ Ø§Ù„Ø°ÙƒÙŠ (Ù‡ÙŠØªÙØ¹Ù„ Ù„Ù…Ø§ Ø§Ù„Ù‚Ø§Ø±Ø¦ ÙŠÙ†Ø²Ù„ Ù„ØªØ­Øª)
+    // إعداد التحميل المسبق الذكي (هيتفعل لما القارئ ينزل لتحت)
     window._hasPrefetchedNextChapter = false;
     window._nextChapterImages = null;
     const nextChapter = manga.chapters[chapterIndex - 1];
@@ -2764,7 +2764,7 @@ async function ReaderViewComponent() {
         window._nextChapterImages = nextChapter.images;
     }
 
-    // Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ø³Ø¨Ù‚ Ø§Ù„Ø°ÙƒÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ø³ÙŠØ±ÙØ± Ù„Ù„ÙØµÙˆÙ„ Ø§Ù„Ù‚Ø§Ø¯Ù…Ø©
+    // التحميل المسبق الذكي على السيرفر للفصول القادمة
     const prefetchCount = 2; 
     for (let i = 1; i <= prefetchCount; i++) {
         const futureChapter = manga.chapters[chapterIndex - i];
@@ -2777,17 +2777,17 @@ async function ReaderViewComponent() {
         }
     }
 
-    // Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„ÙØµÙˆÙ„
+    // خيارات الفصول
     let optionsHtml = '';
     manga.chapters.forEach(ch => {
-            optionsHtml += `<option value="${ch.id}" ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'selected' : ''}>Ø§Ù„ÙØµÙ„ ${ch.id}</option>`;
+            optionsHtml += `<option value="${ch.id}" ${normalizeChapterId(ch.id) === normalizeChapterId(chapter.id) ? 'selected' : ''}>الفصل ${ch.id}</option>`;
     });
 
-    // ØªÙØ¶ÙŠÙ„ Ø§Ù„ÙØµÙ„
+    // تفضيل الفصل
     const likeKey = `${manga.id}_${chapter.id}`;
     const isLiked = state.likes[likeKey] || false;
 
-    // Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù‚Ø§Ø±Ø¦
+    // إعدادات القارئ
     const settings = state.readerSettings;
     const themeClass = `reader-theme-${settings.theme}`;
     const widthClass = `reader-width-${settings.width}`;
@@ -2799,7 +2799,7 @@ async function ReaderViewComponent() {
             const isActivePage = index === state.activePageIndex;
             imagesHtml += `
             <div class="reader-image-container ${isActivePage ? 'active-page' : ''}" data-index="${index}">
-                <img src="${pageUrl}" alt="ØµÙØ­Ø© ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
+                <img src="${pageUrl}" alt="صفحة ${index + 1}" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null; this.src='/proxy-image?url=' + encodeURIComponent('${pageUrl}')">
             </div>
             `;
         });
@@ -2809,19 +2809,19 @@ async function ReaderViewComponent() {
             <div class="reader-image-container lazy-load-container" data-src="${pageUrl}">
                 <div class="reader-image-placeholder">
                     <i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>
-                    <span>Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø© ${index + 1}...</span>
+                    <span>جاري تحميل الصفحة ${index + 1}...</span>
                 </div>
             </div>
             `;
         });
     }
 
-    // --- Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ù„Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ (Infinite Scroll) ---
+    // --- التحميل التلقائي للفصل التالي (Infinite Scroll) ---
     if (chapterIndex > 0 && settings.mode !== 'horizontal') {
         imagesHtml += '<div id="next-chapter-sentinel" style="height:1px;width:100%;"></div>';
     }
 
-    // Ø¬Ù„Ø¨ ØªØ¹Ù„ÙŠÙ‚Ø§Øª Ø§Ù„ÙØµÙ„ Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±
+    // جلب تعليقات الفصل من السيرفر
     let chapterComments = [];
     let commentsListHtml = '';
     try {
@@ -2829,16 +2829,16 @@ async function ReaderViewComponent() {
         if (response.ok) {
             chapterComments = await response.json();
             if (chapterComments.length === 0) {
-                commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">ÙƒÙ† Ø£ÙˆÙ„ Ù…Ù† ÙŠØªØ±Ùƒ ØªØ¹Ù„ÙŠÙ‚Ø§Ù‹ Ø¹Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„!</p>';
+                commentsListHtml = '<p style="color:var(--text-dark);text-align:center;padding:20px;">كن أول من يترك تعليقاً على هذا الفصل!</p>';
             } else {
                 chapterComments.forEach(comm => {
                     const userDisplay = comm.email.split('@')[0];
                     const firstLetter = userDisplay.charAt(0).toUpperCase();
                     const dateStr = new Date(comm.created_at * 1000).toLocaleDateString('ar-EG');
                     const badgeIcons = {
-                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="Ø£ÙˆÙ„ ØªØ¹Ù„ÙŠÙ‚"></i>',
-                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="Ø«Ø§Ù†ÙŠ ØªØ¹Ù„ÙŠÙ‚"></i>',
-                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="Ø«Ø§Ù„Ø« ØªØ¹Ù„ÙŠÙ‚"></i>'
+                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="أول تعليق"></i>',
+                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="ثاني تعليق"></i>',
+                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="ثالث تعليق"></i>'
                     };
                     const badgeHtml = badgeIcons[comm.badge] ? `<span class="comment-badge">${badgeIcons[comm.badge]}</span>` : '';
                     commentsListHtml += `
@@ -2858,20 +2858,20 @@ async function ReaderViewComponent() {
         }
     } catch (e) {
         console.error("Error fetching comments:", e);
-        commentsListHtml = '<p style="color:#ff007f;text-align:center;padding:20px;">ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ ØªØ¹Ù„ÙŠÙ‚Ø§Øª Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„.</p>';
+        commentsListHtml = '<p style="color:#ff007f;text-align:center;padding:20px;">فشل تحميل تعليقات هذا الفصل.</p>';
     }
 
-    // ØµÙ†Ø¯ÙˆÙ‚ ØªØ¹Ù„ÙŠÙ‚ Ù…Ø³Ø¬Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£Ùˆ ØºÙŠØ± Ø§Ù„Ù…Ø³Ø¬Ù„
+    // صندوق تعليق مسجل الدخول أو غير المسجل
     let commentFormHtml = '';
     if (state.sessionToken) {
         commentFormHtml = `
         <form class="comments-form" id="chapter-comment-form" style="display: flex; flex-direction: column; gap: 10px; text-align: right;">
             <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px;">
-                <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> Ø§Ù„ØªØ¹Ù„ÙŠÙ‚ Ø¨Ø§Ø³Ù…: <strong>${state.userEmail.split('@')[0]}</strong>
+                <i class="fa-solid fa-user-check" style="color: var(--color-secondary); margin-left: 4px;"></i> التعليق باسم: <strong>${state.userEmail.split('@')[0]}</strong>
             </div>
             <div style="display: flex; gap: 12px; width: 100%;">
-                <input type="text" placeholder="Ø´Ø§Ø±ÙƒÙ†Ø§ Ø±Ø£ÙŠÙƒ Ø­ÙˆÙ„ Ø§Ù„ÙØµÙ„..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
-                <button type="submit" style="padding: 10px 24px; background: var(--color-primary); color: #fff; border: none; border-radius: 30px; font-weight: 700; cursor: pointer;">Ø¥Ø±Ø³Ø§Ù„</button>
+                <input type="text" placeholder="شاركنا رأيك حول الفصل..." id="chapter-comment-text" required style="flex: 1; padding: 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 30px; color: var(--text-main); outline: none; text-align: right;">
+                <button type="submit" style="padding: 10px 24px; background: var(--color-primary); color: #fff; border: none; border-radius: 30px; font-weight: 700; cursor: pointer;">إرسال</button>
             </div>
         </form>
         `;
@@ -2879,14 +2879,14 @@ async function ReaderViewComponent() {
         commentFormHtml = `
         <div class="glass-card" style="padding: 18px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255, 0, 127, 0.03); text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
             <p style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); margin: 0;">
-                <i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ø§Ù„Ø¬ÙŠÙ…ÙŠÙ„ Ø§Ù„Ø®Ø§Øµ Ø¨Ùƒ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† ÙƒØªØ§Ø¨Ø© ØªØ¹Ù„ÙŠÙ‚ Ø¹Ù„Ù‰ Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„.
+                <i class="fa-solid fa-lock" style="color: var(--color-accent); margin-left: 6px;"></i> يجب تسجيل الدخول بالجيميل الخاص بك لتتمكن من كتابة تعليق على هذا الفصل.
             </p>
-            <button class="login-navbar-btn" id="comment-auth-prompt-btn" style="padding: 6px 18px; font-size: 0.8rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø¢Ù†</button>
+            <button class="login-navbar-btn" id="comment-auth-prompt-btn" style="padding: 6px 18px; font-size: 0.8rem; border-radius: 20px;"><i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول الآن</button>
         </div>
         `;
     }
 
-    // Ø§Ø³ØªØ±Ø¬Ø§Ø¹ ÙˆØ­ÙØ¸ Ø§Ù„ØªÙ‚Ø¯Ù…
+    // استرجاع وحفظ التقدم
     const progressPercent = settings.mode === 'horizontal' ? ((state.activePageIndex + 1) / pages.length) * 100 : 0;
     state.saveReadingProgress(manga.id, chapter.id, 0, progressPercent, state.activePageIndex);
 
@@ -2895,13 +2895,13 @@ async function ReaderViewComponent() {
         <div class="reader-progress-bar" id="reading-bar" style="width: ${progressPercent}%"></div>
         
         <div class="reader-nav">
-            <button class="reader-btn return-to-manga" title="Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØµÙØ­Ø© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§"><i class="fa-solid fa-arrow-right"></i></button>
+            <button class="reader-btn return-to-manga" title="العودة لصفحة المانجا"><i class="fa-solid fa-arrow-right"></i></button>
             <div class="reader-title-info">
                 <h2>${manga.title}</h2>
-                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> Ø£ÙˆÙÙ„Ø§ÙŠÙ†</span>' : ''}</p>
+                <p>${chapter.title} ${isOfflineAvailable ? '<span style="color:var(--color-secondary)"><i class="fa-solid fa-wifi-slash"></i> أوفلاين</span>' : ''}</p>
             </div>
             <div class="reader-controls">
-                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ Ø§Ù„Ø³Ø§Ø¨Ù‚"><i class="fa-solid fa-chevron-right"></i></button>
+                <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i></button>
                 
                 <div class="custom-dropdown" id="chapter-dropdown">
                     <button class="dropdown-trigger">
@@ -2910,13 +2910,13 @@ async function ReaderViewComponent() {
                     </button>
                     <div class="dropdown-content">
                         <div class="dropdown-search-box">
-                            <input type="text" id="chapter-drop-search" placeholder="Ø§Ø¨Ø­Ø« Ø¹Ù† Ø±Ù‚Ù… Ø§Ù„ÙØµÙ„..." autocomplete="off">
+                            <input type="text" id="chapter-drop-search" placeholder="ابحث عن رقم الفصل..." autocomplete="off">
                             <i class="fa-solid fa-magnifying-glass"></i>
                         </div>
                         <div class="dropdown-items-list">
                             ${manga.chapters.map(ch => {
                                 let subtitle = ch.title ? (ch.title.includes(':') ? ch.title.split(':').slice(1).join(':').trim() : '') : '';
-                                let mainTitle = ch.title ? ch.title.split(':')[0].trim() : `Ø§Ù„ÙØµÙ„ ${String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}`;
+                                let mainTitle = ch.title ? ch.title.split(':')[0].trim() : `الفصل ${String(ch.id).replace(/^ch_/, '').replace(/_0$/, '').replace(/_/g, '.')}`;
                                 if (subtitle.replace(/[^0-9.]/g, '') === mainTitle.replace(/[^0-9.]/g, '')) {
                                     subtitle = '';
                                 }
@@ -2931,9 +2931,9 @@ async function ReaderViewComponent() {
                     </div>
                 </div>
 
-                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ"><i class="fa-solid fa-chevron-left"></i></button>
+                <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي"><i class="fa-solid fa-chevron-left"></i></button>
                 ${state.userRole === 'admin' ? `
-                <button class="reader-btn translate-chapter-btn" title="ØªØ±Ø¬Ù…Ø© Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
+                <button class="reader-btn translate-chapter-btn" title="ترجمة هذا الفصل" data-url="${chapter.url}" data-manga-id="${manga.id}" data-chapter-id="${chapter.id}">
                     <i class="fa-solid fa-language"></i>
                 </button>` : ''}
             </div>
@@ -2944,11 +2944,11 @@ async function ReaderViewComponent() {
             
             ${settings.mode === 'horizontal' ? `
                 <div class="horizontal-click-navigator">
-                    <div class="nav-zone nav-zone-right" id="h-prev-zone" title="Ø§Ù„ØµÙØ­Ø© Ø§Ù„Ø³Ø§Ø¨Ù‚Ø©"><i class="fa-solid fa-chevron-right"></i></div>
-                    <div class="nav-zone nav-zone-left" id="h-next-zone" title="Ø§Ù„ØµÙØ­Ø© Ø§Ù„ØªØ§Ù„ÙŠØ©"><i class="fa-solid fa-chevron-left"></i></div>
+                    <div class="nav-zone nav-zone-right" id="h-prev-zone" title="الصفحة السابقة"><i class="fa-solid fa-chevron-right"></i></div>
+                    <div class="nav-zone nav-zone-left" id="h-next-zone" title="الصفحة التالية"><i class="fa-solid fa-chevron-left"></i></div>
                 </div>
                 <div class="horizontal-page-indicator">
-                    ØµÙØ­Ø© ${state.activePageIndex + 1} Ù…Ù† ${pages.length}
+                    صفحة ${state.activePageIndex + 1} من ${pages.length}
                 </div>
             ` : ''}
         </div>
@@ -2956,57 +2956,57 @@ async function ReaderViewComponent() {
         <div class="chapter-likes-interactive">
             <button class="like-chapter-btn ${isLiked ? 'liked' : ''}" id="chapter-like-btn">
                 <i class="fa-${isLiked ? 'solid' : 'regular'} fa-heart"></i>
-                <span id="like-text">${isLiked ? 'Ø£Ø¹Ø¬Ø¨Ù†ÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„!' : 'Ø£Ø¹Ø¬Ø¨Ù†ÙŠ'}</span>
+                <span id="like-text">${isLiked ? 'أعجبني هذا الفصل!' : 'أعجبني'}</span>
             </button>
         </div>
         
         <div class="reader-bottom-nav">
-            <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ Ø§Ù„Ø³Ø§Ø¨Ù‚"><i class="fa-solid fa-chevron-right"></i> Ø§Ù„ÙØµÙ„ Ø§Ù„Ø³Ø§Ø¨Ù‚</button>
-            <button class="reader-btn return-to-manga" title="Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØµÙØ­Ø© Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§">Ø±Ø¬ÙˆØ¹ Ø¥Ù„Ù‰ Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§</button>
-            <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="Ø§Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ">Ø§Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ <i class="fa-solid fa-chevron-left"></i></button>
+            <button class="reader-btn prev-chapter-btn ${chapterIndex === manga.chapters.length - 1 ? 'disabled' : ''}" title="الفصل السابق"><i class="fa-solid fa-chevron-right"></i> الفصل السابق</button>
+            <button class="reader-btn return-to-manga" title="العودة لصفحة المانهوا">رجوع إلى المانهوا</button>
+            <button class="reader-btn next-chapter-btn ${chapterIndex === 0 ? 'disabled' : ''}" title="الفصل التالي">الفصل التالي <i class="fa-solid fa-chevron-left"></i></button>
         </div>
         
-        <button class="reader-settings-toggle-btn" id="settings-panel-toggle" title="ØªØ®ØµÙŠØµ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©"><i class="fa-solid fa-gear"></i></button>
+        <button class="reader-settings-toggle-btn" id="settings-panel-toggle" title="تخصيص القراءة"><i class="fa-solid fa-gear"></i></button>
         
         <div class="reader-settings-panel" id="settings-panel">
             <div class="setting-row">
-                <label>Ø§ØªØ¬Ø§Ù‡ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</label>
+                <label>اتجاه القراءة</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">Ø·ÙˆÙ„ÙŠ (Webtoon)</button>
-                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">Ø£ÙÙ‚ÙŠ (Manga)</button>
+                    <button class="setting-btn ${settings.mode === 'vertical' ? 'active' : ''}" data-setting="mode" data-value="vertical">طولي (Webtoon)</button>
+                    <button class="setting-btn ${settings.mode === 'horizontal' ? 'active' : ''}" data-setting="mode" data-value="horizontal">أفقي (Manga)</button>
                 </div>
             </div>
             <div class="setting-row">
-                <label>Ù„ÙˆÙ† Ø§Ù„Ø®Ù„ÙÙŠØ©</label>
+                <label>لون الخلفية</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">Ø¯Ø§ÙƒÙ†</button>
-                    <button class="setting-btn ${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">Ø±Ù…Ø§Ø¯ÙŠ</button>
-                    <button class="setting-btn ${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">Ù…Ø±ÙŠØ­ Ù„Ù„Ø¹ÙŠÙ†</button>
+                    <button class="setting-btn ${settings.theme === 'dark' ? 'active' : ''}" data-setting="theme" data-value="dark">داكن</button>
+                    <button class="setting-btn ${settings.theme === 'gray' ? 'active' : ''}" data-setting="theme" data-value="gray">رمادي</button>
+                    <button class="setting-btn ${settings.theme === 'sepia' ? 'active' : ''}" data-setting="theme" data-value="sepia">مريح للعين</button>
                 </div>
             </div>
             <div class="setting-row">
-                <label>Ø¹Ø±Ø¶ Ø§Ù„ØµÙˆØ±</label>
+                <label>عرض الصور</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn ${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">Ù…Ø¶ØºÙˆØ·</button>
-                    <button class="setting-btn ${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">Ù…ØªÙˆØ³Ø·</button>
-                    <button class="setting-btn ${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">ÙƒØ§Ù…Ù„</button>
+                    <button class="setting-btn ${settings.width === 'compact' ? 'active' : ''}" data-setting="width" data-value="compact">مضغوط</button>
+                    <button class="setting-btn ${settings.width === 'medium' ? 'active' : ''}" data-setting="width" data-value="medium">متوسط</button>
+                    <button class="setting-btn ${settings.width === 'full' ? 'active' : ''}" data-setting="width" data-value="full">كامل</button>
                 </div>
             </div>
             <div class="setting-row">
-                <label>ÙˆØ¶Ø¹ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</label>
+                <label>وضع القراءة</label>
                 <div class="setting-buttons">
-                    <button class="setting-btn" id="reader-fullscreen-btn"><i class="fa-solid fa-expand"></i> Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø©</button>
-                    <button class="setting-btn" id="reader-strip-toggle"><i class="fa-solid fa-align-center"></i> ØªÙ…Ø±ÙŠØ± Ù…Ø³ØªÙ…Ø±</button>
-                    <button class="setting-btn" id="reader-zoom-in" title="ØªÙƒØ¨ÙŠØ±"><i class="fa-solid fa-plus"></i></button>
-                    <button class="setting-btn" id="reader-zoom-out" title="ØªØµØºÙŠØ±"><i class="fa-solid fa-minus"></i></button>
-                    <button class="setting-btn" id="reader-zoom-reset" title="Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ø¶Ø¨Ø·"><i class="fa-solid fa-undo"></i></button>
+                    <button class="setting-btn" id="reader-fullscreen-btn"><i class="fa-solid fa-expand"></i> ملء الشاشة</button>
+                    <button class="setting-btn" id="reader-strip-toggle"><i class="fa-solid fa-align-center"></i> تمرير مستمر</button>
+                    <button class="setting-btn" id="reader-zoom-in" title="تكبير"><i class="fa-solid fa-plus"></i></button>
+                    <button class="setting-btn" id="reader-zoom-out" title="تصغير"><i class="fa-solid fa-minus"></i></button>
+                    <button class="setting-btn" id="reader-zoom-reset" title="إعادة الضبط"><i class="fa-solid fa-undo"></i></button>
                 </div>
             </div>
         </div>
         
         <div class="main-content" style="max-width: 800px; margin: 0 auto; width: 100%;">
             <div class="comments-container" style="margin-bottom: 50px;">
-                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> Ù…Ù†Ø§Ù‚Ø´Ø© Ø§Ù„ÙØµÙ„ (${chapterComments.length})</h3>
+                <h3 class="comments-title"><i class="fa-regular fa-comments"></i> مناقشة الفصل (${chapterComments.length})</h3>
                 ${commentFormHtml}
                 <div class="comments-list" id="chapter-comments-list">
                     ${commentsListHtml}
@@ -3017,10 +3017,10 @@ async function ReaderViewComponent() {
     `;
 }
 
-// Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©
+// لوحة الإدارة
 function AdminPanelViewComponent() {
     if (state.userRole !== 'admin') {
-        return '<p style="padding: 40px; text-align: center; color: var(--text-dark);">Ù„Ø§ ØªÙ…Ù„Ùƒ ØµÙ„Ø§Ø­ÙŠØ© Ø§Ù„ÙˆØµÙˆÙ„ Ø¥Ù„Ù‰ Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©.</p>';
+        return '<p style="padding: 40px; text-align: center; color: var(--text-dark);">لا تملك صلاحية الوصول إلى لوحة الإدارة.</p>';
     }
     if (!state.adminStats) {
         loadAdminStats();
@@ -3033,51 +3033,51 @@ function AdminPanelViewComponent() {
 
     const dateFrom = state.adminDateFrom || '';
     const dateTo = state.adminDateTo || '';
-    const statsTitle = state.adminDateFrom && state.adminDateTo ? `Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª (${state.adminDateFrom} â†’ ${state.adminDateTo})` : 'Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ø­ÙŠÙˆÙŠØ©';
+    const statsTitle = state.adminDateFrom && state.adminDateTo ? `إحصائيات (${state.adminDateFrom} → ${state.adminDateTo})` : 'لوحة الإحصائيات الحيوية';
     return `
     <div class="admin-container" style="position: relative;">
-        <button class="settings-close-btn" id="close-admin-btn" title="Ø®Ø±ÙˆØ¬ Ù…Ù† Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©" style="position: absolute; top: 12px; left: 12px;"><i class="fa-solid fa-xmark"></i></button>
-        <h2 class="admin-title">Ù„ÙˆØ­Ø© Ø§Ù„ØªØ­ÙƒÙ… ÙˆØ§Ù„Ø¥Ø¯Ø§Ø±Ø© Ù„Ù„Ù…ÙˆÙ‚Ø¹ <span>(KAIRO/Ù…Ù†Ù‡ÙˆØ§)</span></h2>
+        <button class="settings-close-btn" id="close-admin-btn" title="خروج من لوحة الإدارة" style="position: absolute; top: 12px; left: 12px;"><i class="fa-solid fa-xmark"></i></button>
+        <h2 class="admin-title">لوحة التحكم والإدارة للموقع <span>(KAIRO/منهوا)</span></h2>
         
         <!-- Date Range + Export Controls -->
         <div class="admin-controls" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: rgba(255,255,255,0.01);">
-            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-calendar"></i> ØªØµÙÙŠØ©:</span>
+            <span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;"><i class="fa-solid fa-calendar"></i> تصفية:</span>
             <input type="date" id="admin-date-from" value="${dateFrom}" style="direction: ltr; text-align: right; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
-            <span style="color: var(--text-dark);">â†’</span>
+            <span style="color: var(--text-dark);">→</span>
             <input type="date" id="admin-date-to" value="${dateTo}" style="direction: ltr; text-align: right; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.85rem; outline: none;">
-            <button class="admin-control-btn" id="btn-admin-apply-filter" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: none; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-filter"></i> ØªØ·Ø¨ÙŠÙ‚</button>
-            <button class="admin-control-btn" id="btn-admin-clear-filter" style="padding: 8px 16px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-xmark"></i> Ù…Ø³Ø­</button>
+            <button class="admin-control-btn" id="btn-admin-apply-filter" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: none; background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-filter"></i> تطبيق</button>
+            <button class="admin-control-btn" id="btn-admin-clear-filter" style="padding: 8px 16px; border-radius: var(--border-radius-sm); border: 1px solid var(--border-color); background: transparent; color: var(--text-dark); font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-xmark"></i> مسح</button>
             <span style="flex:1;"></span>
             <button class="admin-control-btn" id="btn-admin-export-csv" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: 1px solid #00ff7f44; background: rgba(0,255,127,0.05); color: #00ff7f; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-csv"></i> CSV</button>
             <button class="admin-control-btn" id="btn-admin-export-json" style="padding: 8px 20px; border-radius: var(--border-radius-sm); border: 1px solid #6c63ff44; background: rgba(108,99,255,0.05); color: #6c63ff; font-weight: 700; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-file-export"></i> JSON</button>
         </div>
         
-        <!-- Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø­ØµØ§Ø¦ÙŠØ§Øª Ø§Ù„Ø­ÙŠÙˆÙŠØ© -->
+        <!-- لوحة الإحصائيات الحيوية -->
         <div class="admin-stats-dashboard" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 30px;">
             ${state.adminStats ? `
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-eye" style="color: var(--color-secondary); margin-left: 6px;"></i> Ø²ÙŠØ§Ø±Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø§Ù„ÙƒÙ„ÙŠØ©</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-eye" style="color: var(--color-secondary); margin-left: 6px;"></i> زيارات الموقع الكلية</span>
                     <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.visits}</strong>
                 </div>
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-users" style="color: var(--color-primary); margin-left: 6px;"></i> Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ù…Ø´ØªØ±ÙƒÙŠÙ†</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-users" style="color: var(--color-primary); margin-left: 6px;"></i> إجمالي المشتركين</span>
                     <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.total_users}</strong>
                 </div>
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-google" style="color: #ea4335; margin-left: 6px;"></i> Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ù€ Google</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-google" style="color: #ea4335; margin-left: 6px;"></i> التسجيل بـ Google</span>
                     <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.google}</strong>
                 </div>
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 6px; background: rgba(255,255,255,0.01); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-facebook" style="color: #1877f2; margin-left: 6px;"></i> Ø§Ù„ØªØ³Ø¬ÙŠÙ„ Ø¨Ù€ Facebook</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-brands fa-facebook" style="color: #1877f2; margin-left: 6px;"></i> التسجيل بـ Facebook</span>
                     <strong style="font-size: 1.5rem; color: var(--text-main); font-weight: 800;">${state.adminStats.facebook}</strong>
                 </div>
                 ${state.adminStats.suggestions_in_range !== undefined ? `
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª/Ø´ÙƒØ§ÙˆÙ‰ (ÙÙŠ Ø§Ù„Ù†Ø·Ø§Ù‚)</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> اقتراحات/شكاوى (في النطاق)</span>
                     <strong style="font-size: 1.5rem; color: #ff007f; font-weight: 800;">${state.adminStats.suggestions_in_range}</strong>
                 </div>` : state.adminStats.total_suggestions !== undefined ? `
                 <div class="stat-card glass-card" style="padding: 16px; border-radius: var(--border-radius-md); border: 1px solid #ff007f44; display: flex; flex-direction: column; gap: 6px; background: rgba(255,0,127,0.03); text-align: right;">
-                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª ÙˆØ§Ù„Ø´ÙƒØ§ÙˆÙ‰</span>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);"><i class="fa-solid fa-message" style="color: #ff007f; margin-left: 6px;"></i> إجمالي الاقتراحات والشكاوى</span>
                     <strong style="font-size: 1.5rem; color: #ff007f; font-weight: 800;">${state.adminStats.total_suggestions}</strong>
                 </div>` : ''}
             ` : `
@@ -3089,68 +3089,68 @@ function AdminPanelViewComponent() {
         </div>
 
         <div class="admin-tabs">
-            <button class="admin-tab" id="tab-add-chapter">Ø¥Ø¶Ø§ÙØ© ÙØµÙ„ Ø¬Ø¯ÙŠØ¯</button>
-            <button class="admin-tab" id="tab-edit-manga">ØªØ¹Ø¯ÙŠÙ„ Ù…Ø§Ù†Ø¬Ø§/Ù…Ù†Ù‡ÙˆØ§</button>
-            <button class="admin-tab active" id="tab-live-scraper"><i class="fa-solid fa-terminal"></i> Ø³Ø­Ø¨ Ùˆ Ù…Ø±Ø§Ù‚Ø¨Ø© (Pro)</button>
-            <button class="admin-tab" id="tab-suggestions">Ø§Ù„Ø´ÙƒØ§ÙˆÙ‰ ÙˆØ§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª</button>
-            <button class="admin-tab" id="tab-site-settings">Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹</button>
-            <button class="admin-tab" id="tab-alt-sources">Ù…ØµØ§Ø¯Ø± Ø¨Ø¯ÙŠÙ„Ø©</button>
+            <button class="admin-tab" id="tab-add-chapter">إضافة فصل جديد</button>
+            <button class="admin-tab" id="tab-edit-manga">تعديل مانجا/منهوا</button>
+            <button class="admin-tab active" id="tab-live-scraper"><i class="fa-solid fa-terminal"></i> سحب و مراقبة (Pro)</button>
+            <button class="admin-tab" id="tab-suggestions">الشكاوى والاقتراحات</button>
+            <button class="admin-tab" id="tab-site-settings">إعدادات الموقع</button>
+            <button class="admin-tab" id="tab-alt-sources">مصادر بديلة</button>
         </div>
         
         <div class="admin-form-panel" id="panel-edit-manga" style="display:none;">
             <form id="edit-manga-form">
                 <div class="admin-form-group">
-                    <label>Ø§Ø®ØªØ± Ø§Ù„Ù…Ø§Ù†Ø¬Ø§/Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ù„Ù„ØªØ¹Ø¯ÙŠÙ„</label>
+                    <label>اختر المانجا/المنهوا للتعديل</label>
                     <select id="edit-manga-id" required>
-                        <option value="">-- Ø§Ø®ØªØ± --</option>
+                        <option value="">-- اختر --</option>
                         ${mangaOptions}
                     </select>
                 </div>
                 <div id="edit-manga-fields" style="display:none; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 20px;">
                     <div class="admin-form-group">
-                        <label>Ø±Ø§Ø¨Ø· ØµÙˆØ±Ø© Ø§Ù„ØºÙ„Ø§Ù (Cover)</label>
-                        <input type="url" id="edit-manga-cover" placeholder="Ø±Ø§Ø¨Ø· URL Ù„Ù„ØºÙ„Ø§Ù">
+                        <label>رابط صورة الغلاف (Cover)</label>
+                        <input type="url" id="edit-manga-cover" placeholder="رابط URL للغلاف">
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª (ØªÙØµÙ„ Ø¨ÙØ§ØµÙ„Ø©)</label>
-                        <input type="text" id="edit-manga-genres" placeholder="Ø£ÙƒØ´Ù†, Ù…ØºØ§Ù…Ø±Ø©, Ø®ÙŠØ§Ù„, Ø¹Ø³ÙƒØ±ÙŠ">
+                        <label>التصنيفات (تفصل بفاصلة)</label>
+                        <input type="text" id="edit-manga-genres" placeholder="أكشن, مغامرة, خيال, عسكري">
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø§Ù„Ø¹Ù†ÙˆØ§Ù†</label>
-                        <input type="text" id="edit-manga-title" placeholder="Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ø§Ù†Ø¬Ø§">
+                        <label>العنوان</label>
+                        <input type="text" id="edit-manga-title" placeholder="عنوان المانجا">
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¨Ø¯ÙŠÙ„</label>
-                        <input type="text" id="edit-manga-alt" placeholder="Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ Ø£Ùˆ Ø§Ù„Ø¨Ø¯ÙŠÙ„">
+                        <label>العنوان البديل</label>
+                        <input type="text" id="edit-manga-alt" placeholder="العنوان بالإنجليزي أو البديل">
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø§Ù„Ù…Ø¤Ù„Ù</label>
-                        <input type="text" id="edit-manga-author" placeholder="Ø§Ø³Ù… Ø§Ù„Ù…Ø¤Ù„Ù Ø£Ùˆ Ø§Ù„Ø±Ø³Ø§Ù…">
+                        <label>المؤلف</label>
+                        <input type="text" id="edit-manga-author" placeholder="اسم المؤلف أو الرسام">
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø§Ù„Ù‚ØµØ© (Ø§Ù„ÙˆØµÙ)</label>
-                        <textarea id="edit-manga-synopsis" rows="4" placeholder="ÙˆØµÙ Ø§Ù„Ù‚ØµØ©"></textarea>
+                        <label>القصة (الوصف)</label>
+                        <textarea id="edit-manga-synopsis" rows="4" placeholder="وصف القصة"></textarea>
                     </div>
 
 
                     <div class="admin-form-group">
-                        <label>Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù…Ù„ (Type)</label>
+                        <label>نوع العمل (Type)</label>
                         <select id="edit-manga-type">
-                            <option value="Manga">Ù…Ø§Ù†Ø¬Ø§ (Manga)</option>
-                            <option value="Manhwa">Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ© (Manhwa)</option>
-                            <option value="Manhua">Ù…Ø§Ù†Ù‡ÙˆØ§ ØµÙŠÙ†ÙŠØ© (Manhua)</option>
-                            <option value="Comic">ÙƒÙˆÙ…ÙŠÙƒ (Comic)</option>
+                            <option value="Manga">مانجا (Manga)</option>
+                            <option value="Manhwa">مانهوا كورية (Manhwa)</option>
+                            <option value="Manhua">مانهوا صينية (Manhua)</option>
+                            <option value="Comic">كوميك (Comic)</option>
                         </select>
                     </div>
                     <div class="admin-form-group">
-                        <label>Ø­Ø§Ù„Ø© Ø§Ù„Ø¹Ù…Ù„</label>
+                        <label>حالة العمل</label>
                         <select id="edit-manga-status">
-                            <option value="Ù…Ø³ØªÙ…Ø±">Ù…Ø³ØªÙ…Ø±</option>
-                            <option value="Ù…ÙƒØªÙ…Ù„">Ù…ÙƒØªÙ…Ù„</option>
-                            <option value="Ù…ØªÙˆÙ‚Ù">Ù…ØªÙˆÙ‚Ù</option>
+                            <option value="مستمر">مستمر</option>
+                            <option value="مكتمل">مكتمل</option>
+                            <option value="متوقف">متوقف</option>
                         </select>
                     </div>
-                    <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-floppy-disk"></i> Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„Ø§Øª</button>
+                    <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-floppy-disk"></i> حفظ التعديلات</button>
                     <div id="edit-manga-msg" style="margin-top: 12px; font-size: 0.9rem; text-align: center;"></div>
                 </div>
             </form>
@@ -3159,12 +3159,12 @@ function AdminPanelViewComponent() {
         <div class="admin-form-panel" id="panel-alt-sources" style="display:none;">
             <form id="alt-source-form">
                 <div class="admin-form-group">
-                    <label>Ø§Ø®ØªØ± Ø§Ù„Ù…Ø§Ù†Ø¬Ø§/Ø§Ù„Ù…Ù†Ù‡ÙˆØ§</label>
+                    <label>اختر المانجا/المنهوا</label>
                     <select id="alt-manga-id" required>
                         ${mangaOptions}
                     </select>
                 </div>
-                <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-search"></i> Ø¨Ø­Ø« Ø¹Ù† Ù…ØµØ§Ø¯Ø± Ø¨Ø¯ÙŠÙ„Ø©</button>
+                <button type="submit" class="admin-submit-btn"><i class="fa-solid fa-search"></i> بحث عن مصادر بديلة</button>
             </form>
             <div id="alt-source-results" style="margin-top:20px;"></div>
         </div>
@@ -3172,90 +3172,90 @@ function AdminPanelViewComponent() {
         <div class="admin-form-panel" id="panel-add-manga" style="display:none;">
             <form id="add-manga-form">
                 <div class="admin-form-group">
-                    <label>Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ Ø§Ù„Ø£ØµÙ„ÙŠ</label>
-                    <input type="text" id="manga-title" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø¨Ø§Ù„Ø¹Ø±Ø¨ÙŠØ©ØŒ Ù…Ø«Ù„Ø§Ù‹: ÙƒÙŠÙ†Ø¬Ø¯ÙˆÙ…" required>
+                    <label>عنوان المانجا الأصلي</label>
+                    <input type="text" id="manga-title" placeholder="أدخل العنوان بالعربية، مثلاً: كينجدوم" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø¨Ø¯ÙŠÙ„ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>
-                    <input type="text" id="manga-alt" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ù„Ø¹Ù†ÙˆØ§Ù† Ø¨Ø§Ù„Ø¥Ù†Ø¬Ù„ÙŠØ²ÙŠ Ø£Ùˆ Ø§Ù„ÙŠØ§Ø¨Ø§Ù†ÙŠ">
+                    <label>العنوان البديل (اختياري)</label>
+                    <input type="text" id="manga-alt" placeholder="أدخل العنوان بالإنجليزي أو الياباني">
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø§Ù„Ù…Ø¤Ù„Ù</label>
-                    <input type="text" id="manga-author" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ø³Ù… Ø§Ù„Ù…Ø¤Ù„Ù Ø£Ùˆ Ø§Ù„Ø±Ø³Ø§Ù…" required>
+                    <label>المؤلف</label>
+                    <input type="text" id="manga-author" placeholder="أدخل اسم المؤلف أو الرسام" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ù†ÙˆØ¹ Ø§Ù„Ø¹Ù…Ù„</label>
+                    <label>نوع العمل</label>
                     <select id="manga-type">
-                        <option value="Ù…Ø§Ù†Ø¬Ø§">Ù…Ø§Ù†Ø¬Ø§ (Manga)</option>
-                        <option value="Ù…Ù†Ù‡ÙˆØ§">Ù…Ù†Ù‡ÙˆØ§ (Manhua/Webtoon)</option>
+                        <option value="مانجا">مانجا (Manga)</option>
+                        <option value="منهوا">منهوا (Manhua/Webtoon)</option>
                     </select>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø±Ø§Ø¨Ø· ØµÙˆØ±Ø© Ø§Ù„ØºÙ„Ø§Ù (Cover)</label>
-                    <input type="url" id="manga-cover" placeholder="Ø±Ø§Ø¨Ø· URL Ù„Ù„ØºÙ„Ø§ÙØŒ Ø£Ùˆ Ø§ØªØ±ÙƒÙ‡ ÙØ§Ø±ØºØ§Ù‹ Ù„Ù†Ø³ØªØ®Ø¯Ù… ØµÙˆØ±Ø© Ø§ÙØªØ±Ø§Ø¶ÙŠØ© Ù…Ù…ØªØ§Ø²Ø©">
+                    <label>رابط صورة الغلاف (Cover)</label>
+                    <input type="url" id="manga-cover" placeholder="رابط URL للغلاف، أو اتركه فارغاً لنستخدم صورة افتراضية ممتازة">
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø±Ø§Ø¨Ø· ØµÙˆØ±Ø© Ø§Ù„Ø®Ù„ÙÙŠØ© Ø§Ù„Ø¹Ø±ÙŠØ¶Ø© (Banner)</label>
-                    <input type="url" id="manga-banner" placeholder="Ø±Ø§Ø¨Ø· URL Ù„Ù„Ø®Ù„ÙÙŠØ© ÙÙŠ ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„">
+                    <label>رابط صورة الخلفية العريضة (Banner)</label>
+                    <input type="url" id="manga-banner" placeholder="رابط URL للخلفية في صفحة التفاصيل">
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª (ØªÙØµÙ„ Ø¨ÙØ§ØµÙ„Ø©)</label>
-                    <input type="text" id="manga-genres" placeholder="Ø£ÙƒØ´Ù†, Ù…ØºØ§Ù…Ø±Ø©, Ø®ÙŠØ§Ù„, Ø¹Ø³ÙƒØ±ÙŠ" required>
+                    <label>التصنيفات (تفصل بفاصلة)</label>
+                    <input type="text" id="manga-genres" placeholder="أكشن, مغامرة, خيال, عسكري" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ù‚ØµØ© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ (Ø§Ù„ÙˆØµÙ)</label>
-                    <textarea id="manga-synopsis" rows="5" placeholder="Ø£ÙƒØªØ¨ Ù…Ù„Ø®Øµ Ø§Ù„Ù‚ØµØ© ÙˆØ§Ù„Ø³ÙŠÙ†Ø§Ø±ÙŠÙˆ Ø§Ù„Ø®Ø§Øµ Ø¨Ø§Ù„Ù…Ø§Ù†Ø¬Ø§..." required></textarea>
+                    <label>قصة المانجا (الوصف)</label>
+                    <textarea id="manga-synopsis" rows="5" placeholder="أكتب ملخص القصة والسيناريو الخاص بالمانجا..." required></textarea>
                 </div>
-                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ ÙˆØ¥Ø¯Ø±Ø§Ø¬ Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„Ø¬Ø¯ÙŠØ¯</button>
+                <button type="submit" class="admin-submit-btn">حفظ وإدراج العمل الجديد</button>
             </form>
         </div>
 
         <div class="admin-form-panel" id="panel-add-chapter" style="display:none;">
             <form id="add-chapter-form">
                 <div class="admin-form-group">
-                    <label>Ø§Ø®ØªØ± Ø§Ù„Ù…Ø§Ù†Ø¬Ø§/Ø§Ù„Ù…Ù†Ù‡ÙˆØ§</label>
+                    <label>اختر المانجا/المنهوا</label>
                     <select id="chap-manga-id" required>
                         ${mangaOptions}
                     </select>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø±Ù‚Ù… Ø§Ù„ÙØµÙ„</label>
-                    <input type="number" step="any" id="chap-number" placeholder="Ø±Ù‚Ù… Ø§Ù„ÙØµÙ„ØŒ Ù…Ø«Ù„Ø§Ù‹: 4 Ø£Ùˆ 4.5" required>
+                    <label>رقم الفصل</label>
+                    <input type="number" step="any" id="chap-number" placeholder="رقم الفصل، مثلاً: 4 أو 4.5" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø¹Ù†ÙˆØ§Ù† Ø§Ù„ÙØµÙ„ (Ø§Ø®ØªÙŠØ§Ø±ÙŠ)</label>
-                    <input type="text" id="chap-title" placeholder="Ø£Ø¯Ø®Ù„ Ø§Ø³Ù…Ø§Ù‹ Ù„Ù„ÙØµÙ„ØŒ Ù…Ø«Ù„Ø§Ù‹: Ø§Ù„Ø¨Ø¯Ø§ÙŠØ© Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©">
+                    <label>عنوان الفصل (اختياري)</label>
+                    <input type="text" id="chap-title" placeholder="أدخل اسماً للفصل، مثلاً: البداية الجديدة">
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø±ÙˆØ§Ø¨Ø· ØµÙØ­Ø§Øª Ø§Ù„Ù…Ø§Ù†Ø¬Ø§ (Ø±Ø§Ø¨Ø· ÙˆØ§Ø­Ø¯ ÙÙŠ ÙƒÙ„ Ø³Ø·Ø±)</label>
-                    <textarea id="chap-images" rows="8" placeholder="Ø¶Ø¹ Ø±Ø§Ø¨Ø· Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ù…Ø¨Ø§Ø´Ø± Ù„ÙƒÙ„ ØµÙØ­Ø©ØŒ Ø³Ø·Ø± ØªÙ„Ùˆ Ø³Ø·Ø±.&#10;Ø¥Ø°Ø§ ØªØ±ÙƒØªÙ‡ ÙØ§Ø±ØºØ§Ù‹ØŒ Ø³Ù†Ù‚ÙˆÙ… Ø¨ØªÙˆÙ„ÙŠØ¯ ØµÙØ­Ø§Øª ØªØ¬Ø±ÙŠØ¨ÙŠØ© ÙØ§Ø¦Ù‚Ø© Ø§Ù„Ø¬Ù…Ø§Ù„ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹ Ù„ØªØ¬Ø±Ø¨Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø£ÙˆÙÙ„Ø§ÙŠÙ†."></textarea>
+                    <label>روابط صفحات المانجا (رابط واحد في كل سطر)</label>
+                    <textarea id="chap-images" rows="8" placeholder="ضع رابط الصورة المباشر لكل صفحة، سطر تلو سطر.&#10;إذا تركته فارغاً، سنقوم بتوليد صفحات تجريبية فائقة الجمال تلقائياً لتجربة القراءة أوفلاين."></textarea>
                 </div>
-                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ ÙˆÙ†Ø´Ø± Ø§Ù„ÙØµÙ„ Ø§Ù„Ø¬Ø¯ÙŠØ¯</button>
+                <button type="submit" class="admin-submit-btn">حفظ ونشر الفصل الجديد</button>
             </form>
         </div>
 
         
         <div class="admin-form-panel" id="panel-live-scraper" style="display:none; text-align: right;">
             <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px; margin-bottom:20px;">
-                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-robot"></i> Ø§Ù„Ù…Ø­Ø¯Ø« Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ (Auto-Updater)</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">ÙŠØªØ­ÙƒÙ… ÙÙŠ ØªØ´ØºÙŠÙ„ ÙˆØ¥ÙŠÙ‚Ø§Ù Ø§Ù„Ø±ÙˆØ¨ÙˆØª Ø§Ù„Ø°ÙŠ ÙŠØ¨Ø­Ø« Ø¹Ù† Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© Ù„Ù„Ù…Ø§Ù†Ù‡ÙˆØ§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø© ÙÙŠ Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¨Ø´ÙƒÙ„ ØªÙ„Ù‚Ø§Ø¦ÙŠ.</p>
+                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-robot"></i> المحدث التلقائي (Auto-Updater)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">يتحكم في تشغيل وإيقاف الروبوت الذي يبحث عن الفصول الجديدة للمانهوات الموجودة في الموقع بشكل تلقائي.</p>
                 
                 <div style="display:flex; align-items:center; gap:15px;">
                     <label class="switch">
                         <input type="checkbox" id="auto-updater-toggle" onchange="toggleAutoUpdater()">
                         <span class="slider round"></span>
                     </label>
-                    <span id="auto-updater-status" style="font-weight:bold; color:#ff4444;">Ù…ØªÙˆÙ‚Ù</span>
+                    <span id="auto-updater-status" style="font-weight:bold; color:#ff4444;">متوقف</span>
                 </div>
             </div>
 
             <div style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:10px; padding:20px;">
-                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-terminal"></i> Ø§Ù„Ø³Ø­Ø¨ Ø§Ù„Ù…Ø¨Ø§Ø´Ø± (Live Terminal)</h3>
-                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">Ø§Ø³Ø­Ø¨ Ø£ÙŠ Ù…Ø§Ù†Ù‡ÙˆØ§ ÙŠØ¯ÙˆÙŠØ§Ù‹ ÙˆØ±Ø§Ù‚Ø¨ ØªÙ‚Ø¯Ù… Ø§Ù„Ø¹Ù…Ù„ÙŠØ§Øª Ù‡Ù†Ø§ ÙÙŠ Ø§Ù„ÙˆÙ‚Øª Ø§Ù„ÙØ¹Ù„ÙŠ.</p>
+                <h3 style="color:var(--primary-color); margin-bottom:15px;"><i class="fa-solid fa-terminal"></i> السحب المباشر (Live Terminal)</h3>
+                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:15px;">اسحب أي مانهوا يدوياً وراقب تقدم العمليات هنا في الوقت الفعلي.</p>
                 
                 <div style="display:flex; gap:10px; margin-bottom:20px;">
-                    <input type="text" id="live-scrape-url" placeholder="Ø£Ø¯Ø®Ù„ Ø±Ø§Ø¨Ø· Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§ Ù‡Ù†Ø§..." style="flex:1; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; border-radius:5px; outline:none;">
-                    <button id="live-scrape-btn" class="primary-btn" onclick="startLiveScrape()" style="padding:10px 20px; border-radius:5px;"><i class="fa-solid fa-play"></i> Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø³Ø­Ø¨</button>
+                    <input type="text" id="live-scrape-url" placeholder="أدخل رابط المانهوا هنا..." style="flex:1; padding:10px; background:rgba(0,0,0,0.2); border:1px solid var(--border-color); color:#fff; border-radius:5px; outline:none;">
+                    <button id="live-scrape-btn" class="primary-btn" onclick="startLiveScrape()" style="padding:10px 20px; border-radius:5px;"><i class="fa-solid fa-play"></i> ابدأ السحب</button>
                 </div>
                 
                 <div id="terminal-output" style="background:#0a0a0a; border:1px solid #333; border-radius:5px; padding:15px; height:350px; overflow-y:auto; color:#0f0; font-family:monospace; font-size:0.9rem; white-space:pre-wrap; direction:ltr; text-align:left;">
@@ -3266,56 +3266,56 @@ function AdminPanelViewComponent() {
 
         <div class="admin-form-panel" id="panel-suggestions" style="display:none; text-align: right;">
             <div id="suggestions-list-admin" style="display: flex; flex-direction: column; gap: 16px;">
-                <p style="text-align:center; padding: 20px; color: var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø´ÙƒØ§ÙˆÙ‰ ÙˆØ§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª...</p>
+                <p style="text-align:center; padding: 20px; color: var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الشكاوى والاقتراحات...</p>
             </div>
         </div>
 
         <div class="admin-form-panel" id="panel-site-settings" style="display:none; text-align: right;">
             <form id="site-settings-form">
                 <div class="admin-form-group">
-                    <label>Ù…Ø¹Ø±Ù ØªØ·Ø¨ÙŠÙ‚ Ø¬ÙˆØ¬Ù„ (Google Client ID)</label>
-                    <input type="text" id="setting-google-id" value="${state.adminConfig?.google_client_id || GOOGLE_CLIENT_ID}" placeholder="Ù…Ø«Ø§Ù„: 123456789-abc123xyz.apps.googleusercontent.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„ÙŠÙ‡ Ù…Ù† Google Cloud Console Ù„ØªÙØ¹ÙŠÙ„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ø¬ÙŠÙ…ÙŠÙ„.</span>
+                    <label>معرف تطبيق جوجل (Google Client ID)</label>
+                    <input type="text" id="setting-google-id" value="${state.adminConfig?.google_client_id || GOOGLE_CLIENT_ID}" placeholder="مثال: 123456789-abc123xyz.apps.googleusercontent.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Google Cloud Console لتفعيل تسجيل الدخول بجيميل.</span>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ù…Ø¹Ø±Ù ØªØ·Ø¨ÙŠÙ‚ ÙÙŠØ³Ø¨ÙˆÙƒ (Facebook App ID)</label>
-                    <input type="text" id="setting-facebook-id" value="${state.adminConfig?.facebook_app_id || FACEBOOK_APP_ID}" placeholder="Ù…Ø«Ø§Ù„: 123456789012345" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø­ØµÙˆÙ„ Ø¹Ù„ÙŠÙ‡ Ù…Ù† Meta Developers Ù„ØªÙØ¹ÙŠÙ„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨ÙÙŠØ³Ø¨ÙˆÙƒ.</span>
+                    <label>معرف تطبيق فيسبوك (Facebook App ID)</label>
+                    <input type="text" id="setting-facebook-id" value="${state.adminConfig?.facebook_app_id || FACEBOOK_APP_ID}" placeholder="مثال: 123456789012345" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">يمكنك الحصول عليه من Meta Developers لتفعيل تسجيل الدخول بفيسبوك.</span>
                 </div>
                 
-                <h3 style="color: var(--text-main); margin-top: 30px; margin-bottom: 15px; border-right: 4px solid var(--color-primary); padding-right: 10px; font-size: 1.15rem; font-weight: 800;"><i class="fa-solid fa-envelope" style="color: var(--color-primary); margin-left: 6px;"></i> Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø®Ø§Ø¯Ù… Ø§Ù„Ø¨Ø±ÙŠØ¯ (SMTP)</h3>
+                <h3 style="color: var(--text-main); margin-top: 30px; margin-bottom: 15px; border-right: 4px solid var(--color-primary); padding-right: 10px; font-size: 1.15rem; font-weight: 800;"><i class="fa-solid fa-envelope" style="color: var(--color-primary); margin-left: 6px;"></i> إعدادات خادم البريد (SMTP)</h3>
                 
                 <div class="admin-form-group">
-                    <label>Ø®Ø§Ø¯Ù… SMTP (SMTP Host)</label>
+                    <label>خادم SMTP (SMTP Host)</label>
                     <input type="text" id="setting-smtp-host" value="${state.adminConfig?.smtp_host || 'smtp.gmail.com'}" placeholder="smtp.gmail.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ù…Ù†ÙØ° SMTP (SMTP Port)</label>
+                    <label>منفذ SMTP (SMTP Port)</label>
                     <input type="text" id="setting-smtp-port" value="${state.adminConfig?.smtp_port || '587'}" placeholder="587" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø¨Ø±ÙŠØ¯ Ø®Ø§Ø¯Ù… Ø§Ù„Ø¥Ø±Ø³Ø§Ù„ (SMTP Username)</label>
+                    <label>بريد خادم الإرسال (SMTP Username)</label>
                     <input type="text" id="setting-smtp-user" value="${state.adminConfig?.smtp_user || ''}" placeholder="example@gmail.com" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">Ø§Ù„Ø¨Ø±ÙŠØ¯ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ Ø§Ù„Ø°ÙŠ Ø³ÙŠÙ‚ÙˆÙ… Ø§Ù„Ø®Ø§Ø¯Ù… Ø¨Ø§Ø³ØªØ®Ø¯Ø§Ù…Ù‡ Ù„Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ø¦Ù„ (Ù…Ø«Ù„ Ø­Ø³Ø§Ø¨ Gmail).</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">البريد الإلكتروني الذي سيقوم الخادم باستخدامه لإرسال الرسائل (مثل حساب Gmail).</span>
                 </div>
                 <div class="admin-form-group">
-                    <label>ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ (SMTP Password / Gmail App Password)</label>
-                    <input type="password" id="setting-smtp-pass" value="${state.adminConfig?.smtp_pass || ''}" placeholder="ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ø§Ù„Ù…ÙƒÙˆÙ†Ø© Ù…Ù† 16 Ø­Ø±ÙØ§Ù‹" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">Ø¥Ø°Ø§ ÙƒÙ†Øª ØªØ³ØªØ®Ø¯Ù… GmailØŒ ÙŠØ±Ø¬Ù‰ Ø¥Ù†Ø´Ø§Ø¡ ÙƒÙ„Ù…Ø© Ù…Ø±ÙˆØ± ØªØ·Ø¨ÙŠÙ‚ (App Password) Ù…Ù† Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø­Ø³Ø§Ø¨ Google Ø§Ù„Ø®Ø§Øµ Ø¨Ùƒ.</span>
+                    <label>كلمة مرور التطبيق (SMTP Password / Gmail App Password)</label>
+                    <input type="password" id="setting-smtp-pass" value="${state.adminConfig?.smtp_pass || ''}" placeholder="كلمة مرور التطبيق المكونة من 16 حرفاً" style="direction: ltr; text-align: left; background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;">
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: block;">إذا كنت تستخدم Gmail، يرجى إنشاء كلمة مرور تطبيق (App Password) من إعدادات حساب Google الخاص بك.</span>
                 </div>
                 <div class="admin-form-group">
-                    <label>Ø¹Ù†ÙˆØ§Ù† ÙˆØ§Ø³Ù… Ø§Ù„Ù…Ø±Ø³Ù„ (Sender Email & Name)</label>
-                    <input type="text" id="setting-smtp-sender" value="${state.adminConfig?.smtp_sender || 'KAIRO/Ù…Ù†Ù‡ÙˆØ§ <noreply@kairo-manhua.com>'}" placeholder="KAIRO/Ù…Ù†Ù‡ÙˆØ§ &lt;noreply@kairo-manhua.com&gt;" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
+                    <label>عنوان واسم المرسل (Sender Email & Name)</label>
+                    <input type="text" id="setting-smtp-sender" value="${state.adminConfig?.smtp_sender || 'KAIRO/منهوا <noreply@kairo-manhua.com>'}" placeholder="KAIRO/منهوا &lt;noreply@kairo-manhua.com&gt;" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: var(--border-radius-sm); width: 100%; outline: none;" required>
                 </div>
                 
-                <button type="submit" class="admin-submit-btn">Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª ÙˆØªØ·Ø¨ÙŠÙ‚Ù‡Ø§</button>
+                <button type="submit" class="admin-submit-btn">حفظ الإعدادات وتطبيقها</button>
             </form>
         </div>
     </div>
     `;
 }
 
-// ØµÙØ­Ø© Ø§Ù„Ù…ÙØ¶Ù„Ø© ÙˆØ§Ù„Ù…ØªØ§Ø¨Ø¹Ø© (Bookmarks)
+// صفحة المفضلة والمتابعة (Bookmarks)
 function BookmarksViewComponent() {
     const activeTab = state.activeGenre;
     const currentTab = ['reading', 'plan', 'completed', 'all'].includes(activeTab) ? activeTab : 'all';
@@ -3335,16 +3335,16 @@ function BookmarksViewComponent() {
         listHtml = `
         <div class="empty-state empty-state-glow">
             <i class="fa-solid fa-folder-open" style="font-size: 3rem; color: var(--text-muted); opacity: 0.5; margin-bottom: 15px;"></i>
-            <h3>Ø§Ù„Ù…ÙØ¶Ù„Ø© ÙØ§Ø±ØºØ©</h3>
-            <p>ØªØµÙØ­ Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ ÙˆÙ‚Ù… Ø¨Ø¥Ø¶Ø§ÙØªÙ‡Ø§ Ù„Ù…ÙØ¶Ù„ØªÙƒ Ù„ØªØ¸Ù‡Ø± Ù‡Ù†Ø§ ÙˆØªØªØ§Ø¨Ø¹Ù‡Ø§ Ø£ÙˆÙ„Ø§Ù‹ Ø¨Ø£ÙˆÙ„.</p>
+            <h3>المفضلة فارغة</h3>
+            <p>تصفح الأعمال وقم بإضافتها لمفضلتك لتظهر هنا وتتابعها أولاً بأول.</p>
         </div>
         `;
     } else {
         listHtml = `<div class="manga-grid">`;
         mangasFiltered.forEach(manga => {
             const status = state.bookmarks[manga.id];
-            const statusText = status === 'reading' ? 'Ø£Ù‚Ø±Ø£Ù‡ Ø­Ø§Ù„ÙŠØ§Ù‹' :
-                               status === 'plan' ? 'Ø£Ø±ØºØ¨ Ø¨Ù‚Ø±Ø§Ø¡ØªÙ‡' : 'Ù…ÙƒØªÙ…Ù„';
+            const statusText = status === 'reading' ? 'أقرأه حالياً' :
+                               status === 'plan' ? 'أرغب بقراءته' : 'مكتمل';
             listHtml += `
             <div class="manga-card" data-id="${manga.id}">
                 <div class="manga-card-cover">
@@ -3355,8 +3355,8 @@ function BookmarksViewComponent() {
                 <div class="manga-card-info">
                     <h3 class="manga-card-title">${manga.title}</h3>
                     <div class="manga-card-chapter">
-                        <span>ØªÙ‚Ø¯Ù… Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</span>
-                        <span class="chap-num">ÙØµÙ„ ${state.progress[manga.id] ? state.progress[manga.id].chapterId : 'Ù„Ù… ØªØ¨Ø¯Ø£'}</span>
+                        <span>تقدم القراءة</span>
+                        <span class="chap-num">فصل ${state.progress[manga.id] ? state.progress[manga.id].chapterId : 'لم تبدأ'}</span>
                     </div>
                 </div>
             </div>
@@ -3368,20 +3368,20 @@ function BookmarksViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">Ù…ÙƒØªØ¨ØªÙƒ ÙˆÙ…ÙØ¶Ù„ØªÙƒ <span>Ø§Ù„Ø®Ø§ØµØ©</span></h2>
+            <h2 class="section-title">مكتبتك ومفضلتك <span>الخاصة</span></h2>
         </div>
         <div class="bookmarks-tabs">
-            <button class="bookmark-tab ${currentTab === 'all' ? 'active' : ''}" data-tab="all"><i class="fa-solid fa-layer-group"></i> Ø§Ù„ÙƒÙ„</button>
-            <button class="bookmark-tab ${currentTab === 'reading' ? 'active' : ''}" data-tab="reading"><i class="fa-solid fa-book-open-reader"></i> Ø£Ù‚Ø±Ø£Ù‡ Ø­Ø§Ù„ÙŠØ§Ù‹</button>
-            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan"><i class="fa-solid fa-clock"></i> Ø£Ø±ØºØ¨ ÙÙŠ Ù‚Ø±Ø§Ø¡ØªÙ‡</button>
-            <button class="bookmark-tab ${currentTab === 'completed' ? 'active' : ''}" data-tab="completed"><i class="fa-solid fa-circle-check"></i> Ù…ÙƒØªÙ…Ù„</button>
+            <button class="bookmark-tab ${currentTab === 'all' ? 'active' : ''}" data-tab="all"><i class="fa-solid fa-layer-group"></i> الكل</button>
+            <button class="bookmark-tab ${currentTab === 'reading' ? 'active' : ''}" data-tab="reading"><i class="fa-solid fa-book-open-reader"></i> أقرأه حالياً</button>
+            <button class="bookmark-tab ${currentTab === 'plan' ? 'active' : ''}" data-tab="plan"><i class="fa-solid fa-clock"></i> أرغب في قراءته</button>
+            <button class="bookmark-tab ${currentTab === 'completed' ? 'active' : ''}" data-tab="completed"><i class="fa-solid fa-circle-check"></i> مكتمل</button>
         </div>
         ${listHtml}
     </div>
     `;
 }
 
-// ØµÙØ­Ø© Ø§Ù„ØªØ­Ù…ÙŠÙ„Ø§Øª ÙˆØ§Ù„Ù‚Ø±Ø§Ø¡Ø© Ø£ÙˆÙÙ„Ø§ÙŠÙ† (Downloads)
+// صفحة التحميلات والقراءة أوفلاين (Downloads)
 async function DownloadsViewComponent() {
     const localDownloads = await getAllDownloadsOffline();
     
@@ -3390,31 +3390,31 @@ async function DownloadsViewComponent() {
         listHtml = `
         <div class="empty-state">
             <i class="fa-solid fa-circle-down" style="color:var(--border-color)"></i>
-            <h3>Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØµÙˆÙ„ Ù…Ø­Ù…Ù„Ø©</h3>
-            <p>Ù‚Ù… Ø¨Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„ØµÙØ­Ø© Ø£ÙŠ Ù…Ø§Ù†Ø¬Ø§ ÙˆØ§Ø¶ØºØ· Ø¹Ù„Ù‰ Ø²Ø± Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø¨Ø¬ÙˆØ§Ø± Ø§Ù„ÙØµÙ„ Ù„ÙŠØªÙ… Ø­ÙØ¸Ù‡ Ø¹Ù„Ù‰ Ø¬Ù‡Ø§Ø²Ùƒ Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø¯ÙˆÙ† Ø¥Ù†ØªØ±Ù†Øª.</p>
+            <h3>لا توجد فصول محملة</h3>
+            <p>قم بالدخول لصفحة أي مانجا واضغط على زر التحميل بجوار الفصل ليتم حفظه على جهازك للاستخدام دون إنترنت.</p>
         </div>
         `;
     } else {
         listHtml = `
         <div class="chapters-section">
             <div class="chapters-header">
-                <h3>Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ù…Ø­Ù…Ù„Ø© Ù„Ù„Ø§Ø³ØªØ®Ø¯Ø§Ù… Ø£ÙˆÙÙ„Ø§ÙŠÙ†</h3>
-                <span>Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØµÙˆÙ„: ${localDownloads.length}</span>
+                <h3>الفصول المحملة للاستخدام أوفلاين</h3>
+                <span>إجمالي الفصول: ${localDownloads.length}</span>
             </div>
             <div class="chapters-list">
         `;
         
         localDownloads.forEach(d => {
             const manga = state.mangas.find(m => m.id === d.mangaId);
-            const mangaTitle = manga ? manga.title : 'Ù…Ø§Ù†Ø¬Ø§ ØºÙŠØ± Ù…Ø¹Ø±ÙˆÙØ©';
+            const mangaTitle = manga ? manga.title : 'مانجا غير معروفة';
             listHtml += `
             <div class="chapter-item" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}">
                 <div class="chapter-info">
-                    <span class="chapter-name">${mangaTitle} - Ø§Ù„ÙØµÙ„ ${d.chapterId}</span>
-                    <span class="chapter-date" style="color:var(--color-secondary);"><i class="fa-solid fa-wifi-slash"></i> Ù…ØªØ§Ø­ Ø¯ÙˆÙ† Ø§ØªØµØ§Ù„</span>
+                    <span class="chapter-name">${mangaTitle} - الفصل ${d.chapterId}</span>
+                    <span class="chapter-date" style="color:var(--color-secondary);"><i class="fa-solid fa-wifi-slash"></i> متاح دون اتصال</span>
                 </div>
                 <div class="chapter-actions-inline">
-                    <button class="download-btn downloaded delete-download-btn" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}" title="Ø­Ø°Ù Ø§Ù„Ù…Ù„ÙØ§Øª Ø§Ù„Ù…Ø­Ù…Ù„Ø©">
+                    <button class="download-btn downloaded delete-download-btn" data-manga-id="${d.mangaId}" data-chap-id="${d.chapterId}" title="حذف الملفات المحملة">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
@@ -3431,7 +3431,7 @@ async function DownloadsViewComponent() {
     return `
     <div>
         <div class="section-header">
-            <h2 class="section-title">Ù…Ø±ÙƒØ² Ø§Ù„ØªØ­Ù…ÙŠÙ„Ø§Øª <span>Ø£ÙˆÙÙ„Ø§ÙŠÙ†</span></h2>
+            <h2 class="section-title">مركز التحميلات <span>أوفلاين</span></h2>
         </div>
         ${listHtml}
     </div>
@@ -3441,28 +3441,28 @@ async function DownloadsViewComponent() {
 function ResetPasswordViewComponent() {
     return `
     <div class="reset-password-wrapper" style="max-width: 450px; margin: 60px auto; padding: 30px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); text-align: right; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);">
-        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; border-right: 4px solid var(--color-secondary); padding-right: 12px;"><i class="fa-solid fa-lock" style="color:var(--color-secondary); margin-left: 6px;"></i> Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</h2>
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px;">Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© Ù„Ø­Ø³Ø§Ø¨Ùƒ.</p>
+        <h2 style="font-size: 1.6rem; font-weight: 800; color: var(--text-main); margin-bottom: 20px; border-right: 4px solid var(--color-secondary); padding-right: 12px;"><i class="fa-solid fa-lock" style="color:var(--color-secondary); margin-left: 6px;"></i> استعادة كلمة المرور</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 24px;">الرجاء إدخال كلمة المرور الجديدة لحسابك.</p>
         
         <form id="reset-password-form" style="display: flex; flex-direction: column; gap: 16px;">
             <div class="form-group" style="text-align: right;">
-                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</label>
+                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">كلمة المرور الجديدة</label>
                 <input type="password" id="reset-new-pass" required placeholder="********" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
             </div>
             <div class="form-group" style="text-align: right;">
-                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</label>
+                <label style="color:var(--text-main); font-weight:700; font-size:0.9rem;">تأكيد كلمة المرور الجديدة</label>
                 <input type="password" id="reset-confirm-pass" required placeholder="********" style="background: var(--bg-surface); border: 1px solid var(--border-color); color: var(--text-main); padding: 12px; border-radius: var(--border-radius-sm); width: 100%; outline: none; margin-top: 6px;">
             </div>
             <div id="reset-error-msg" class="auth-error-msg" style="display:none; margin-bottom: 8px; color: var(--color-accent); font-weight: 700;"></div>
             <div id="reset-success-msg" class="auth-success-msg" style="display:none; margin-bottom: 8px; color: #00ff7f; font-weight: 700;"></div>
-            <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%;">ØªØ­Ø¯ÙŠØ« ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</button>
+            <button type="submit" class="auth-submit-btn neon-pulse-hover" style="background: linear-gradient(135deg, var(--color-secondary), var(--color-primary)); color: #07080c; border: none; padding: 12px; border-radius: 30px; font-weight: 800; cursor: pointer; width: 100%;">تحديث كلمة المرور</button>
         </form>
     </div>
     `;
 }
 
 // ==========================================
-// 4.4.7. Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©
+// 4.4.7. المكافآت اليومية
 // ==========================================
 
 function DailyRewardModalComponent() {
@@ -3475,10 +3475,10 @@ function DailyRewardModalComponent() {
                 <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
                 <div class="reward-header">
                     <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
-                    <h2>Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</h2>
-                    <p class="reward-streak-text">ðŸ”¥ Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ© ØºÙŠØ± Ù…ØªÙˆÙØ±Ø© Ø­Ø§Ù„ÙŠØ§Ù‹</p>
+                    <h2>المكافآت اليومية</h2>
+                    <p class="reward-streak-text">🔥 المكافآت اليومية غير متوفرة حالياً</p>
                 </div>
-                <p style="text-align:center;padding:20px;color:var(--text-muted);">Ù‡Ø°Ù‡ Ø§Ù„Ù…ÙŠØ²Ø© Ù‚ÙŠØ¯ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯</p>
+                <p style="text-align:center;padding:20px;color:var(--text-muted);">هذه الميزة قيد الإعداد</p>
             </div>
         </div>`;
     }
@@ -3493,8 +3493,8 @@ function DailyRewardModalComponent() {
             <button class="reward-close-btn" id="close-reward-modal"><i class="fa-solid fa-xmark"></i></button>
             <div class="reward-header">
                 <div class="reward-gift-icon"><i class="fa-solid fa-gift"></i></div>
-                <h2>Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</h2>
-                <p class="reward-streak-text">ðŸ”¥ Ø§Ù„ÙŠÙˆÙ… ${currentDay} Ù…Ù† 7 â€” ${streak} ÙŠÙˆÙ… Ù…ØªØªØ§Ù„Ù</p>
+                <h2>المكافآت اليومية</h2>
+                <p class="reward-streak-text">🔥 اليوم ${currentDay} من 7 — ${streak} يوم متتالٍ</p>
             </div>
             <div class="reward-cards-grid">
                 ${rewards.map(r => {
@@ -3509,8 +3509,8 @@ function DailyRewardModalComponent() {
                     if (isWeekBonus) cardClass += ' week-bonus';
                     return `
                     <div class="${cardClass}">
-                        ${isWeekBonus ? '<span class="week-badge">Ù…ÙƒØ§ÙØ£Ø© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹</span>' : ''}
-                        <div class="reward-card-day">Ø§Ù„ÙŠÙˆÙ… ${r.day}</div>
+                        ${isWeekBonus ? '<span class="week-badge">مكافأة الأسبوع</span>' : ''}
+                        <div class="reward-card-day">اليوم ${r.day}</div>
                         <div class="reward-card-points"><i class="fa-solid fa-star"></i> ${r.points}</div>
                         <div class="reward-card-status">
                             ${isPast ? '<i class="fa-solid fa-check"></i>' : isCurrent && canClaim ? '<i class="fa-solid fa-gift" style="color:var(--color-secondary);"></i>' : isCurrent ? '<i class="fa-solid fa-star" style="color:var(--color-primary);"></i>' : '<i class="fa-solid fa-lock"></i>'}
@@ -3519,7 +3519,7 @@ function DailyRewardModalComponent() {
                     `;
                 }).join('')}
             </div>
-            ${canClaim ? '<button class="claim-reward-btn" id="claim-reward-btn"><i class="fa-solid fa-gift"></i> Ø¬Ù…Ø¹ Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©</button>' : '<p class="reward-claimed-msg">âœ… ØªÙ… Ø¬Ù…Ø¹ Ù…ÙƒØ§ÙØ£Ø© Ø§Ù„ÙŠÙˆÙ…ØŒ Ø¹Ø¯ ØºØ¯Ø§Ù‹ Ù„ÙŠÙˆÙ… Ø¬Ø¯ÙŠØ¯!</p>'}
+            ${canClaim ? '<button class="claim-reward-btn" id="claim-reward-btn"><i class="fa-solid fa-gift"></i> جمع المكافأة</button>' : '<p class="reward-claimed-msg">✅ تم جمع مكافأة اليوم، عد غداً ليوم جديد!</p>'}
         </div>
     </div>
     `;
@@ -3555,7 +3555,7 @@ function triggerConfetti() {
     }
 }
 
-// ØªØ¬Ù…ÙŠØ¹ ÙˆØªØµÙŠÙŠØ± Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„
+// تجميع وتصيير التطبيق بالكامل
 async function renderReaderContent() {
     const root = document.getElementById('app-root');
     if (!root) { renderApp(); return; }
@@ -3580,13 +3580,13 @@ function getFilteredMangas() {
             (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
         );
     }
-    if (s.activeGenre !== 'Ø§Ù„ÙƒÙ„') {
+    if (s.activeGenre !== 'الكل') {
         result = result.filter(m => m.genres.includes(s.activeGenre));
     }
-    if (s.filterStatus !== 'Ø§Ù„ÙƒÙ„') {
+    if (s.filterStatus !== 'الكل') {
         result = result.filter(m => m.status === s.filterStatus);
     }
-    if (s.filterType !== 'Ø§Ù„ÙƒÙ„') {
+    if (s.filterType !== 'الكل') {
         result = result.filter(m => (m.type || '') === s.filterType);
     }
     if (s.filterYearMin) {
@@ -3613,11 +3613,11 @@ function getFilteredMangas() {
         const chMax = parseInt(s.filterChaptersMax);
         if (!isNaN(chMax)) result = result.filter(m => (m.chapters ? m.chapters.length : 0) <= chMax);
     }
-    if (s.filterSort === 'Ø§Ù„Ø£Ù‚Ø¯Ù…') {
+    if (s.filterSort === 'الأقدم') {
         result = [...result].reverse();
-    } else if (s.filterSort === 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ…') {
+    } else if (s.filterSort === 'التقييم') {
         result = [...result].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (s.filterSort === 'Ø¹Ø¯Ø¯ Ø§Ù„ÙØµÙˆÙ„') {
+    } else if (s.filterSort === 'عدد الفصول') {
         result = [...result].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
     }
     if (s.filterTime === 'today') {
@@ -3649,7 +3649,7 @@ function updateGridOnly() {
                 <div class="user-search-avatar" style="width:50px; height:50px; font-size:1.2rem; background:var(--primary-color); display:flex; justify-content:center; align-items:center; border-radius:50%; color:#fff;">${u.username ? u.username[0].toUpperCase() : '?'}</div>
                 <div>
                     <h3 style="margin:0; color:#fff; font-size:1.1rem;">${u.username}</h3>
-                    <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> Ø§Ù„Ø±ØªØ¨Ø©: ${u.rank || 'Ù…Ø¨ØªØ¯Ø¦'}</span>
+                    <span style="color:var(--text-muted); font-size:0.85rem;"><i class="fa-solid fa-trophy" style="color:gold;"></i> الرتبة: ${u.rank || 'مبتدئ'}</span>
                 </div>
                 <div style="margin-right:auto; color:var(--primary-color); font-weight:bold;">
                     ${u.points || 0} XP
@@ -3659,9 +3659,9 @@ function updateGridOnly() {
 
         usersContainer.innerHTML = `
             <div class="mangatime-toolbar" style="margin-bottom:20px;">
-                <div class="mangatime-toolbar-left">${totalUsers} Ù…Ø³ØªØ®Ø¯Ù…</div>
+                <div class="mangatime-toolbar-left">${totalUsers} مستخدم</div>
             </div>
-            ${filteredUsers.length === 0 ? '<div class="empty-state"><h3>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ†</h3></div>' : `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">${usersCards}</div>`}
+            ${filteredUsers.length === 0 ? '<div class="empty-state"><h3>لا يوجد مستخدمين</h3></div>' : `<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(300px, 1fr)); gap:20px;">${usersCards}</div>`}
         `;
         return;
     }
@@ -3672,13 +3672,13 @@ function updateGridOnly() {
     const s = state;
     let filtered = [...s.mangas];
 
-    if (s.activeGenre && s.activeGenre !== 'Ø§Ù„ÙƒÙ„') {
+    if (s.activeGenre && s.activeGenre !== 'الكل') {
         filtered = filtered.filter(m => m.genres && m.genres.includes(s.activeGenre));
     }
-    if (s.filterStatus && s.filterStatus !== 'Ø§Ù„ÙƒÙ„') {
-        filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'Ù…Ø³ØªÙ…Ø±Ø©' && m.status === 'Ongoing'));
+    if (s.filterStatus && s.filterStatus !== 'الكل') {
+        filtered = filtered.filter(m => m.status === s.filterStatus || (s.filterStatus === 'مستمرة' && m.status === 'Ongoing'));
     }
-    if (s.filterType && s.filterType !== 'Ø§Ù„ÙƒÙ„') {
+    if (s.filterType && s.filterType !== 'الكل') {
         filtered = filtered.filter(m => m.type === s.filterType);
     }
     if (s.filterYearMin) {
@@ -3718,23 +3718,23 @@ function updateGridOnly() {
         });
     }
 
-    if (s.filterSort === 'Ø§Ù„Ø£Ø­Ø¯Ø«' || !s.filterSort) {
+    if (s.filterSort === 'الأحدث' || !s.filterSort) {
         filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
-    } else if (s.filterSort === 'Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª') {
+    } else if (s.filterSort === 'أحدث التحديثات') {
         filtered.sort((a,b) => new Date(b.updated_at) - new Date(a.updated_at));
-    } else if (s.filterSort === 'Ø£-ÙŠ') {
+    } else if (s.filterSort === 'أ-ي') {
         filtered.sort((a,b) => (a.title || '').localeCompare(b.title || ''));
-    } else if (s.filterSort === 'Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹') {
+    } else if (s.filterSort === 'الأعلى تقييماً') {
         filtered.sort((a,b) => (b.rating||0) - (a.rating||0));
-    } else if (s.filterSort === 'Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹') {
+    } else if (s.filterSort === 'الأكثر فصولاً') {
         filtered.sort((a,b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
-    } else if (s.filterSort === 'Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹') {
+    } else if (s.filterSort === 'الأقل فصولاً') {
         filtered.sort((a,b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
-    } else if (s.filterSort === 'Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©') {
+    } else if (s.filterSort === 'الأكثر شعبية') {
         filtered.sort((a,b) => (b.views||0) - (a.views||0));
     }
 
-    gridContainer.innerHTML = MangaGridComponent("ØªØµÙØ­ Ø§Ù„Ù…Ø§Ù†Ù‡ÙˆØ§", filtered);
+    gridContainer.innerHTML = MangaGridComponent("تصفح المانهوا", filtered);
 }
 
 async function renderApp() {
@@ -3744,7 +3744,7 @@ async function renderApp() {
     const loader = document.getElementById('initial-loader');
     if (loader) loader.remove();
 
-    // 1. ØªØµÙÙŠØ© Ø§Ù„Ù…Ø§Ù†Ø¬Ø§
+    // 1. تصفية المانجا
     let filteredMangas = getFilteredMangas();
     const s = state;
     if (s.searchQuery) {
@@ -3753,14 +3753,14 @@ async function renderApp() {
             (m.alternative || '').toLowerCase().includes(s.searchQuery.toLowerCase())
         );
     }
-    if (s.activeGenre !== 'Ø§Ù„ÙƒÙ„' && s.currentView === 'home') {
+    if (s.activeGenre !== 'الكل' && s.currentView === 'home') {
         filteredMangas = filteredMangas.filter(m => m.genres && m.genres.includes(s.activeGenre));
     }
     if (s.currentView === 'home') {
-        if (s.filterStatus !== 'Ø§Ù„ÙƒÙ„') {
+        if (s.filterStatus !== 'الكل') {
             filteredMangas = filteredMangas.filter(m => m.status === s.filterStatus);
         }
-        if (s.filterType !== 'Ø§Ù„ÙƒÙ„') {
+        if (s.filterType !== 'الكل') {
             filteredMangas = filteredMangas.filter(m => (m.type || '') === s.filterType);
         }
         if (s.filterYearMin) {
@@ -3787,29 +3787,29 @@ async function renderApp() {
             const chMax = parseInt(s.filterChaptersMax);
             if (!isNaN(chMax)) filteredMangas = filteredMangas.filter(m => (m.chapters ? m.chapters.length : 0) <= chMax);
         }
-        if (s.filterSort === 'Ø§Ù„Ø£Ù‚Ø¯Ù…') {
+        if (s.filterSort === 'الأقدم') {
             filteredMangas = [...filteredMangas].reverse();
-        } else if (s.filterSort === 'Ø§Ù„ØªÙ‚ÙŠÙŠÙ…') {
+        } else if (s.filterSort === 'التقييم') {
             filteredMangas = [...filteredMangas].sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        } else if (s.filterSort === 'Ø¹Ø¯Ø¯ Ø§Ù„ÙØµÙˆÙ„') {
+        } else if (s.filterSort === 'عدد الفصول') {
             filteredMangas = [...filteredMangas].sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
         }
     }
 
-    // 2. ØªØ¬Ù…ÙŠØ¹ Ù…Ø­ØªÙˆÙ‰ Ø§Ù„ÙˆØ§Ø¬Ù‡Ø© Ø§Ù„Ù…Ø¹Ù†ÙŠØ©
+    // 2. تجميع محتوى الواجهة المعنية
     let viewHtml = '';
     
         if (state.currentView === 'home') {
             const s = state;
             const searchTypes = [
-                {id:'all', label:'Ø§Ù„ÙƒÙ„'}, {id:'username', label:'Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…'}, {id:'title', label:'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†'}, {id:'author', label:'Ø§Ù„Ù…Ø¤Ù„Ù'},
-                {id:'tags', label:'Ø§Ù„Ø±Ø³ÙˆÙ…'}, {id:'desc', label:'Ø§Ù„ÙˆØµÙ'}
+                {id:'all', label:'الكل'}, {id:'username', label:'اسم المستخدم'}, {id:'title', label:'العنوان'}, {id:'author', label:'المؤلف'},
+                {id:'tags', label:'الرسوم'}, {id:'desc', label:'الوصف'}
             ];
             const searchTypeHtml = searchTypes.map(t => 
                 `<span class="mangatime-s-filter ${s.searchType===t.id ? 'active':''}" onclick="toggleFilter('search_type','${t.id}')">${t.label}</span>`
             ).join('');
 
-            const allGenres = ['Ø§Ù„ÙƒÙ„'];
+            const allGenres = ['الكل'];
             if (s.mangas) s.mangas.forEach(m => { if (m.genres) m.genres.forEach(g => { if(!allGenres.includes(g)) allGenres.push(g); }); });
 
             const contentHtml = await window.generateHomeGridHtml();
@@ -3817,16 +3817,16 @@ async function renderApp() {
             viewHtml = `
             <div class="mangatime-browse-container">
                 <div class="mangatime-hero-section">
-                    <h1 class="mangatime-hero-title">ØªØµÙØ­ Ø¹Ø§Ù„Ù… Ø§Ù„Ù…Ø§Ù†Ø¬Ø§</h1>
-                    <p class="mangatime-hero-subtitle">Ø§ÙƒØªØ´Ù Ø¹Ù…Ù„Ùƒ Ø§Ù„ØªØ§Ù„ÙŠ Ø¨ÙŠÙ† Ø¢Ù„Ø§Ù Ø§Ù„Ø³Ù„Ø§Ø³Ù„</p>
+                    <h1 class="mangatime-hero-title">تصفح عالم المانجا</h1>
+                    <p class="mangatime-hero-subtitle">اكتشف عملك التالي بين آلاف السلاسل</p>
                 </div>
                 <div class="mangatime-search-wrapper">
-                    <input type="text" class="mangatime-search-input" placeholder="Ø§Ø¨Ø­Ø« Ø¹Ù† Ø£ÙŠ Ø´ÙŠØ¡..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
+                    <input type="text" class="mangatime-search-input" placeholder="ابحث عن أي شيء..." value="${s.searchQuery || ''}" oninput="handleSearchInput(event)">
                     <i class="fa-solid fa-microphone mangatime-mic-icon"></i>
                     <i class="fa-solid fa-magnifying-glass mangatime-search-icon"></i>
                 </div>
                 <div class="mangatime-search-filters">
-                    <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">Ø§Ù„Ø¨Ø­Ø« Ø¨Ù€:</span>
+                    <span style="color:var(--text-muted);font-size:0.85rem;margin-left:10px;">البحث بـ:</span>
                     ${searchTypeHtml}
                 </div>
                 <div class="mangatime-dropdowns-row" style="display:${s.searchType==='username'?'none':'flex'}">
@@ -3839,41 +3839,41 @@ async function renderApp() {
                     <div class="glass-select-wrapper">
                         <i class="fa-solid fa-book-open glass-icon"></i>
                         <select class="glass-select" onchange="toggleFilter('type', this.value)">
-                            <option value="Ø§Ù„ÙƒÙ„" ${s.filterType==='Ø§Ù„ÙƒÙ„'?'selected':''}>ÙƒÙ„ Ø§Ù„Ø£Ù†ÙˆØ§Ø¹</option>
-                            <option value="Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ù‡ÙˆØ§ ÙƒÙˆØ±ÙŠØ©</option>
-                            <option value="Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ø¬Ø§ ÙŠØ§Ø¨Ø§Ù†ÙŠØ©</option>
-                            <option value="Ù…Ø§Ù†Ù‡Ø§ ØµÙŠÙ†ÙŠØ©" ${s.filterType==='Ù…Ø§Ù†Ù‡Ø§ ØµÙŠÙ†ÙŠØ©'?'selected':''}>Ù…Ø§Ù†Ù‡Ø§ ØµÙŠÙ†ÙŠØ©</option>
-                            <option value="ÙƒÙˆÙ…ÙŠÙƒ" ${s.filterType==='ÙƒÙˆÙ…ÙŠÙƒ'?'selected':''}>ÙƒÙˆÙ…ÙŠÙƒ</option>
+                            <option value="الكل" ${s.filterType==='الكل'?'selected':''}>كل الأنواع</option>
+                            <option value="مانهوا كورية" ${s.filterType==='مانهوا كورية'?'selected':''}>مانهوا كورية</option>
+                            <option value="مانجا يابانية" ${s.filterType==='مانجا يابانية'?'selected':''}>مانجا يابانية</option>
+                            <option value="مانها صينية" ${s.filterType==='مانها صينية'?'selected':''}>مانها صينية</option>
+                            <option value="كوميك" ${s.filterType==='كوميك'?'selected':''}>كوميك</option>
                         </select>
                     </div>
                     <div class="glass-select-wrapper">
                         <i class="fa-solid fa-circle-check glass-icon"></i>
                         <select class="glass-select" onchange="toggleFilter('status', this.value)">
-                            <option value="Ø§Ù„ÙƒÙ„" ${s.filterStatus==='Ø§Ù„ÙƒÙ„'?'selected':''}>ÙƒÙ„ Ø§Ù„Ø­Ø§Ù„Ø§Øª</option>
-                            <option value="Ù…Ø³ØªÙ…Ø±Ø©" ${s.filterStatus==='Ù…Ø³ØªÙ…Ø±Ø©'?'selected':''}>Ù…Ø³ØªÙ…Ø±Ø©</option>
-                            <option value="Ù…ÙƒØªÙ…Ù„Ø©" ${s.filterStatus==='Ù…ÙƒØªÙ…Ù„Ø©'?'selected':''}>Ù…ÙƒØªÙ…Ù„Ø©</option>
-                            <option value="Ù…ØªÙˆÙ‚ÙØ©" ${s.filterStatus==='Ù…ØªÙˆÙ‚ÙØ©'?'selected':''}>Ù…ØªÙˆÙ‚ÙØ©</option>
+                            <option value="الكل" ${s.filterStatus==='الكل'?'selected':''}>كل الحالات</option>
+                            <option value="مستمرة" ${s.filterStatus==='مستمرة'?'selected':''}>مستمرة</option>
+                            <option value="مكتملة" ${s.filterStatus==='مكتملة'?'selected':''}>مكتملة</option>
+                            <option value="متوقفة" ${s.filterStatus==='متوقفة'?'selected':''}>متوقفة</option>
                         </select>
                     </div>
                     <div class="glass-select-wrapper">
                         <i class="fa-solid fa-arrow-down-short-wide glass-icon"></i>
                         <select class="glass-select" onchange="toggleFilter('sort', this.value)">
-                            <option value="Ø§Ù„Ø£Ø­Ø¯Ø«" ${s.filterSort==='Ø§Ù„Ø£Ø­Ø¯Ø«'?'selected':''}>Ø§Ù„Ø£Ø­Ø¯Ø«</option>
-                            <option value="Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª" ${s.filterSort==='Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª'?'selected':''}>Ø£Ø­Ø¯Ø« Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª</option>
-                            <option value="Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹" ${s.filterSort==='Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹'?'selected':''}>Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹</option>
-                            <option value="Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©" ${s.filterSort==='Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©'?'selected':''}>Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©</option>
-                            <option value="Ø£-ÙŠ" ${s.filterSort==='Ø£-ÙŠ'?'selected':''}>Ø£Ø¨Ø¬Ø¯ÙŠØ§Ù‹</option>
-                            <option value="Ø¹Ø¯Ø¯ Ø§Ù„ÙØµÙˆÙ„" ${s.filterSort==='Ø¹Ø¯Ø¯ Ø§Ù„ÙØµÙˆÙ„'?'selected':''}>Ø¹Ø¯Ø¯ Ø§Ù„ÙØµÙˆÙ„</option>
+                            <option value="الأحدث" ${s.filterSort==='الأحدث'?'selected':''}>الأحدث</option>
+                            <option value="أحدث التحديثات" ${s.filterSort==='أحدث التحديثات'?'selected':''}>أحدث التحديثات</option>
+                            <option value="الأعلى تقييماً" ${s.filterSort==='الأعلى تقييماً'?'selected':''}>الأعلى تقييماً</option>
+                            <option value="الأكثر شعبية" ${s.filterSort==='الأكثر شعبية'?'selected':''}>الأكثر شعبية</option>
+                            <option value="أ-ي" ${s.filterSort==='أ-ي'?'selected':''}>أبجدياً</option>
+                            <option value="عدد الفصول" ${s.filterSort==='عدد الفصول'?'selected':''}>عدد الفصول</option>
                         </select>
                     </div>
                     <div class="glass-input-group">
                         <i class="fa-regular fa-calendar glass-icon" style="margin-left:5px;"></i>
-                        <input type="number" class="glass-input" placeholder="Ù…Ù† Ø³Ù†Ø©" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
+                        <input type="number" class="glass-input" placeholder="من سنة" value="${s.filterYearMin||''}" oninput="handleNumberInput('filterYearMin', this.value)">
                         <span class="glass-separator">-</span>
-                        <input type="number" class="glass-input" placeholder="Ø¥Ù„Ù‰" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
+                        <input type="number" class="glass-input" placeholder="إلى" value="${s.filterYearMax||''}" oninput="handleNumberInput('filterYearMax', this.value)">
                     </div>
                     <div class="glass-toolbar" style="display:flex; align-items:center; gap:10px;">
-                        <span style="color:var(--text-muted); font-size:0.85rem;">Ø¹Ø±Ø¶:</span>
+                        <span style="color:var(--text-muted); font-size:0.85rem;">عرض:</span>
                         <div class="glass-select-wrapper" style="padding:0; min-width:unset;">
                             <select class="glass-select" style="padding:8px 10px; min-width:60px;" onchange="toggleFilter('limit', this.value)">
                                 <option value="12" ${s.limit===12?'selected':''}>12</option>
@@ -3881,8 +3881,8 @@ async function renderApp() {
                                 <option value="48" ${s.limit===48?'selected':''}>48</option>
                             </select>
                         </div>
-                        <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="Ø¹Ø±Ø¶ Ø´Ø¨ÙƒÙŠ" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
-                        <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="Ø¹Ø±Ø¶ Ù‚Ø§Ø¦Ù…Ø©" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
+                        <button class="mangatime-view-btn ${!s.viewMode || s.viewMode==='grid'?'active':''}" onclick="toggleViewMode('grid')" title="عرض شبكي" style="padding:8px;"><i class="fa-solid fa-border-all"></i></button>
+                        <button class="mangatime-view-btn ${s.viewMode==='list'?'active':''}" onclick="toggleViewMode('list')" title="عرض قائمة" style="padding:8px;"><i class="fa-solid fa-list"></i></button>
                     </div>
                 </div>
                 ${contentHtml}
@@ -3938,7 +3938,7 @@ async function renderApp() {
         if (sliderInterval) clearInterval(sliderInterval);
     }
 
-    // 3. Ø¨Ù†Ø§Ø¡ ÙˆØªØµÙŠÙŠØ± Ø§Ù„Ù‡ÙŠÙƒÙ„ Ø§Ù„Ø£Ø³Ø§Ø³ÙŠ Ù„Ù„ÙˆØ§Ø¬Ù‡Ø©
+    // 3. بناء وتصيير الهيكل الأساسي للواجهة
     const isReader = state.currentView === 'reader';
     let appRoot = document.getElementById('app-root');
     let mainContent = document.getElementById('main-content');
@@ -4013,19 +4013,19 @@ function BottomNavComponent() {
     <nav class="bottom-nav">
         <a href="javascript:void(0);" class="bottom-nav-item ${s==='home'?'active':''}" onclick="event.preventDefault(); window.navigateView('home')">
             <i class="fa-solid fa-house"></i>
-            <span>Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</span>
+            <span>الرئيسية</span>
         </a>
         <a href="javascript:void(0);" class="bottom-nav-item ${s==='search'?'active':''}" onclick="event.preventDefault(); window.navigateView('search')">
             <i class="fa-solid fa-magnifying-glass"></i>
-            <span>Ø¨Ø­Ø«</span>
+            <span>بحث</span>
         </a>
         <a href="javascript:void(0);" class="bottom-nav-item ${s==='bookmarks'?'active':''}" onclick="event.preventDefault(); window.navigateView('bookmarks')">
             <i class="fa-solid fa-bookmark"></i>
-            <span>Ù…ÙƒØªØ¨ØªÙŠ</span>
+            <span>مكتبتي</span>
         </a>
         <a href="javascript:void(0);" class="bottom-nav-item ${s==='profile'?'active':''}" onclick="event.preventDefault(); if(state.sessionToken){ window.navigateProfile(state.sessionUsername); } else { window.toggleModal('auth-modal'); }">
             <i class="fa-solid fa-user"></i>
-            <span>Ø­Ø³Ø§Ø¨ÙŠ</span>
+            <span>حسابي</span>
         </a>
     </nav>
     `;
@@ -4046,15 +4046,15 @@ function updateBottomNavActiveState() {
 
 
 // ==========================================
-// 4.4.5. Ù…Ø¹Ø§ÙŠÙ†Ø© Ù…Ù„Ù Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…
+// 4.4.5. معاينة ملف المستخدم
 // ==========================================
 
 async function ProfileViewComponent() {
     const username = state.profileUsername;
-    if (!username) return '<div class="empty-state"><p>Ù„Ù… ÙŠØªÙ… ØªØ­Ø¯ÙŠØ¯ Ù…Ø³ØªØ®Ø¯Ù…</p></div>';
+    if (!username) return '<div class="empty-state"><p>لم يتم تحديد مستخدم</p></div>';
     try {
         const res = await fetch('/api/profile/' + encodeURIComponent(username));
-        if (!res.ok) return '<div class="empty-state"><p>Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯</p></div>';
+        if (!res.ok) return '<div class="empty-state"><p>المستخدم غير موجود</p></div>';
         const profile = await res.json();
         
         // Fetch activity, reviews, lists in parallel
@@ -4081,7 +4081,7 @@ async function ProfileViewComponent() {
         if (state.sessionToken && !isOwner) {
             followBtnHtml = `<button class="follow-btn ${profile.is_following ? 'following' : ''}" id="profile-follow-btn" data-username="${username}">
                 <i class="fa-solid ${profile.is_following ? 'fa-user-check' : 'fa-user-plus'}"></i>
-                ${profile.is_following ? 'Ù…ØªØ§Ø¨ÙŽØ¹' : 'Ù…ØªØ§Ø¨Ø¹Ø©'}
+                ${profile.is_following ? 'متابَع' : 'متابعة'}
             </button>`;
         }
         
@@ -4105,54 +4105,54 @@ async function ProfileViewComponent() {
                     </div>
                 </div>
                 <div class="profile-stats-row">
-                    <div class="profile-stat"><span class="stat-value">${profile.points.toLocaleString()}</span><span class="stat-label">Ù†Ù‚Ø§Ø·</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.level}</span><span class="stat-label">Ø§Ù„Ù…Ø³ØªÙˆÙ‰</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.chapters_read}</span><span class="stat-label">ÙØµÙ„ Ù…Ù‚Ø±ÙˆØ¡</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.followers}</span><span class="stat-label">Ù…ØªØ§Ø¨Ø¹ÙˆÙ†</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.following}</span><span class="stat-label">ÙŠØªØ§Ø¨Ø¹</span></div>
-                    <div class="profile-stat"><span class="stat-value">${profile.streak_days || 0}</span><span class="stat-label">streak ðŸ”¥</span></div>
-                    ${profile.created_at ? `<div class="profile-stat"><span class="stat-value">${new Date(profile.created_at).toLocaleDateString('ar-EG')}</span><span class="stat-label">ØªØ§Ø±ÙŠØ® Ø§Ù„Ø§Ù†Ø¶Ù…Ø§Ù…</span></div>` : ''}
-                    ${profile.comments_count !== undefined ? `<div class="profile-stat"><span class="stat-value">${profile.comments_count}</span><span class="stat-label">ØªØ¹Ù„ÙŠÙ‚Ø§Øª</span></div>` : ''}
+                    <div class="profile-stat"><span class="stat-value">${profile.points.toLocaleString()}</span><span class="stat-label">نقاط</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.level}</span><span class="stat-label">المستوى</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.chapters_read}</span><span class="stat-label">فصل مقروء</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.followers}</span><span class="stat-label">متابعون</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.following}</span><span class="stat-label">يتابع</span></div>
+                    <div class="profile-stat"><span class="stat-value">${profile.streak_days || 0}</span><span class="stat-label">streak 🔥</span></div>
+                    ${profile.created_at ? `<div class="profile-stat"><span class="stat-value">${new Date(profile.created_at).toLocaleDateString('ar-EG')}</span><span class="stat-label">تاريخ الانضمام</span></div>` : ''}
+                    ${profile.comments_count !== undefined ? `<div class="profile-stat"><span class="stat-value">${profile.comments_count}</span><span class="stat-label">تعليقات</span></div>` : ''}
                 </div>
                 <div class="profile-xp-bar-container">
                     <div class="profile-xp-bar-fill" style="width:${xpPercent}%"></div>
-                    <span class="profile-xp-text">Ø§Ù„Ù…Ø³ØªÙˆÙ‰ ${profile.level} â€” ${profile.points} XP</span>
+                    <span class="profile-xp-text">المستوى ${profile.level} — ${profile.points} XP</span>
                 </div>
             </div>
 
             <div class="reading-stats-section" style="display:flex;flex-wrap:wrap;gap:12px;margin:16px 0;padding:16px;background:var(--bg-surface);border-radius:12px;border:1px solid var(--border-color);">
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.chapters_read || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">Ø¥Ø¬Ù…Ø§Ù„ÙŠ Ø§Ù„ÙØµÙˆÙ„</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">إجمالي الفصول</div>
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
-                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.avg_rating ? profile.avg_rating.toFixed(1) : 'â€”'}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">Ù…ØªÙˆØ³Ø· Ø§Ù„ØªÙ‚ÙŠÙŠÙ…</div>
+                    <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.avg_rating ? profile.avg_rating.toFixed(1) : '—'}</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">متوسط التقييم</div>
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-secondary);">${profile.unique_manga || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">Ù…Ø§Ù†Ø¬Ø§ Ù…Ø®ØªÙ„ÙØ©</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">مانجا مختلفة</div>
                 </div>
                 <div style="flex:1;min-width:120px;text-align:center;padding:8px;">
                     <div style="font-size:1.2rem;font-weight:800;color:var(--color-primary);">${profile.weekly_pace || 0}</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);">ÙØµÙ„/Ø£Ø³Ø¨ÙˆØ¹</div>
+                    <div style="font-size:0.7rem;color:var(--text-muted);">فصل/أسبوع</div>
                 </div>
             </div>
 
             <div class="profile-tabs">
-                <button class="profile-tab active" data-tab="activity">Ø§Ù„Ù†Ø´Ø§Ø·</button>
-                <button class="profile-tab" data-tab="library">Ø§Ù„Ù…ÙƒØªØ¨Ø©</button>
-                <button class="profile-tab" data-tab="reviews">Ø§Ù„ØªÙ‚ÙŠÙŠÙ…Ø§Øª (${reviews.length})</button>
-                <button class="profile-tab" data-tab="lists">Ø§Ù„Ù‚ÙˆØ§Ø¦Ù… (${lists.length})</button>
+                <button class="profile-tab active" data-tab="activity">النشاط</button>
+                <button class="profile-tab" data-tab="library">المكتبة</button>
+                <button class="profile-tab" data-tab="reviews">التقييمات (${reviews.length})</button>
+                <button class="profile-tab" data-tab="lists">القوائم (${lists.length})</button>
             </div>
 
             <div class="profile-tab-content active" id="profile-tab-activity">
-                ${activities.length === 0 ? '<div class="empty-state"><p>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù†Ø´Ø§Ø· Ø¨Ø¹Ø¯</p></div>' : activities.map(a => `
+                ${activities.length === 0 ? '<div class="empty-state"><p>لا يوجد نشاط بعد</p></div>' : activities.map(a => `
                     <div class="activity-item" data-manga="${a.manga_id}">
                         <img src="${a.cover || DEFAULT_COVER_URL}" class="activity-cover">
                         <div class="activity-info">
                             <strong>${a.title}</strong>
-                            <span>Ø§Ù„ÙØµÙ„ ${a.chapter_id}</span>
+                            <span>الفصل ${a.chapter_id}</span>
                             <small>${timeAgo(a.time)}</small>
                         </div>
                     </div>
@@ -4160,7 +4160,7 @@ async function ProfileViewComponent() {
             </div>
 
             <div class="profile-tab-content" id="profile-tab-library">
-                ${library.length === 0 ? '<div class="empty-state"><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø§Ù†Ø¬Ø§ ÙÙŠ Ø§Ù„Ù…ÙƒØªØ¨Ø©</p></div>' : `<div class="profile-library-grid">${library.map(m => `
+                ${library.length === 0 ? '<div class="empty-state"><p>لا توجد مانجا في المكتبة</p></div>' : `<div class="profile-library-grid">${library.map(m => `
                     <div class="library-card" data-manga="${m.manga_id}">
                         <img src="${m.cover || DEFAULT_COVER_URL}" class="library-card-cover">
                         <span class="library-card-title">${m.title}</span>
@@ -4169,12 +4169,12 @@ async function ProfileViewComponent() {
             </div>
 
             <div class="profile-tab-content" id="profile-tab-reviews">
-                ${reviews.length === 0 ? '<div class="empty-state"><p>Ù„Ø§ ØªÙˆØ¬Ø¯ ØªÙ‚ÙŠÙŠÙ…Ø§Øª Ø¨Ø¹Ø¯</p></div>' : reviews.map(r => `
+                ${reviews.length === 0 ? '<div class="empty-state"><p>لا توجد تقييمات بعد</p></div>' : reviews.map(r => `
                     <div class="review-card" data-manga="${r.manga_id}">
                         <img src="${r.cover || DEFAULT_COVER_URL}" class="review-cover">
                         <div class="review-body">
                             <strong>${r.title}</strong>
-                            <div class="review-stars">${'â˜…'.repeat(r.rating)}${'â˜†'.repeat(5 - r.rating)}</div>
+                            <div class="review-stars">${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</div>
                             ${r.review ? `<p class="review-text">${r.review}</p>` : ''}
                             <small>${timeAgo(r.time)}</small>
                         </div>
@@ -4183,11 +4183,11 @@ async function ProfileViewComponent() {
             </div>
 
             <div class="profile-tab-content" id="profile-tab-lists">
-                ${lists.length === 0 ? '<div class="empty-state"><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù‚ÙˆØ§Ø¦Ù… Ø¨Ø¹Ø¯</p></div>' : lists.map(l => `
+                ${lists.length === 0 ? '<div class="empty-state"><p>لا توجد قوائم بعد</p></div>' : lists.map(l => `
                     <div class="list-card" data-list="${l.id}">
                         <div class="list-card-header">
                             <strong>${l.name}</strong>
-                            <span class="list-count">${l.count} Ù…Ø§Ù†Ø¬Ø§</span>
+                            <span class="list-count">${l.count} مانجا</span>
                         </div>
                         ${l.description ? `<p class="list-desc">${l.description}</p>` : ''}
                     </div>
@@ -4197,27 +4197,27 @@ async function ProfileViewComponent() {
         `;
     } catch (e) {
         console.error('Profile error:', e);
-        return '<div class="empty-state"><p>Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ</p></div>';
+        return '<div class="empty-state"><p>حدث خطأ في تحميل الملف الشخصي</p></div>';
     }
 }
 
 // ==========================================
-// 4.4.6. ØµÙØ­Ø© Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª
+// 4.4.6. صفحة الإعلانات
 // ==========================================
 
 async function AnnouncementsViewComponent() {
     try {
         const res = await fetch('/api/announcements');
-        if (!res.ok) return '<div class="empty-state"><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø­Ø§Ù„ÙŠØ§Ù‹</p></div>';
+        if (!res.ok) return '<div class="empty-state"><p>لا توجد إعلانات حالياً</p></div>';
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.announcements || []);
-        if (list.length === 0) return '<div class="empty-state"><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ø¥Ø¹Ù„Ø§Ù†Ø§Øª Ø­Ø§Ù„ÙŠØ§Ù‹</p></div>';
+        if (list.length === 0) return '<div class="empty-state"><p>لا توجد إعلانات حالياً</p></div>';
         const items = list.map(a => {
             const date = a.created_at ? new Date(a.created_at).toLocaleDateString('ar-EG') : '';
             return `
             <div class="announcement-card" style="background:var(--bg-surface);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.1);">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <h3 style="margin:0;font-size:1.1rem;">${a.title || 'Ø¥Ø¹Ù„Ø§Ù†'}</h3>
+                    <h3 style="margin:0;font-size:1.1rem;">${a.title || 'إعلان'}</h3>
                     ${date ? `<small style="color:var(--text-muted);">${date}</small>` : ''}
                 </div>
                 <p style="margin:0;color:var(--text-dark);line-height:1.6;">${a.content || a.body || ''}</p>
@@ -4225,17 +4225,17 @@ async function AnnouncementsViewComponent() {
         }).join('');
         return `
         <div style="max-width:800px;margin:0 auto;padding:24px;">
-            <div class="section-header"><h2 class="section-title">Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª <span>ÙˆØ§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª</span></h2></div>
+            <div class="section-header"><h2 class="section-title">الإعلانات <span>والتحديثات</span></h2></div>
             ${items}
         </div>`;
     } catch (e) {
         console.error('Announcements error:', e);
-        return '<div class="empty-state"><p>ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø¥Ø¹Ù„Ø§Ù†Ø§Øª</p></div>';
+        return '<div class="empty-state"><p>تعذر تحميل الإعلانات</p></div>';
     }
 }
 
 // ==========================================
-// 4.4.7. ØµÙØ­Ø© Ø§Ù„Ù…ØªØ¬Ø±
+// 4.4.7. صفحة المتجر
 // ==========================================
 
 async function StoreViewComponent() {
@@ -4243,25 +4243,25 @@ async function StoreViewComponent() {
         const res = await fetch('/api/store/items');
         const data = await res.json();
         const items = Array.isArray(data) ? data : (data.items || []);
-        if (items.length === 0) return '<div class="empty-state"><p>Ø§Ù„Ù…ØªØ¬Ø± Ù‚ÙŠØ¯ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯ØŒ Ø¹Ø¯ Ù„Ø§Ø­Ù‚Ø§Ù‹!</p></div>';
+        if (items.length === 0) return '<div class="empty-state"><p>المتجر قيد الإعداد، عد لاحقاً!</p></div>';
         const s = state;
         return `
         <div style="max-width:1000px;margin:0 auto;padding:24px;">
-            <div class="section-header"><h2 class="section-title">Ø§Ù„Ù…ØªØ¬Ø± <span>Ø§Ø³ØªØ¨Ø¯Ù„ Ù†Ù‚Ø§Ø·Ùƒ</span></h2></div>
+            <div class="section-header"><h2 class="section-title">المتجر <span>استبدل نقاطك</span></h2></div>
             <div class="manga-grid">
                 ${items.map(item => {
                     const canBuy = (s.userProfile.points || 0) >= item.cost;
                     return `
                     <div class="store-item" data-id="${item.id}" style="background:var(--bg-surface);border-radius:16px;overflow:hidden;border:1px solid var(--border-color);transition:var(--transition-fast);">
                         <div style="padding:24px;text-align:center;">
-                            <div style="font-size:3rem;margin-bottom:12px;">${item.icon || 'ðŸŽ'}</div>
+                            <div style="font-size:3rem;margin-bottom:12px;">${item.icon || '🎁'}</div>
                             <h3 style="margin:0 0 8px;font-size:1rem;">${item.name}</h3>
                             <p style="font-size:0.8rem;color:var(--text-muted);margin:0 0 16px;">${item.description || ''}</p>
                             <div style="font-size:1.1rem;font-weight:700;color:var(--color-secondary);margin-bottom:12px;">
                                 <i class="fa-solid fa-star"></i> ${item.cost}
                             </div>
                             <button class="store-buy-btn" data-id="${item.id}" ${canBuy ? '' : 'disabled'} style="width:100%;padding:10px;border:none;border-radius:30px;font-weight:700;cursor:${canBuy ? 'pointer' : 'not-allowed'};background:${canBuy ? 'var(--color-primary)' : 'var(--border-color)'};color:#fff;">
-                                ${canBuy ? 'Ø´Ø±Ø§Ø¡' : 'Ù†Ù‚Ø§Ø· ØºÙŠØ± ÙƒØ§ÙÙŠØ©'}
+                                ${canBuy ? 'شراء' : 'نقاط غير كافية'}
                             </button>
                         </div>
                     </div>`;
@@ -4270,19 +4270,19 @@ async function StoreViewComponent() {
         </div>`;
     } catch (e) {
         console.error('Store error:', e);
-        return '<div class="empty-state"><p>Ø§Ù„Ù…ØªØ¬Ø± ØºÙŠØ± Ù…ØªØ§Ø­ Ø­Ø§Ù„ÙŠØ§Ù‹</p></div>';
+        return '<div class="empty-state"><p>المتجر غير متاح حالياً</p></div>';
     }
 }
 
 // ==========================================
-// 4.4.8. Ø§Ù„Ø´Ø§Øª Ø§Ù„Ø¹Ø§Ù… (ÙˆØ§Ø¬Ù‡Ø© ÙÙ‚Ø·)
+// 4.4.8. الشات العام (واجهة فقط)
 // ==========================================
 
 function ChatViewComponent() {
     const demoMsgs = [
-        { user: 'Kairo', text: 'Ù…Ø±Ø­Ø¨Ø§Ù‹ Ø¨Ø§Ù„Ø¬Ù…ÙŠØ¹ ÙÙŠ Ø§Ù„Ø´Ø§Øª! ðŸ™Œ', time: '02:30', mine: false },
-        { user: 'ReadMaster', text: 'Ù‡Ù„ Ù‡Ù†Ø§Ùƒ Ù…Ø§Ù†Ø¬Ø§ Ø¬Ø¯ÙŠØ¯Ø© Ø§Ù„ÙŠÙˆÙ…ØŸ', time: '02:31', mine: false },
-        { user: 'Ø£Ù†Øª', text: 'Ø£Ù‡Ù„Ø§Ù‹! Ù†Ø¹Ù… ÙÙŠÙ‡ Ø¥ØµØ¯Ø§Ø±Ø§Øª Ø¬Ø¯ÙŠØ¯Ø©', time: '02:32', mine: true },
+        { user: 'Kairo', text: 'مرحباً بالجميع في الشات! 🙌', time: '02:30', mine: false },
+        { user: 'ReadMaster', text: 'هل هناك مانجا جديدة اليوم؟', time: '02:31', mine: false },
+        { user: 'أنت', text: 'أهلاً! نعم فيه إصدارات جديدة', time: '02:32', mine: true },
     ];
     const msgsHtml = demoMsgs.map(m => `
         <div class="chat-msg ${m.mine ? 'mine' : 'other'}">
@@ -4294,22 +4294,22 @@ function ChatViewComponent() {
     const isLoggedIn = !!state.sessionToken;
     return `
     <div style="max-width:700px;margin:0 auto;padding:24px;">
-        <div class="section-header"><h2 class="section-title">Ø§Ù„Ø´Ø§Øª Ø§Ù„Ø¹Ø§Ù… <span>ØªÙˆØ§ØµÙ„ Ù…Ø¹ Ø§Ù„Ù…Ø¬ØªÙ…Ø¹</span></h2></div>
+        <div class="section-header"><h2 class="section-title">الشات العام <span>تواصل مع المجتمع</span></h2></div>
         <div class="chat-container">
             <div class="chat-messages" id="chat-messages">
                 ${msgsHtml}
-                ${!isLoggedIn ? '<div class="empty-state" style="margin:auto;"><p>Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„Ù„Ù…Ø´Ø§Ø±ÙƒØ© ÙÙŠ Ø§Ù„Ø´Ø§Øª</p></div>' : ''}
+                ${!isLoggedIn ? '<div class="empty-state" style="margin:auto;"><p>سجّل الدخول للمشاركة في الشات</p></div>' : ''}
             </div>
             <div class="chat-input-area">
-                <input type="text" id="chat-input" placeholder="${isLoggedIn ? 'Ø§ÙƒØªØ¨ Ø±Ø³Ø§Ù„ØªÙƒ...' : 'Ø³Ø¬Ù‘Ù„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£ÙˆÙ„Ø§Ù‹'}" ${!isLoggedIn ? 'disabled' : ''}>
-                <button id="chat-send-btn" ${!isLoggedIn ? 'disabled style="opacity:0.5"' : ''}><i class="fa-solid fa-paper-plane"></i> Ø¥Ø±Ø³Ø§Ù„</button>
+                <input type="text" id="chat-input" placeholder="${isLoggedIn ? 'اكتب رسالتك...' : 'سجّل الدخول أولاً'}" ${!isLoggedIn ? 'disabled' : ''}>
+                <button id="chat-send-btn" ${!isLoggedIn ? 'disabled style="opacity:0.5"' : ''}><i class="fa-solid fa-paper-plane"></i> إرسال</button>
             </div>
         </div>
     </div>`;
 }
 
 // ==========================================
-// 4.4.9. ØµÙØ­Ø© Ø§Ù„Ø¨Ø­Ø« Ø§Ù„Ù…ØªÙ‚Ø¯Ù…
+// 4.4.9. صفحة البحث المتقدم
 // ==========================================
 
 function getLastChapterNum(m) {
@@ -4326,12 +4326,12 @@ function getLastChapterNum(m) {
 function getTypeLabel(m) {
     const t = (m.type || '').trim();
     if (!t) return '';
-    const labels = { 'manga': 'Ù…Ø§Ù†Ø¬Ø§', 'manhwa': 'Ù…Ø§Ù†Ù‡ÙˆØ§', 'manhua': 'Ù…Ø§Ù†Ù‡Ø§', 'Ù…Ø§Ù†Ø¬Ø§': 'Ù…Ø§Ù†Ø¬Ø§', 'Ù…Ø§Ù†Ù‡ÙˆØ§': 'Ù…Ø§Ù†Ù‡ÙˆØ§', 'Ù…Ø§Ù†Ù‡Ø§': 'Ù…Ø§Ù†Ù‡Ø§' };
+    const labels = { 'manga': 'مانجا', 'manhwa': 'مانهوا', 'manhua': 'مانها', 'مانجا': 'مانجا', 'مانهوا': 'مانهوا', 'مانها': 'مانها' };
     return labels[t.toLowerCase()] || t;
 }
 
 function getStatusLabel(s) {
-    const labels = { 'ongoing': 'Ù…Ø³ØªÙ…Ø±Ø©', 'completed': 'Ù…ÙƒØªÙ…Ù„Ø©', 'hiatus': 'Ù…ØªÙˆÙ‚ÙØ©', 'cancelled': 'Ù…Ù„ØºÙŠØ©', 'Ù…Ø³ØªÙ…Ø±Ø©': 'Ù…Ø³ØªÙ…Ø±Ø©', 'Ù…ÙƒØªÙ…Ù„Ø©': 'Ù…ÙƒØªÙ…Ù„Ø©', 'Ù…ØªÙˆÙ‚ÙØ©': 'Ù…ØªÙˆÙ‚ÙØ©' };
+    const labels = { 'ongoing': 'مستمرة', 'completed': 'مكتملة', 'hiatus': 'متوقفة', 'cancelled': 'ملغية', 'مستمرة': 'مستمرة', 'مكتملة': 'مكتملة', 'متوقفة': 'متوقفة' };
     return labels[s] || s;
 }
 
@@ -4340,11 +4340,11 @@ function SearchViewComponent() {
     const viewMode = state.searchViewMode || 'grid';
     const perPage = 30;
     const page = state.searchPage || 1;
-    const scope = state.searchScope || 'Ø§Ù„ÙƒÙ„';
-    const sortBy = state.filterSort || 'Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©';
+    const scope = state.searchScope || 'الكل';
+    const sortBy = state.filterSort || 'الأكثر شعبية';
     const showFilters = state.browseShowFilters;
-    const filterStatus = state.filterStatus || 'Ø§Ù„ÙƒÙ„';
-    const filterType = state.filterType || 'Ø§Ù„ÙƒÙ„';
+    const filterStatus = state.filterStatus || 'الكل';
+    const filterType = state.filterType || 'الكل';
     const filterYearMin = state.filterYearMin || '';
     const filterYearMax = state.filterYearMax || '';
     const filterRatingMin = state.filterRatingMin || '';
@@ -4356,13 +4356,13 @@ function SearchViewComponent() {
 
     if (query) {
         const q = query.toLowerCase();
-        if (scope === 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†') {
+        if (scope === 'العنوان') {
             results = results.filter(m => m.title.toLowerCase().includes(q));
-        } else if (scope === 'Ø§Ù„Ù…Ø¤Ù„Ù') {
+        } else if (scope === 'المؤلف') {
             results = results.filter(m => (m.author || '').toLowerCase().includes(q));
-        } else if (scope === 'Ø§Ù„ÙˆØ³ÙˆÙ…') {
+        } else if (scope === 'الوسوم') {
             results = results.filter(m => (m.genres || []).some(g => g.toLowerCase().includes(q)));
-        } else if (scope === 'Ø§Ù„ÙˆØµÙ') {
+        } else if (scope === 'الوصف') {
             results = results.filter(m => (m.synopsis || '').toLowerCase().includes(q));
         } else {
             results = results.filter(m =>
@@ -4375,13 +4375,13 @@ function SearchViewComponent() {
         }
     }
 
-    if (filterStatus !== 'Ø§Ù„ÙƒÙ„') {
+    if (filterStatus !== 'الكل') {
         results = results.filter(m => {
             const s = (m.status || '').trim();
             return s === filterStatus || getStatusLabel(s) === filterStatus;
         });
     }
-    if (filterType !== 'Ø§Ù„ÙƒÙ„') {
+    if (filterType !== 'الكل') {
         results = results.filter(m => {
             const t = (m.type || '').trim();
             return t === filterType || getTypeLabel(t) === filterType;
@@ -4389,8 +4389,8 @@ function SearchViewComponent() {
     }
 
     const allGenres = [...new Set((state.mangas || []).flatMap(m => m.genres || []))].sort();
-    const activeGenre = state.activeGenre || 'Ø§Ù„ÙƒÙ„';
-    if (activeGenre !== 'Ø§Ù„ÙƒÙ„') {
+    const activeGenre = state.activeGenre || 'الكل';
+    if (activeGenre !== 'الكل') {
         results = results.filter(m => m.genres && m.genres.includes(activeGenre));
     }
 
@@ -4419,15 +4419,15 @@ function SearchViewComponent() {
         if (!isNaN(cMax)) results = results.filter(m => (m.chapters ? m.chapters.length : 0) <= cMax);
     }
 
-    if (sortBy === 'Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©') {
+    if (sortBy === 'الأكثر شعبية') {
         results.sort((a, b) => (b.popularity || b.rating || 0) - (a.popularity || a.rating || 0));
-    } else if (sortBy === 'Ø§Ù„Ø£Ø­Ø¯Ø«') {
+    } else if (sortBy === 'الأحدث') {
         results.sort((a, b) => (b.year || 0) - (a.year || 0));
-    } else if (sortBy === 'Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹') {
+    } else if (sortBy === 'الأعلى تقييماً') {
         results.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-    } else if (sortBy === 'Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹') {
+    } else if (sortBy === 'الأكثر فصولاً') {
         results.sort((a, b) => (b.chapters ? b.chapters.length : 0) - (a.chapters ? a.chapters.length : 0));
-    } else if (sortBy === 'Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹') {
+    } else if (sortBy === 'الأقل فصولاً') {
         results.sort((a, b) => (a.chapters ? a.chapters.length : 0) - (b.chapters ? b.chapters.length : 0));
     }
 
@@ -4438,7 +4438,7 @@ function SearchViewComponent() {
 
     const itemsHtml = pageResults.map(m => {
         const lastCh = getLastChapterNum(m);
-        const chLabel = lastCh != null ? `Ø§Ù„ÙØµÙ„ ${lastCh}` : (m.chapters ? `${m.chapters.length} ÙØµÙˆÙ„` : '');
+        const chLabel = lastCh != null ? `الفصل ${lastCh}` : (m.chapters ? `${m.chapters.length} فصول` : '');
 
         if (viewMode === 'list') {
             return `
@@ -4471,8 +4471,8 @@ function SearchViewComponent() {
     }).join('');
 
     const emptyMsg = query
-        ? `<div class="empty-state"><i class="fa-solid fa-search" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù†ØªØ§Ø¦Ø¬ Ù„Ù€ "${query}"</p></div>`
-        : `<div class="empty-state"><i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø§Ù†Ø¬Ø§ Ø¨Ø¹Ø¯</p></div>`;
+        ? `<div class="empty-state"><i class="fa-solid fa-search" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>لا توجد نتائج لـ "${query}"</p></div>`
+        : `<div class="empty-state"><i class="fa-solid fa-book-open" style="font-size:3rem;color:var(--text-muted);margin-bottom:16px;"></i><p>لا توجد مانجا بعد</p></div>`;
 
     let pagHtml = '';
     if (totalPages > 1) {
@@ -4491,34 +4491,34 @@ function SearchViewComponent() {
         }).join('')}</div>`;
     }
 
-    const scopeTabs = ['Ø§Ù„ÙƒÙ„', 'Ø§Ù„Ø¹Ù†ÙˆØ§Ù†', 'Ø§Ù„Ù…Ø¤Ù„Ù', 'Ø§Ù„ÙˆØ³ÙˆÙ…', 'Ø§Ù„ÙˆØµÙ'];
-    const filterStatuses = ['Ø§Ù„ÙƒÙ„', 'Ù…Ø³ØªÙ…Ø±Ø©', 'Ù…ÙƒØªÙ…Ù„Ø©', 'Ù…ØªÙˆÙ‚ÙØ©'];
-    const filterTypes = ['Ø§Ù„ÙƒÙ„', 'Ù…Ø§Ù†Ø¬Ø§', 'Ù…Ø§Ù†Ù‡ÙˆØ§', 'Ù…Ø§Ù†Ù‡Ø§'];
-    const sortOptions = ['Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©', 'Ø§Ù„Ø£Ø­Ø¯Ø«', 'Ø§Ù„Ø£Ø¹Ù„Ù‰ ØªÙ‚ÙŠÙŠÙ…Ø§Ù‹', 'Ø§Ù„Ø£ÙƒØ«Ø± ÙØµÙˆÙ„Ø§Ù‹', 'Ø§Ù„Ø£Ù‚Ù„ ÙØµÙˆÙ„Ø§Ù‹'];
+    const scopeTabs = ['الكل', 'العنوان', 'المؤلف', 'الوسوم', 'الوصف'];
+    const filterStatuses = ['الكل', 'مستمرة', 'مكتملة', 'متوقفة'];
+    const filterTypes = ['الكل', 'مانجا', 'مانهوا', 'مانها'];
+    const sortOptions = ['الأكثر شعبية', 'الأحدث', 'الأعلى تقييماً', 'الأكثر فصولاً', 'الأقل فصولاً'];
 
     return `
     <div class="browse-page">
         <div class="browse-hero">
-            <h1 class="browse-hero-title">Ø¹Ø§Ù„Ù… Ø§Ù„Ù…Ø§Ù†Ø¬Ø§</h1>
-            <p class="browse-hero-sub">ØªØµÙÙ‘Ø­ Ø¹Ø§Ù„Ù… Ø§Ù„Ù…Ø§Ù†Ø¬Ø§</p>
-            <p class="browse-hero-desc">Ø§ÙƒØªØ´Ù Ø¹Ù…Ù„Ùƒ Ø§Ù„ØªØ§Ù„ÙŠ Ø¨ÙŠÙ† Ø¢Ù„Ø§Ù Ø§Ù„Ø³Ù„Ø§Ø³Ù„</p>
+            <h1 class="browse-hero-title">عالم المانجا</h1>
+            <p class="browse-hero-sub">تصفّح عالم المانجا</p>
+            <p class="browse-hero-desc">اكتشف عملك التالي بين آلاف السلاسل</p>
         </div>
 
         <div class="browse-toolbar">
-            <div class="browse-counter">${totalCount} Ø³Ù„Ø³Ù„Ø©</div>
+            <div class="browse-counter">${totalCount} سلسلة</div>
             <div class="browse-actions">
                 <select class="browse-sort-select" id="browse-sort">
                     ${sortOptions.map(s => `<option value="${s}" ${s === sortBy ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
                 <div class="view-toggle">
-                    <button class="view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="Ø´Ø¨ÙƒØ©"><i class="fa-solid fa-th-large"></i></button>
-                    <button class="view-toggle-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="Ù‚Ø§Ø¦Ù…Ø©"><i class="fa-solid fa-list"></i></button>
+                    <button class="view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}" data-view="grid" title="شبكة"><i class="fa-solid fa-th-large"></i></button>
+                    <button class="view-toggle-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="قائمة"><i class="fa-solid fa-list"></i></button>
                 </div>
             </div>
         </div>
 
         <div class="browse-scope-bar">
-            <span class="browse-scope-label">Ø§Ù„Ø¨Ø­Ø« Ø¨Ù€:</span>
+            <span class="browse-scope-label">البحث بـ:</span>
             ${scopeTabs.map(s => `
                 <button class="browse-scope-btn ${s === scope ? 'active' : ''}" data-scope="${s}">${s}</button>
             `).join('')}
@@ -4526,54 +4526,54 @@ function SearchViewComponent() {
 
         <div class="browse-filter-bar">
             <div class="browse-filter-group">
-                <label>Ø§Ù„Ø­Ø§Ù„Ø©</label>
+                <label>الحالة</label>
                 <select class="browse-filter-select" id="browse-filter-status">
                     ${filterStatuses.map(s => `<option value="${s}" ${s === filterStatus ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
             </div>
             <div class="browse-filter-group">
-                <label>Ø§Ù„Ù†ÙˆØ¹</label>
+                <label>النوع</label>
                 <select class="browse-filter-select" id="browse-filter-type">
                     ${filterTypes.map(s => `<option value="${s}" ${s === filterType ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
             </div>
             <div class="browse-filter-group">
-                <label>Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª</label>
+                <label>التصنيفات</label>
                 <select class="browse-filter-select" id="browse-filter-genre">
-                    <option value="Ø§Ù„ÙƒÙ„" ${activeGenre === 'Ø§Ù„ÙƒÙ„' ? 'selected' : ''}>Ø§Ù„ÙƒÙ„</option>
+                    <option value="الكل" ${activeGenre === 'الكل' ? 'selected' : ''}>الكل</option>
                     ${allGenres.map(g => `<option value="${g}" ${g === activeGenre ? 'selected' : ''}>${g}</option>`).join('')}
                 </select>
             </div>
             <div class="browse-filter-group browse-filter-collapsible">
                 <button class="browse-filter-toggle" id="browse-filter-toggle">
-                    <i class="fa-solid fa-sliders"></i> Ø®ÙŠØ§Ø±Ø§Øª Ø£Ø®Ø±Ù‰
+                    <i class="fa-solid fa-sliders"></i> خيارات أخرى
                 </button>
             </div>
         </div>
 
         <div class="browse-extra-filters" id="browse-extra-filters" style="display:${showFilters ? 'flex' : 'none'}">
             <div class="browse-filter-group">
-                <label>Ø§Ù„Ø³Ù†Ø© Ù…Ù†</label>
-                <input type="number" class="browse-filter-input" id="browse-filter-year-min" value="${filterYearMin}" placeholder="Ù…Ø«Ø§Ù„: 2020">
+                <label>السنة من</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-year-min" value="${filterYearMin}" placeholder="مثال: 2020">
             </div>
             <div class="browse-filter-group">
-                <label>Ø§Ù„Ø³Ù†Ø© Ø¥Ù„Ù‰</label>
-                <input type="number" class="browse-filter-input" id="browse-filter-year-max" value="${filterYearMax}" placeholder="Ù…Ø«Ø§Ù„: 2026">
+                <label>السنة إلى</label>
+                <input type="number" class="browse-filter-input" id="browse-filter-year-max" value="${filterYearMax}" placeholder="مثال: 2026">
             </div>
             <div class="browse-filter-group">
-                <label>Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ù…Ù†</label>
+                <label>التقييم من</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-rating-min" value="${filterRatingMin}" placeholder="0" min="0" max="5" step="0.5">
             </div>
             <div class="browse-filter-group">
-                <label>Ø§Ù„ØªÙ‚ÙŠÙŠÙ… Ø¥Ù„Ù‰</label>
+                <label>التقييم إلى</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-rating-max" value="${filterRatingMax}" placeholder="5" min="0" max="5" step="0.5">
             </div>
             <div class="browse-filter-group">
-                <label>Ø£Ù‚Ù„ ÙØµÙˆÙ„</label>
+                <label>أقل فصول</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-ch-min" value="${filterChaptersMin}" placeholder="0">
             </div>
             <div class="browse-filter-group">
-                <label>Ø£ÙƒØ«Ø± ÙØµÙˆÙ„</label>
+                <label>أكثر فصول</label>
                 <input type="number" class="browse-filter-input" id="browse-filter-ch-max" value="${filterChaptersMax}" placeholder="1000">
             </div>
         </div>
@@ -4587,7 +4587,7 @@ function SearchViewComponent() {
 }
 
 // ==========================================
-// 4.4.10. Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…ØªØµØ¯Ø±ÙŠÙ†
+// 4.4.10. قائمة المتصدرين
 // ==========================================
 
 async function LeaderboardViewComponent() {
@@ -4600,9 +4600,9 @@ async function LeaderboardViewComponent() {
         const qs = params.toString();
         const res = await fetch(baseUrl + (qs ? '?' + qs : ''));
         const data = await res.json();
-        if (!data || data.length === 0) return '<div class="empty-state"><p>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ù…ØªØµØ¯Ø±ÙŠÙ† Ø¨Ø¹Ø¯</p></div>';
+        if (!data || data.length === 0) return '<div class="empty-state"><p>لا يوجد متصدرين بعد</p></div>';
 
-        // Ù…Ø¹Ø±ÙØ© Ù…ÙˆÙ‚Ø¹ Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø§Ù„Ø­Ø§Ù„ÙŠ
+        // معرفة موقع المستخدم الحالي
         let myRankHtml = '';
         if (state.sessionToken && state.userEmail) {
             const myUsername = getUserHandle(state.userEmail);
@@ -4613,7 +4613,7 @@ async function LeaderboardViewComponent() {
                 myRankHtml = `
                 <div class="my-rank-card" style="background:linear-gradient(135deg,var(--color-primary),var(--color-secondary));padding:16px 20px;border-radius:12px;margin:20px 0;text-align:center;color:#fff;">
                     <div style="font-size:1.5rem;font-weight:800;">#${myRank}</div>
-                    <div style="font-size:0.85rem;opacity:0.9;">ØªØ±ØªÙŠØ¨Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ â€” ${myData.points.toLocaleString()} Ù†Ù‚Ø·Ø©</div>
+                    <div style="font-size:0.85rem;opacity:0.9;">ترتيبك الحالي — ${myData.points.toLocaleString()} نقطة</div>
                 </div>`;
             } else if (state.userProfile && state.userProfile.points != null) {
                 const userPoints = state.userProfile.points;
@@ -4623,15 +4623,15 @@ async function LeaderboardViewComponent() {
                 const myTrueRank = myData ? myData.rank : '?';
                 myRankHtml = `
                 <div class="my-rank-card" style="background:var(--bg-surface);border:2px dashed var(--color-primary);padding:16px 20px;border-radius:12px;margin:20px 0;text-align:center;">
-                    <div style="font-size:0.9rem;color:var(--text-muted);">ØªØ±ØªÙŠØ¨Ùƒ Ø§Ù„Ø­Ø§Ù„ÙŠ: #${myTrueRank}</div>
+                    <div style="font-size:0.9rem;color:var(--text-muted);">ترتيبك الحالي: #${myTrueRank}</div>
                     <div style="font-size:1rem;margin:6px 0;color:var(--text-main);">
-                        Ø±ØµÙŠØ¯Ùƒ: <strong>${userPoints.toLocaleString()}</strong> Ù†Ù‚Ø·Ø©
+                        رصيدك: <strong>${userPoints.toLocaleString()}</strong> نقطة
                     </div>
                     ${pointsNeeded > 0 ? `<div style="font-size:0.85rem;color:var(--color-secondary);">
-                        ÙŠÙ†Ù‚ØµÙƒ <strong>${pointsNeeded.toLocaleString()}</strong> Ù†Ù‚Ø·Ø© Ù„Ø¯Ø®ÙˆÙ„ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø§Ø¦Ø©
+                        ينقصك <strong>${pointsNeeded.toLocaleString()}</strong> نقطة لدخول قائمة المائة
                     </div>` : ''}
                     ${lastUser ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
-                        ØµØ§Ø­Ø¨ Ø§Ù„Ù…Ø±ÙƒØ² #${lastRank} Ù„Ø¯ÙŠÙ‡ ${lastUser.points.toLocaleString()} Ù†Ù‚Ø·Ø©
+                        صاحب المركز #${lastRank} لديه ${lastUser.points.toLocaleString()} نقطة
                     </div>` : ''}
                 </div>`;
             }
@@ -4641,22 +4641,22 @@ async function LeaderboardViewComponent() {
         const top3 = displayData.slice(0, 3);
         const rest = displayData.slice(3);
         
-        const medalEmojis = ['ðŸ¥‡', 'ðŸ¥ˆ', 'ðŸ¥‰'];
-        const stickers = ['âœ¦', 'âœ§', 'â­', 'ðŸ’«', 'âœ¨'];
+        const medalEmojis = ['🥇', '🥈', '🥉'];
+        const stickers = ['✦', '✧', '⭐', '💫', '✨'];
         const tabs = [
-            { key: 'all', label: 'ÙƒÙ„ Ø§Ù„ÙˆÙ‚Øª' },
-            { key: 'monthly', label: 'Ø´Ù‡Ø±ÙŠ' },
-            { key: 'weekly', label: 'Ø£Ø³Ø¨ÙˆØ¹ÙŠ' }
+            { key: 'all', label: 'كل الوقت' },
+            { key: 'monthly', label: 'شهري' },
+            { key: 'weekly', label: 'أسبوعي' }
         ];
         const activeTab = state.leaderboardTab || 'all';
         
-        const flt = (s) => `<span style="position:absolute;font-size:${1.5 + Math.random() * 1.5}rem;opacity:${0.2 + Math.random() * 0.3};color:var(--color-primary);pointer-events:none;user-select:none;${s}">${['â˜…','âœ¦','âœ§','â­','ðŸ’«','âœ¨','âš¡','ðŸ”¥','ðŸ’Ž','ðŸŽ¯'][Math.floor(Math.random()*10)]}</span>`;
+        const flt = (s) => `<span style="position:absolute;font-size:${1.5 + Math.random() * 1.5}rem;opacity:${0.2 + Math.random() * 0.3};color:var(--color-primary);pointer-events:none;user-select:none;${s}">${['★','✦','✧','⭐','💫','✨','⚡','🔥','💎','🎯'][Math.floor(Math.random()*10)]}</span>`;
         return `
         <div class="leaderboard-page" style="position:relative;overflow:hidden;">
             ${flt('top:5%;left:3%;')}${flt('top:12%;right:5%;')}${flt('top:25%;left:6%;')}${flt('top:40%;right:3%;')}${flt('top:55%;left:4%;')}${flt('top:70%;right:6%;')}${flt('top:85%;left:5%;')}${flt('top:15%;right:8%;')}${flt('top:30%;left:8%;')}${flt('top:50%;right:4%;')}
             <div class="leaderboard-header">
-                <h1><i class="fa-solid fa-trophy" style="color: #ffd700;"></i> Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…ØªØµØ¯Ø±ÙŠÙ†</h1>
-                <p>Ø£ÙƒØ«Ø± Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…ÙŠÙ† Ù†Ø´Ø§Ø·Ø§Ù‹ Ø¹Ù„Ù‰ KAIRO/Ù…Ù†Ù‡ÙˆØ§</p>
+                <h1><i class="fa-solid fa-trophy" style="color: #ffd700;"></i> قائمة المتصدرين</h1>
+                <p>أكثر المستخدمين نشاطاً على KAIRO/منهوا</p>
             </div>
             
             <div class="bookmarks-tabs" style="justify-content:center;margin-bottom:20px;">
@@ -4699,29 +4699,29 @@ async function LeaderboardViewComponent() {
                         <span class="lb-avatar" style="background:${getRankColor(u.level)}">${getUserInitial(u.username)}</span>
                         <span class="lb-name">${u.username}</span>
                         <span class="lb-rank-name">${u.rank_name}</span>
-                        <span class="lb-stats">${u.chapters_read} ÙØµÙ„</span>
+                        <span class="lb-stats">${u.chapters_read} فصل</span>
                         <span class="lb-points">${u.points.toLocaleString()} <i class="fa-solid fa-star" style="font-size:0.6rem;"></i></span>
                     </div>
                 `).join('')}
             </div>
             <div style="text-align:center;margin-top:24px;">
-                <button class="header-logo" id="lb-home-btn" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--color-secondary);">â† Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©</button>
+                <button class="header-logo" id="lb-home-btn" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--color-secondary);">← العودة للرئيسية</button>
             </div>
         </div>
         `;
     } catch (e) {
         console.error('Leaderboard error:', e);
-        return '<div class="empty-state"><p>Ø­Ø¯Ø« Ø®Ø·Ø£ ÙÙŠ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ù…ØªØµØ¯Ø±ÙŠÙ†</p></div>';
+        return '<div class="empty-state"><p>حدث خطأ في تحميل المتصدرين</p></div>';
     }
 }
 
 function formatNotificationTime(timestamp) {
     if (!timestamp) return '';
     const diff = Date.now() / 1000 - timestamp;
-    if (diff < 60) return 'Ø§Ù„Ø¢Ù†';
-    if (diff < 3600) return Math.floor(diff / 60) + ' Ø¯Ù‚ÙŠÙ‚Ø©';
-    if (diff < 86400) return Math.floor(diff / 3600) + ' Ø³Ø§Ø¹Ø©';
-    return Math.floor(diff / 86400) + ' ÙŠÙˆÙ…';
+    if (diff < 60) return 'الآن';
+    if (diff < 3600) return Math.floor(diff / 60) + ' دقيقة';
+    if (diff < 86400) return Math.floor(diff / 3600) + ' ساعة';
+    return Math.floor(diff / 86400) + ' يوم';
 }
 
 // Frontend safety: enforce admin only for the designated email
@@ -4732,7 +4732,7 @@ function enforceAdminRole() {
 }
 
 // ==========================================
-// 4.5. Ø§Ù„ØªÙˆØ«ÙŠÙ‚ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠ (Google & Facebook OAuth)
+// 4.5. التوثيق الاجتماعي (Google & Facebook OAuth)
 // ==========================================
 let googleTokenClient = null;
 
@@ -4758,13 +4758,13 @@ async function handleGoogleLogin(response) {
             state.showAuthModal = false;
             state.checkDailyReward();
             renderApp();
-            alert(`Ø£Ù‡Ù„Ø§Ù‹ Ø¨Ùƒ! ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù†Ø¬Ø§Ø­ Ø¹Ø¨Ø± Google Ø¨Ø§Ø³Ù… ${result.email.split('@')[0]}`);
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù€ Google');
+            alert(result.error || 'فشل تسجيل الدخول بـ Google');
         }
     } catch (e) {
         console.error("Google Auth error:", e);
-        alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù… Ø£Ø«Ù†Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù€ Google');
+        alert('خطأ في الاتصال بالخادم أثناء تسجيل الدخول بـ Google');
     }
 }
 
@@ -4789,13 +4789,13 @@ async function verifyGoogleAccessToken(accessToken) {
             state.showAuthModal = false;
             state.checkDailyReward();
             renderApp();
-            alert(`Ø£Ù‡Ù„Ø§Ù‹ Ø¨Ùƒ! ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù†Ø¬Ø§Ø­ Ø¹Ø¨Ø± Google Ø¨Ø§Ø³Ù… ${result.email.split('@')[0]}`);
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Google باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù€ Google');
+            alert(result.error || 'فشل تسجيل الدخول بـ Google');
         }
     } catch (e) {
         console.error("Google access token verification error:", e);
-        alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø³Ø§Ø¨ Google');
+        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Google');
     }
 }
 
@@ -4818,19 +4818,19 @@ async function verifyFacebookAccessToken(accessToken) {
             await state.fetchAndMergeSettings();
             state.showAuthModal = false;
             renderApp();
-            alert(`Ø£Ù‡Ù„Ø§Ù‹ Ø¨Ùƒ! ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù†Ø¬Ø§Ø­ Ø¹Ø¨Ø± Facebook Ø¨Ø§Ø³Ù… ${result.email.split('@')[0]}`);
+            alert(`أهلاً بك! تم تسجيل الدخول بنجاح عبر Facebook باسم ${result.email.split('@')[0]}`);
         } else {
-            alert(result.error || 'ÙØ´Ù„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù€ Facebook');
+            alert(result.error || 'فشل تسجيل الدخول بـ Facebook');
         }
     } catch (e) {
         console.error("Facebook access token verification error:", e);
-        alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ± Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØ­Ù‚Ù‚ Ù…Ù† Ø­Ø³Ø§Ø¨ Facebook');
+        alert('خطأ في الاتصال بالسيرفر أثناء التحقق من حساب Facebook');
     }
 }
 
 function handleFacebookLoginClick() {
     if (typeof FB === 'undefined') {
-        alert("Ù…ÙƒØªØ¨Ø© Ø§Ù„ÙÙŠØ³Ø¨ÙˆÙƒ Ù„Ù… ÙŠØªÙ… ØªØ­Ù…ÙŠÙ„Ù‡Ø§ Ø¨Ø¹Ø¯. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù…Ø±Ø© Ø£Ø®Ø±Ù‰.");
+        alert("مكتبة الفيسبوك لم يتم تحميلها بعد. يرجى المحاولة مرة أخرى.");
         return;
     }
     FB.login(function(response) {
@@ -4844,7 +4844,7 @@ function handleFacebookLoginClick() {
 }
 
 function initSocialAuths() {
-    // 1. ØªÙ‡ÙŠØ¦Ø© Google Sign-In & One Tap
+    // 1. تهيئة Google Sign-In & One Tap
     googleTokenClient = null;
     if (isUsableGoogleClientId()) {
         if (typeof google === 'undefined') {
@@ -4887,7 +4887,7 @@ function initSocialAuths() {
         }
     }
 
-    // 2. ØªÙ‡ÙŠØ¦Ø© Facebook SDK ÙˆØªØ­Ù…ÙŠÙ„Ù‡Ø§ ØªÙ„Ù‚Ø§Ø¦ÙŠØ§Ù‹
+    // 2. تهيئة Facebook SDK وتحميلها تلقائياً
     window.fbAsyncInit = function() {
         if (!isUsableFacebookAppId()) return;
         try {
@@ -4913,22 +4913,22 @@ function initSocialAuths() {
 }
 
 // ==========================================
-// 5. Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ø£Ø­Ø¯Ø§Ø« ÙˆØ§Ù„Ø§ØªØµØ§Ù„ Ù…Ø¹ Ø§Ù„Ù€ DOM (Events Binding)
+// 5. إدارة الأحداث والاتصال مع الـ DOM (Events Binding)
 // ==========================================
 
 function attachEventListeners() {
-    // ØªÙØ¹ÙŠÙ„ Ø´Ø¹Ø§Ø± Ø§Ù„Ù…ÙˆÙ‚Ø¹
+    // تفعيل شعار الموقع
     const logoBtn = document.getElementById('logo-btn');
     if (logoBtn) logoBtn.onclick = () => {
         state.searchQuery = '';
-        state.activeGenre = 'Ø§Ù„ÙƒÙ„';
+        state.activeGenre = 'الكل';
         navigate('home');
     };
 
-    // Ø±ÙˆØ§Ø¨Ø· Ø§Ù„ØªÙ†Ù‚Ù„
+    // روابط التنقل
     const navHome = document.getElementById('nav-home');
     if (navHome) navHome.onclick = () => {
-        state.activeGenre = 'Ø§Ù„ÙƒÙ„';
+        state.activeGenre = 'الكل';
         navigate('home');
     };
 
@@ -5011,7 +5011,7 @@ function attachEventListeners() {
     const navAdmin = document.getElementById('nav-admin');
     if (navAdmin) navAdmin.onclick = () => navigate('admin');
 
-    // Ø´Ø±ÙŠØ· Ø§Ù„Ø¨Ø­Ø« ÙˆÙ…Ù‚ØªØ±Ø­Ø§Øª Ø§Ù„Ø¨Ø­Ø«
+    // شريط البحث ومقترحات البحث
     const searchInput = document.getElementById('search-input');
     const searchBox = document.getElementById('search-box');
     if (searchInput) {
@@ -5040,7 +5040,7 @@ function attachEventListeners() {
         };
     }
 
-    // Ø²Ø± Ù…Ø³Ø­ Ø§Ù„Ø¨Ø­Ø«
+    // زر مسح البحث
     const searchClearBtn = document.getElementById('search-clear-btn');
     if (searchClearBtn) {
         searchClearBtn.onclick = () => {
@@ -5051,14 +5051,14 @@ function attachEventListeners() {
         };
     }
 
-    // Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¹Ù†Ø¯ Ø§Ù„Ù†Ù‚Ø± Ø®Ø§Ø±Ø¬Ù‡Ø§
+    // إغلاق القائمة عند النقر خارجها
     document.addEventListener('click', (e) => {
         if (searchBox && !searchBox.contains(e.target) && state.showSearchSuggestions) {
             state.showSearchSuggestions = false;
         }
     });
 
-    // Ø§Ù„Ù†Ù‚Ø± Ø¹Ù„Ù‰ Ù…Ù‚ØªØ±Ø­ Ø¨Ø­Ø«
+    // النقر على مقترح بحث
     const suggestionItems = document.querySelectorAll('.suggestion-item');
     suggestionItems.forEach(item => {
         item.onclick = (e) => {
@@ -5077,7 +5077,7 @@ function attachEventListeners() {
     });
 
 
-    // ØªØµÙÙŠØ© Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª
+    // تصفية التصنيفات
     const genreTags = document.querySelectorAll('.genre-tag');
     genreTags.forEach(tag => {
         tag.onclick = (e) => {
@@ -5089,7 +5089,7 @@ function attachEventListeners() {
                     const cards = homeLayout.querySelectorAll('.manga-card');
                     cards.forEach(card => {
                         const genres = card.dataset.genres || '';
-                        const match = genre === 'Ø§Ù„ÙƒÙ„' || genres.split(',').includes(genre);
+                        const match = genre === 'الكل' || genres.split(',').includes(genre);
                         card.style.display = match ? '' : 'none';
                     });
                     // Update active genre visual
@@ -5108,7 +5108,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ø³Ù„Ø§ÙŠØ¯Ø± Ø§Ù„Ø¨Ø§Ù†Ø±
+    // السلايدر البانر
     const heroBtns = document.querySelectorAll('.read-now-hero');
     heroBtns.forEach(btn => {
         btn.onclick = (e) => {
@@ -5140,7 +5140,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø¨Ø·Ø§Ù‚Ø© Ù…Ø§Ù†Ø¬Ø§ Ù„ÙØªØ­Ù‡Ø§
+    // الضغط على بطاقة مانجا لفتحها
     const mangaCards = document.querySelectorAll('.manga-card');
     mangaCards.forEach(card => {
         card.onclick = () => {
@@ -5149,7 +5149,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø³Ø¬Ù„Ø§Øª Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© Ù„Ø§Ø³ØªØ¦Ù†Ø§Ù Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+    // الضغط على سجلات القراءة لاستئناف القراءة
     const historyCards = document.querySelectorAll('.history-item-card');
     historyCards.forEach(card => {
         card.onclick = () => {
@@ -5169,7 +5169,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø£Ø­Ø¯Ø§Ø« ØµÙØ­Ø© Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªÙØµÙŠÙ„ÙŠ: Ø²Ø± Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+    // أحداث صفحة السجل التفصيلي: زر متابعة القراءة
     const resumeHistoryBtns = document.querySelectorAll('.resume-reading-history-btn');
     resumeHistoryBtns.forEach(btn => {
         btn.onclick = (e) => {
@@ -5190,13 +5190,13 @@ function attachEventListeners() {
         };
     });
 
-    // Ø£Ø­Ø¯Ø§Ø« ØµÙØ­Ø© Ø§Ù„Ø³Ø¬Ù„ Ø§Ù„ØªÙØµÙŠÙ„ÙŠ: Ø²Ø± Ø­Ø°Ù Ø¹Ù…Ù„ Ù…Ù† Ø§Ù„Ø³Ø¬Ù„
+    // أحداث صفحة السجل التفصيلي: زر حذف عمل من السجل
     const deleteHistoryEntryBtns = document.querySelectorAll('.delete-history-entry-btn');
     deleteHistoryEntryBtns.forEach(btn => {
         btn.onclick = (e) => {
             e.stopPropagation();
             const mId = btn.dataset.mangaId;
-            if (confirm("Ù‡Ù„ ØªØ±ÙŠØ¯ Ø¥Ø²Ø§Ù„Ø© Ù‡Ø°Ø§ Ø§Ù„Ø¹Ù…Ù„ Ù…Ù† Ø³Ø¬Ù„ Ø§Ù„Ù…Ø´Ø§Ù‡Ø¯Ø©ØŸ")) {
+            if (confirm("هل تريد إزالة هذا العمل من سجل المشاهدة؟")) {
                 state.history = state.history.filter(h => h.mangaId !== mId);
                 state.saveHistory();
                 renderApp();
@@ -5204,7 +5204,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø§Ù„Ø£ÙƒØ«Ø± Ø´Ø¹Ø¨ÙŠØ©
+    // الضغط على الأكثر شعبية
     const trendingItems = document.querySelectorAll('.trending-item');
     trendingItems.forEach(item => {
         item.onclick = () => {
@@ -5213,7 +5213,7 @@ function attachEventListeners() {
         };
     });
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø­Ø¬Ø² Ø§Ù„Ù…ÙØ¶Ù„Ø©
+    // صفحة التفاصيل: حجز المفضلة
     const bookmarkPickers = document.querySelectorAll('.bookmark-picker');
     bookmarkPickers.forEach(picker => {
         const toggle = picker.querySelector('.bookmark-picker-toggle');
@@ -5259,7 +5259,7 @@ function attachEventListeners() {
         });
     });
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ù‚Ø±Ø§Ø¡Ø© Ø£ÙˆÙ„ ÙØµÙ„
+    // صفحة التفاصيل: الضغط على قراءة أول فصل
     const startReadingBtn = document.querySelector('.start-reading-btn');
     if (startReadingBtn) {
         startReadingBtn.onclick = () => {
@@ -5268,7 +5268,7 @@ function attachEventListeners() {
         };
     }
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ù…ØªØ§Ø¨Ø¹Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©
+    // صفحة التفاصيل: الضغط على متابعة القراءة
     const continueReadingBtn = document.querySelector('.continue-reading-btn');
     if (continueReadingBtn) {
         continueReadingBtn.onclick = () => {
@@ -5277,7 +5277,7 @@ function attachEventListeners() {
         };
     }
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ ÙØµÙ„ Ù„Ù‚Ø±Ø§Ø¡ØªÙ‡
+    // صفحة التفاصيل: الضغط على فصل لقراءته
     const chapterItems = document.querySelectorAll('.chapter-item');
     chapterItems.forEach(item => {
         item.onclick = (e) => {
@@ -5288,7 +5288,7 @@ function attachEventListeners() {
         };
     });
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† ÙØµÙ„
+    // صفحة التفاصيل: البحث عن فصل
     const chaptersSearch = document.getElementById('chapters-search-input');
     if (chaptersSearch) {
         chaptersSearch.oninput = (e) => {
@@ -5325,7 +5325,7 @@ function attachEventListeners() {
                     noResult = document.createElement('p');
                     noResult.className = 'chapters-search-noresult';
                     noResult.style.cssText = 'padding: 20px; color: var(--text-dark); text-align: center;';
-                    noResult.textContent = 'Ù„Ø§ ØªÙˆØ¬Ø¯ ÙØµÙˆÙ„ ØªØ·Ø§Ø¨Ù‚ Ø§Ù„Ø¨Ø­Ø«.';
+                    noResult.textContent = 'لا توجد فصول تطابق البحث.';
                     container.appendChild(noResult);
                 }
             } else if (noResult) {
@@ -5334,7 +5334,7 @@ function attachEventListeners() {
         };
     }
 
-    // ØµÙØ­Ø© Ø§Ù„ØªÙØ§ØµÙŠÙ„: Ø²Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙØµÙ„ Ù„Ù„Ø£ÙˆÙÙ„Ø§ÙŠÙ†
+    // صفحة التفاصيل: زر تحميل الفصل للأوفلاين
     const downloadBtns = document.querySelectorAll('.download-btn');
     downloadBtns.forEach(btn => {
         btn.onclick = async (e) => {
@@ -5345,7 +5345,7 @@ function attachEventListeners() {
 
             const isDownloaded = btn.classList.contains('downloaded');
             if (isDownloaded) {
-                if (confirm("Ù‡Ù„ ØªØ±ÙŠØ¯ Ø¥Ø²Ø§Ù„Ø© Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„ Ù…Ù† Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„ØªØ­Ù…ÙŠÙ„Ø§ØªØŸ")) {
+                if (confirm("هل تريد إزالة هذا الفصل من قائمة التحميلات؟")) {
                     await deleteChapterOffline(mangaId, chapId);
                     renderApp();
                 }
@@ -5374,27 +5374,27 @@ function attachEventListeners() {
         };
     });
 
-    // Ù…Ø±ÙƒØ² Ø§Ù„ØªØ­Ù…ÙŠÙ„Ø§Øª: Ø­Ø°Ù  Ø§Ù„Ù ØµÙ„
+    // مركز التحميلات: حذف الفصل
     const deleteDownloadBtns = document.querySelectorAll('.delete-download-btn');
     deleteDownloadBtns.forEach(btn => {
         btn.onclick = async (e) => {
             e.stopPropagation();
             const mangaId = btn.dataset.mangaId;
             const chapId = btn.dataset.chapId;
-            if (confirm("Ù‡Ù„ ØªØ±ÙŠØ¯ Ø¥Ø²Ø§Ù„Ø© Ù‡Ø°Ø§ Ø§Ù„Ù ØµÙ„ Ø§Ù„Ù…Ø­Ù…Ù„ØŸ")) {
+            if (confirm("هل تريد إزالة هذا الفصل المحمل؟")) {
                 await deleteChapterOffline(mangaId, chapId);
                 renderApp();
             }
         };
     });
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø­Ø°Ù Ù…Ù†Ù‡ÙˆØ§ (Admin Only)
+    // الإدارة: حذف منهوا (Admin Only)
     const deleteMangaBtns = document.querySelectorAll('.delete-manga-admin-btn');
     deleteMangaBtns.forEach(btn => {
         btn.onclick = async (e) => {
             e.stopPropagation();
             const mangaId = btn.dataset.id;
-            if (!confirm("Ù‡Ù„ Ø£Ù†Øª Ù…ØªØ£ÙƒØ¯ Ù…Ù† Ø­Ø°Ù Ù‡Ø°Ù‡ Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ØŸ\nÙ‡Ø°Ø§ Ø§Ù„Ø¥Ø¬Ø±Ø§Ø¡ Ù„Ø§ ÙŠÙ…ÙƒÙ† Ø§Ù„ØªØ±Ø§Ø¬Ø¹ Ø¹Ù†Ù‡.")) return;
+            if (!confirm("هل أنت متأكد من حذف هذه المنهوا بالكامل؟\nهذا الإجراء لا يمكن التراجع عنه.")) return;
             try {
                 const response = await fetch('/api/delete_manga', {
                     method: 'POST',
@@ -5412,10 +5412,10 @@ function attachEventListeners() {
                     state.saveMangas();
                     navigate('home');
                 } else {
-                    alert(result.error || 'ÙØ´Ù„ Ø§Ù„Ø­Ø°Ù');
+                    alert(result.error || 'فشل الحذف');
                 }
             } catch (err) {
-                alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…');
+                alert('خطأ في الاتصال بالخادم');
             }
         };
     });
@@ -5431,7 +5431,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ù…ÙØ¶Ù„Ø©: ØªØ¨Ø¯ÙŠÙ„ Ø§Ù„ØªØ¨ÙˆÙŠØ¨Ø§Øª
+    // المفضلة: تبديل التبويبات
     const bookmarkTabs = document.querySelectorAll('.bookmark-tab');
     bookmarkTabs.forEach(tab => {
         tab.onclick = (e) => {
@@ -5440,11 +5440,11 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„ØµÙØ­Ø© ØªÙØ§ØµÙŠÙ„ Ø§Ù„Ù…Ø§Ù†Ø¬Ø§
+    // القارئ: العودة لصفحة تفاصيل المانجا
     const returnBtns = document.querySelectorAll('.return-to-manga');
     returnBtns.forEach(btn => {
         btn.onclick = () => {
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø±Ø¬ÙˆØ¹...</span>';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري الرجوع...</span>';
             btn.style.pointerEvents = 'none';
             setTimeout(() => {
                 navigate('detail', state.activeMangaId);
@@ -5458,14 +5458,14 @@ function attachEventListeners() {
         fsBtn.onclick = () => {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen?.();
-                fsBtn.innerHTML = '<i class="fa-solid fa-compress"></i> Ø¥Ù†Ù‡Ø§Ø¡ Ø§Ù„Ù…Ù„Ø¡';
+                fsBtn.innerHTML = '<i class="fa-solid fa-compress"></i> إنهاء الملء';
             } else {
                 document.exitFullscreen?.();
-                fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø©';
+                fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> ملء الشاشة';
             }
         };
         document.addEventListener('fullscreenchange', () => {
-            if (!document.fullscreenElement) fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> Ù…Ù„Ø¡ Ø§Ù„Ø´Ø§Ø´Ø©';
+            if (!document.fullscreenElement) fsBtn.innerHTML = '<i class="fa-solid fa-expand"></i> ملء الشاشة';
         });
     }
 
@@ -5568,7 +5568,7 @@ function attachEventListeners() {
         document.onkeydown = null;
     }
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø¥Ø¯Ø§Ø±Ø© Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø© Ø§Ù„Ù…Ø®ØµØµØ© Ù„Ù„ÙØµÙˆÙ„
+    // القارئ: إدارة القائمة المنسدلة المخصصة للفصول
     const dropdown = document.getElementById('chapter-dropdown');
     const dropdownTrigger = document.querySelector('.dropdown-trigger');
     if (dropdown && dropdownTrigger) {
@@ -5581,7 +5581,7 @@ function attachEventListeners() {
             }
         };
 
-        // Ù…Ù†Ø¹ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø¶ØºØ· Ø¯Ø§Ø®Ù„ Ù…Ø±Ø¨Ø¹ Ø§Ù„Ø¨Ø­Ø«
+        // منع إغلاق القائمة عند الضغط داخل مربع البحث
         const searchInput = document.getElementById('chapter-drop-search');
         if (searchInput) {
             searchInput.onclick = (e) => e.stopPropagation();
@@ -5600,7 +5600,7 @@ function attachEventListeners() {
             };
         }
 
-        // Ø§Ø®ØªÙŠØ§Ø± ÙØµÙ„ Ù…Ù† Ø§Ù„Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù…Ø®ØµØµØ©
+        // اختيار فصل من القائمة المخصصة
         const options = dropdown.querySelectorAll('.dropdown-item-opt');
         options.forEach(opt => {
             opt.onclick = (e) => {
@@ -5611,7 +5611,7 @@ function attachEventListeners() {
             };
         });
 
-        // Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù…Ù†Ø³Ø¯Ù„Ø© Ø¹Ù†Ø¯ Ø§Ù„Ø¶ØºØ· ÙÙŠ Ø£ÙŠ Ù…ÙƒØ§Ù† Ø¢Ø®Ø± Ø¨Ø§Ù„ØµÙØ­Ø©
+        // إغلاق المنسدلة عند الضغط في أي مكان آخر بالصفحة
         document.addEventListener('click', (e) => {
             if (dropdown && !dropdown.contains(e.target)) {
                 dropdown.classList.remove('open');
@@ -5619,7 +5619,7 @@ function attachEventListeners() {
         });
     }
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø§Ù„ÙØµÙ„ Ø§Ù„Ø³Ø§Ø¨Ù‚
+    // القارئ: الفصل السابق
     const prevBtns = document.querySelectorAll('.prev-chapter-btn');
     prevBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
@@ -5638,7 +5638,7 @@ function attachEventListeners() {
     }
     });
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø§Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ
+    // القارئ: الفصل التالي
     const nextBtns = document.querySelectorAll('.next-chapter-btn');
     nextBtns.forEach(btn => {
         if (!btn.classList.contains('disabled')) {
@@ -5657,7 +5657,7 @@ function attachEventListeners() {
     }
     });
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: ØªØ±Ø¬Ù…Ø© Ø§Ù„ÙØµÙ„
+    // القارئ: ترجمة الفصل
     document.querySelectorAll('.translate-chapter-btn').forEach(btn => {
         btn.onclick = async function() {
             const url = this.dataset.url;
@@ -5676,19 +5676,19 @@ function attachEventListeners() {
                 });
                 const data = await res.json();
                 if (data.status === 'queued') {
-                    alert('ØªÙ…Øª Ø¥Ø¶Ø§ÙØ© Ø§Ù„ÙØµÙ„ Ù„Ø·Ø§Ø¨ÙˆØ± Ø§Ù„ØªØ±Ø¬Ù…Ø©');
+                    alert('تمت إضافة الفصل لطابور الترجمة');
                 } else {
-                    alert(data.error || 'ÙØ´Ù„Øª Ø§Ù„ØªØ±Ø¬Ù…Ø©');
+                    alert(data.error || 'فشلت الترجمة');
                 }
             } catch (e) {
-                alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…');
+                alert('خطأ في الاتصال بالخادم');
             }
             this.innerHTML = '<i class="fa-solid fa-language"></i>';
             this.disabled = false;
         };
     });
 
-    // --- Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØªÙ„Ù‚Ø§Ø¦ÙŠ Ù„Ù„ÙØµÙ„ Ø§Ù„ØªØ§Ù„ÙŠ Ø¹Ù†Ø¯ Ø§Ù„ØªÙ…Ø±ÙŠØ± (Infinite Scroll) ---
+    // --- التحميل التلقائي للفصل التالي عند التمرير (Infinite Scroll) ---
     var sentinel = document.getElementById('next-chapter-sentinel');
     if (sentinel && 'IntersectionObserver' in window) {
         var observer = new IntersectionObserver(function(entries) {
@@ -5707,7 +5707,7 @@ function attachEventListeners() {
         observer.observe(sentinel);
     }
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: ÙØªØ­/Ø¥ØºÙ„Ø§Ù‚ Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¹Ø§Ø¦Ù…Ø© Ù„Ù„ØªØ®ØµÙŠØµ
+    // القارئ: فتح/إغلاق لوحة الإعدادات العائمة للتخصيص
     const settingsToggle = document.getElementById('settings-panel-toggle');
     const settingsPanel = document.getElementById('settings-panel');
     if (settingsToggle && settingsPanel) {
@@ -5723,7 +5723,7 @@ function attachEventListeners() {
         settingsPanel.onclick = (e) => e.stopPropagation();
     }
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø§Ù„Ø¶ØºØ· Ø¹Ù„Ù‰ Ø®ÙŠØ§Ø±Ø§Øª Ø§Ù„ØªØ®ØµÙŠØµ
+    // القارئ: الضغط على خيارات التخصيص
     const settingPanelBtns = document.querySelectorAll('.setting-btn');
     settingPanelBtns.forEach(btn => {
         btn.onclick = (e) => {
@@ -5759,7 +5759,7 @@ function attachEventListeners() {
         };
     });
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦ Ø§Ù„Ø£ÙÙ‚ÙŠ: Ø§Ù„ØªÙ†Ù‚Ù„ Ø¨ÙŠÙ† Ø§Ù„ØµÙØ­Ø§Øª
+    // القارئ الأفقي: التنقل بين الصفحات
     const hPrevZone = document.getElementById('h-prev-zone');
     const hNextZone = document.getElementById('h-next-zone');
     if (hPrevZone && hNextZone) {
@@ -5781,7 +5781,7 @@ function attachEventListeners() {
                     state.activePageIndex = 0;
                     navigate('reader', state.activeMangaId, prevChapId);
                 } else {
-                    alert("Ø£Ù†Øª ÙÙŠ Ø£ÙˆÙ„ ØµÙØ­Ø© ÙÙŠ Ø£ÙˆÙ„ ÙØµÙ„!");
+                    alert("أنت في أول صفحة في أول فصل!");
                 }
             }
         };
@@ -5798,13 +5798,13 @@ function attachEventListeners() {
                     state.activePageIndex = 0;
                     navigate('reader', state.activeMangaId, nextChapId);
                 } else {
-                    alert("Ù„Ù‚Ø¯ ÙˆØµÙ„Øª Ù„Ø¢Ø®Ø± ØµÙØ­Ø© ÙÙŠ Ø¢Ø®Ø± ÙØµÙ„ Ù…ØªØ§Ø­!");
+                    alert("لقد وصلت لآخر صفحة في آخر فصل متاح!");
                 }
             }
         };
     }
 
-    // Ø§Ù„Ù‚Ø§Ø±Ø¦: Ø²Ø± Ø§Ù„Ø¥Ø¹Ø¬Ø§Ø¨ Ø¨Ø§Ù„ÙØµÙ„
+    // القارئ: زر الإعجاب بالفصل
     const chapterLikeBtn = document.getElementById('chapter-like-btn');
     if (chapterLikeBtn) {
         chapterLikeBtn.onclick = () => {
@@ -5815,16 +5815,16 @@ function attachEventListeners() {
             if (isLiked) {
                 chapterLikeBtn.classList.add('liked');
                 icon.className = 'fa-solid fa-heart';
-                text.innerText = 'Ø£Ø¹Ø¬Ø¨Ù†ÙŠ Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„!';
+                text.innerText = 'أعجبني هذا الفصل!';
             } else {
                 chapterLikeBtn.classList.remove('liked');
                 icon.className = 'fa-regular fa-heart';
-                text.innerText = 'Ø£Ø¹Ø¬Ø¨Ù†ÙŠ';
+                text.innerText = 'أعجبني';
             }
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: ØªØ¨Ø¯ÙŠÙ„ Ø§Ù„ØªØ¨ÙˆÙŠØ¨Ø§Øª ÙˆØªÙØ¹ÙŠÙ„ Ø§Ù„ØªØ¨ÙˆÙŠØ¨ Ø§Ù„Ù…Ø®ØªØ§Ø±
+    // الإدارة: تبديل التبويبات وتفعيل التبويب المختار
     const tabAddManga = document.getElementById('tab-add-manga');
     const tabAddChapter = document.getElementById('tab-add-chapter');
     const tabEditManga = document.getElementById('tab-edit-manga');
@@ -5983,7 +5983,7 @@ function attachEventListeners() {
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø¥Ø±Ø³Ø§Ù„ Ù†Ù…ÙˆØ°Ø¬ Ù…Ø§Ù†Ø¬Ø§
+    // الإدارة: إرسال نموذج مانجا
     const addMangaForm = document.getElementById('add-manga-form');
     if (addMangaForm) {
         addMangaForm.onsubmit = (e) => {
@@ -5998,13 +5998,13 @@ function attachEventListeners() {
             const type = document.getElementById('manga-type').value;
 
             state.addManga(title, alt, author, cover, banner, genres, synopsis, type);
-            alert("ØªÙ… Ø¥Ø¯Ø±Ø§Ø¬ Ø§Ù„Ø¹Ù…Ù„ Ø§Ù„ÙÙ†ÙŠ Ø¨Ù†Ø¬Ø§Ø­!");
+            alert("تم إدراج العمل الفني بنجاح!");
             addMangaForm.reset();
             navigate('home');
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø¥Ø±Ø³Ø§Ù„ Ù†Ù…ÙˆØ°Ø¬ ÙØµÙ„
+    // الإدارة: إرسال نموذج فصل
     const addChapterForm = document.getElementById('add-chapter-form');
     if (addChapterForm) {
         addChapterForm.onsubmit = (e) => {
@@ -6015,18 +6015,18 @@ function attachEventListeners() {
             const images = document.getElementById('chap-images').value;
 
             state.addChapter(mangaId, title, chapterNo, images);
-            alert(`ØªÙ… Ø±ÙØ¹ ÙˆÙ†Ø´Ø± Ø§Ù„ÙØµÙ„ ${chapterNo} Ø¨Ù†Ø¬Ø§Ø­!`);
+            alert(`تم رفع ونشر الفصل ${chapterNo} بنجاح!`);
             addChapterForm.reset();
             navigate('detail', mangaId);
         };
     }
 
-    // Ø§Ù„Ø´ÙƒØ§ÙˆÙ‰ ÙˆØ§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª: ÙØªØ­ ÙˆØ¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©
+    // الشكاوى والاقتراحات: فتح وإغلاق النافذة
     const openSuggestionsBtn = document.getElementById('open-suggestions-btn');
     if (openSuggestionsBtn) {
         openSuggestionsBtn.onclick = () => {
             if (!state.sessionToken) {
-                alert("Ø§Ù„Ø±Ø¬Ø§Ø¡ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø£ÙˆÙ„Ø§Ù‹ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† ØªÙ‚Ø¯ÙŠÙ… Ø§Ù‚ØªØ±Ø§Ø­ Ø£Ùˆ Ø´ÙƒÙˆÙ‰.");
+                alert("الرجاء تسجيل الدخول أولاً لتتمكن من تقديم اقتراح أو شكوى.");
                 state.showAuthModal = true;
                 state.authModalTab = 'login';
                 renderApp();
@@ -6053,7 +6053,7 @@ function attachEventListeners() {
         };
     }
 
-    // Ø§Ù„Ø´ÙƒØ§ÙˆÙ‰ ÙˆØ§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª: Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„
+    // الشكاوى والاقتراحات: نموذج الإرسال
     const suggestionsForm = document.getElementById('suggestions-form');
     if (suggestionsForm) {
         suggestionsForm.onsubmit = async (e) => {
@@ -6085,17 +6085,17 @@ function attachEventListeners() {
                         renderApp();
                     }, 1500);
                 } else {
-                    errorMsg.innerText = result.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ù…Ø§';
+                    errorMsg.innerText = result.error || 'حدث خطأ ما';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…';
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
     }
 
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: ÙØªØ­ Ø§Ù„Ù†Ø§ÙØ°Ø© Ø§Ù„Ù…Ù†Ø¨Ø«Ù‚Ø©
+    // التوثيق: فتح النافذة المنبثقة
     const openLoginBtn = document.getElementById('open-login-btn');
     if (openLoginBtn) {
         openLoginBtn.onclick = () => {
@@ -6138,7 +6138,7 @@ function attachEventListeners() {
         };
     }
 
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: ØªØ¨Ø¯ÙŠÙ„ Ø§Ù„ØªØ¨ÙˆÙŠØ¨Ø§Øª
+    // التوثيق: تبديل التبويبات
     const authTabLogin = document.getElementById('auth-tab-login');
     const authTabRegister = document.getElementById('auth-tab-register');
     if (authTabLogin) {
@@ -6154,7 +6154,7 @@ function attachEventListeners() {
         };
     }
 
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„Ù†Ø§ÙØ°Ø©
+    // التوثيق: إغلاق النافذة
     const closeAuthBtn = document.getElementById('close-auth-modal');
     if (closeAuthBtn) {
         closeAuthBtn.onclick = () => {
@@ -6173,18 +6173,18 @@ function attachEventListeners() {
         };
     }
     
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø§Ù„Ø§Ø¬ØªÙ…Ø§Ø¹ÙŠ Ø¹Ø¨Ø± Ø§Ù„Ø£Ø²Ø±Ø§Ø±
+    // التوثيق: تسجيل الدخول الاجتماعي عبر الأزرار
     const googleLoginBtn = document.getElementById('google-login-btn');
     if (googleLoginBtn) {
         googleLoginBtn.onclick = () => {
             if (!isUsableGoogleClientId()) {
-                alert("âš ï¸ Ù„Ù… ÙŠØªÙ… ØªÙƒÙˆÙŠÙ† Google Client ID Ø¨Ø¹Ø¯.\n\nÙŠØ±Ø¬Ù‰ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ÙƒÙ…Ø³Ø¤ÙˆÙ„ Ø«Ù… Ø§Ù„Ø°Ù‡Ø§Ø¨ Ø¥Ù„Ù‰ (Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© â† Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹) Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø¹Ø±Ù‘Ù Ø§Ù„ÙØ¹Ù„ÙŠ Ù„ØªÙØ¹ÙŠÙ„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ø¬ÙˆØ¬Ù„.");
+                alert("⚠️ لم يتم تكوين Google Client ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بجوجل.");
                 return;
             }
             if (typeof google !== 'undefined' && googleTokenClient) {
                 googleTokenClient.requestAccessToken();
             } else {
-                alert("Ù…ÙƒØªØ¨Ø© Ø¬ÙˆØ¬Ù„ Ù„Ù… ÙŠØªÙ… ØªØ­Ù…ÙŠÙ„Ù‡Ø§ Ø¨Ø¹Ø¯ Ø£Ùˆ Ø§Ù„Ù…Ø¹Ø±Ù‘Ù ØºÙŠØ± ØµØ­ÙŠØ­. ÙŠØ±Ø¬Ù‰ Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø© Ù„Ø§Ø­Ù‚Ø§Ù‹.");
+                alert("مكتبة جوجل لم يتم تحميلها بعد أو المعرّف غير صحيح. يرجى المحاولة لاحقاً.");
             }
         };
     }
@@ -6193,7 +6193,7 @@ function attachEventListeners() {
     if (facebookLoginBtn) {
         facebookLoginBtn.onclick = () => {
             if (!isUsableFacebookAppId()) {
-                alert("âš ï¸ Ù„Ù… ÙŠØªÙ… ØªÙƒÙˆÙŠÙ† Facebook App ID Ø¨Ø¹Ø¯.\n\nÙŠØ±Ø¬Ù‰ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ ÙƒÙ…Ø³Ø¤ÙˆÙ„ Ø«Ù… Ø§Ù„Ø°Ù‡Ø§Ø¨ Ø¥Ù„Ù‰ (Ù„ÙˆØ­Ø© Ø§Ù„Ø¥Ø¯Ø§Ø±Ø© â† Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹) Ù„ØªØ­Ø¯ÙŠØ« Ø§Ù„Ù…Ø¹Ø±Ù‘Ù Ø§Ù„ÙØ¹Ù„ÙŠ Ù„ØªÙØ¹ÙŠÙ„ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨ÙÙŠØ³Ø¨ÙˆÙƒ.");
+                alert("⚠️ لم يتم تكوين Facebook App ID بعد.\n\nيرجى تسجيل الدخول كمسؤول ثم الذهاب إلى (لوحة الإدارة ← إعدادات الموقع) لتحديث المعرّف الفعلي لتفعيل تسجيل الدخول بفيسبوك.");
                 return;
             }
             handleFacebookLoginClick();
@@ -6271,14 +6271,14 @@ function attachEventListeners() {
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    successMsg.innerText = result.message || 'ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø§Ø¨Ø· Ø§Ø³ØªØ¹Ø§Ø¯Ø© ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±!';
+                    successMsg.innerText = result.message || 'تم إرسال رابط استعادة كلمة المرور!';
                     successMsg.style.display = 'block';
                 } else {
-                    errorMsg.innerText = result.error || 'ÙØ´Ù„ Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø·Ù„Ø¨';
+                    errorMsg.innerText = result.error || 'فشل إرسال الطلب';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…';
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
@@ -6297,12 +6297,12 @@ function attachEventListeners() {
             successMsg.style.display = 'none';
             
             if (newPass.length < 6) {
-                errorMsg.innerText = 'ÙŠØ¬Ø¨ Ø£Ù† ØªØªÙƒÙˆÙ† ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ù…Ù† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„';
+                errorMsg.innerText = 'يجب أن تتكون كلمة المرور من 6 أحرف على الأقل';
                 errorMsg.style.display = 'block';
                 return;
             }
             if (newPass !== confirmPass) {
-                errorMsg.innerText = 'ÙƒÙ„Ù…ØªØ§ Ø§Ù„Ù…Ø±ÙˆØ± ØºÙŠØ± Ù…ØªØ·Ø§Ø¨Ù‚ØªÙŠÙ†';
+                errorMsg.innerText = 'كلمتا المرور غير متطابقتين';
                 errorMsg.style.display = 'block';
                 return;
             }
@@ -6318,7 +6318,7 @@ function attachEventListeners() {
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    successMsg.innerText = 'ØªÙ… ØªØ­Ø¯ÙŠØ« ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ù†Ø¬Ø§Ø­! Ø³ÙŠØªÙ… ØªÙˆØ¬ÙŠÙ‡Ùƒ Ø§Ù„Ø¢Ù† Ù„ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„.';
+                    successMsg.innerText = 'تم تحديث كلمة المرور بنجاح! سيتم توجيهك الآن لتسجيل الدخول.';
                     successMsg.style.display = 'block';
                     setTimeout(() => {
                         state.showAuthModal = true;
@@ -6326,17 +6326,17 @@ function attachEventListeners() {
                         navigate('home');
                     }, 2000);
                 } else {
-                    errorMsg.innerText = result.error || 'ÙØ´Ù„ ØªØ­Ø¯ÙŠØ« ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±';
+                    errorMsg.innerText = result.error || 'فشل تحديث كلمة المرور';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…';
+                errorMsg.innerText = 'خطأ في الاتصال بالخادم';
                 errorMsg.style.display = 'block';
             }
         };
     }
 
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: Ø¥Ø±Ø³Ø§Ù„ Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„Ø¯Ø®ÙˆÙ„/Ø§Ù„ØªØ³Ø¬ÙŠÙ„
+    // التوثيق: إرسال نموذج الدخول/التسجيل
     const authForm = document.getElementById('auth-form');
     if (authForm) {
         authForm.onsubmit = async (e) => {
@@ -6367,7 +6367,7 @@ function attachEventListeners() {
                         if (result.level !== undefined) state.userProfile.level = result.level;
                         if (result.username) state.userProfile.username = result.username;
                         state.saveUserProfile();
-                        successMsg.innerText = 'ØªÙ… ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ø¨Ù†Ø¬Ø§Ø­!';
+                        successMsg.innerText = 'تم تسجيل الدخول بنجاح!';
                         successMsg.style.display = 'block';
                         await state.fetchAndMergeSettings();
                         state.checkDailyReward();
@@ -6385,7 +6385,7 @@ function attachEventListeners() {
                             if (result.level !== undefined) state.userProfile.level = result.level;
                             if (result.username) state.userProfile.username = result.username;
                             state.saveUserProfile();
-                            successMsg.innerText = 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨ Ø¨Ù†Ø¬Ø§Ø­! Ø¬Ø§Ø±ÙŠ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„...';
+                            successMsg.innerText = 'تم إنشاء الحساب بنجاح! جاري تسجيل الدخول...';
                             successMsg.style.display = 'block';
                             setTimeout(async () => {
                                 await state.fetchAndMergeSettings();
@@ -6394,7 +6394,7 @@ function attachEventListeners() {
                                 renderApp();
                             }, 1200);
                         } else {
-                            successMsg.innerText = result.message || 'ØªÙ… Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø­Ø³Ø§Ø¨ Ø¨Ù†Ø¬Ø§Ø­ØŒ ÙŠÙ…ÙƒÙ†Ùƒ Ø§Ù„Ø¢Ù† ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„';
+                            successMsg.innerText = result.message || 'تم إنشاء الحساب بنجاح، يمكنك الآن تسجيل الدخول';
                             successMsg.style.display = 'block';
                             setTimeout(() => {
                                 state.authModalTab = 'login';
@@ -6403,21 +6403,21 @@ function attachEventListeners() {
                         }
                     }
                 } else {
-                    errorMsg.innerText = result.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ù…Ø§';
+                    errorMsg.innerText = result.error || 'حدث خطأ ما';
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
-                errorMsg.innerText = 'Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø³ÙŠØ±ÙØ±';
+                errorMsg.innerText = 'خطأ في الاتصال بالسيرفر';
                 errorMsg.style.display = 'block';
             }
         };
     }
 
-    // Ø§Ù„ØªÙˆØ«ÙŠÙ‚: ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬
+    // التوثيق: تسجيل الخروج
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.onclick = async () => {
-            if (confirm("Ù‡Ù„ ØªØ±ÙŠØ¯ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬ØŸ")) {
+            if (confirm("هل تريد تسجيل الخروج؟")) {
                 try {
                     await fetch('/api/logout', {
                         method: 'POST',
@@ -6439,7 +6439,7 @@ function attachEventListeners() {
     }
 
     window.performLogout = async () => {
-        if (confirm("Ù‡Ù„ ØªØ±ÙŠØ¯ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø®Ø±ÙˆØ¬ØŸ")) {
+        if (confirm("هل تريد تسجيل الخروج؟")) {
             try {
                 await fetch('/api/logout', {
                     method: 'POST',
@@ -6459,7 +6459,7 @@ function attachEventListeners() {
         }
     };
 
-    // Ù…Ø±Ø§Ø¬Ø¹Ø§Øª Ø§Ù„Ù…Ù†Ù‡ÙˆØ§: Ø§Ù„Ù†Ø¬ÙˆÙ… Ø§Ù„ØªÙØ§Ø¹Ù„ÙŠØ© ÙˆØ¥Ø±Ø³Ø§Ù„ Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø©
+    // مراجعات المنهوا: النجوم التفاعلية وإرسال المراجعة
     const starOpts = document.querySelectorAll('.star-opt');
     let chosenRating = 5;
     if (starOpts.length > 0) {
@@ -6509,12 +6509,12 @@ function attachEventListeners() {
                     alert(result.error);
                 }
             } catch (err) {
-                alert("Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…");
+                alert("خطأ في الاتصال بالخادم");
             }
         };
     }
 
-    // Ø§Ù„ØªØ¹Ù„ÙŠÙ‚ Ø¹Ù„Ù‰ Ø§Ù„ÙØµÙˆÙ„: Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„ØªØ¹Ù„ÙŠÙ‚ Ù„Ù„Ø³ÙŠØ±ÙØ±
+    // التعليق على الفصول: إرسال التعليق للسيرفر
     const chapterCommentForm = document.getElementById('chapter-comment-form');
     if (chapterCommentForm) {
         chapterCommentForm.onsubmit = async (e) => {
@@ -6537,9 +6537,9 @@ function attachEventListeners() {
                 if (response.ok) {
                     document.getElementById('chapter-comment-text').value = '';
                     const badgeIcons = {
-                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="Ø£ÙˆÙ„ ØªØ¹Ù„ÙŠÙ‚"></i>',
-                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="Ø«Ø§Ù†ÙŠ ØªØ¹Ù„ÙŠÙ‚"></i>',
-                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="Ø«Ø§Ù„Ø« ØªØ¹Ù„ÙŠÙ‚"></i>'
+                        'gold': '<i class="fa-solid fa-medal" style="color:#ffd700;" title="أول تعليق"></i>',
+                        'silver': '<i class="fa-solid fa-medal" style="color:#c0c0c0;" title="ثاني تعليق"></i>',
+                        'bronze': '<i class="fa-solid fa-medal" style="color:#cd7f32;" title="ثالث تعليق"></i>'
                     };
                     const badgeHtml = badgeIcons[result.badge] ? `<span class="comment-badge">${badgeIcons[result.badge]}</span>` : '';
                     const userDisplay = state.userEmail.split('@')[0];
@@ -6559,7 +6559,7 @@ function attachEventListeners() {
                     `;
                     const emptyMsg = document.querySelector('.comments-section p');
                     const commentsContainer = document.getElementById('chapter-comments-list');
-                    if (emptyMsg && emptyMsg.textContent.includes('ÙƒÙ† Ø£ÙˆÙ„ Ù…Ù† ÙŠØªØ±Ùƒ')) {
+                    if (emptyMsg && emptyMsg.textContent.includes('كن أول من يترك')) {
                         emptyMsg.outerHTML = newCommentHtml;
                     } else if (commentsContainer) {
                         commentsContainer.insertAdjacentHTML('afterbegin', newCommentHtml);
@@ -6570,12 +6570,12 @@ function attachEventListeners() {
                     alert(result.error);
                 }
             } catch (err) {
-                alert("Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…");
+                alert("خطأ في الاتصال بالخادم");
             }
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ§Ù‹
+    // الإدارة: حفظ إعدادات الموقع ديناميكياً
     const siteSettingsForm = document.getElementById('site-settings-form');
     if (siteSettingsForm) {
         siteSettingsForm.onsubmit = async (e) => {
@@ -6618,19 +6618,19 @@ function attachEventListeners() {
                         smtp_pass: smtpPass,
                         smtp_sender: smtpSender
                     };
-                    alert("ØªÙ… Ø­ÙØ¸ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹ Ø¨Ù†Ø¬Ø§Ø­!");
+                    alert("تم حفظ إعدادات الموقع بنجاح!");
                     initSocialAuths();
                     renderApp();
                 } else {
-                    alert(result.error || "ÙØ´Ù„ Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª");
+                    alert(result.error || "فشل حفظ الإعدادات");
                 }
             } catch (err) {
-                alert("Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù… Ø£Ø«Ù†Ø§Ø¡ Ø­ÙØ¸ Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª");
+                alert("خطأ في الاتصال بالخادم أثناء حفظ الإعدادات");
             }
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø§Ù„Ø¨Ø­Ø« Ø¹Ù† Ù…ØµØ§Ø¯Ø± Ø¨Ø¯ÙŠÙ„Ø©
+    // الإدارة: البحث عن مصادر بديلة
     const altSourceForm = document.getElementById('alt-source-form');
     if (altSourceForm) {
         altSourceForm.onsubmit = async (e) => {
@@ -6638,7 +6638,7 @@ function attachEventListeners() {
             const mangaId = document.getElementById('alt-manga-id')?.value;
             if (!mangaId) return;
             const resultsDiv = document.getElementById('alt-source-results');
-            if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¨Ø­Ø«...</p>';
+            if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);"><i class="fa-solid fa-spinner fa-spin"></i> جاري البحث...</p>';
             try {
                 const resp = await fetch('/api/admin/find-alternative-sources', {
                     method: 'POST',
@@ -6647,19 +6647,19 @@ function attachEventListeners() {
                 });
                 const data = await resp.json();
                 if (!resp.ok || !data.results || data.results.length === 0) {
-                    if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);">Ù„Ù… Ù†Ø¹Ø«Ø± Ø¹Ù„Ù‰ Ù…ØµØ§Ø¯Ø± Ø¨Ø¯ÙŠÙ„Ø©.</p>';
+                    if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:var(--text-dark);">لم نعثر على مصادر بديلة.</p>';
                     return;
                 }
-                let html = '<h3 style="color:var(--text-main);margin-bottom:16px;">Ø§Ù„Ù…ØµØ§Ø¯Ø± Ø§Ù„Ø¨Ø¯ÙŠÙ„Ø© Ø§Ù„Ù…ØªØ§Ø­Ø©:</h3>';
+                let html = '<h3 style="color:var(--text-main);margin-bottom:16px;">المصادر البديلة المتاحة:</h3>';
                 data.results.forEach(r => {
                     html += `
                     <div style="padding:16px;border:1px solid var(--border-color);border-radius:var(--border-radius-md);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;">
                         <div>
                             <strong style="color:var(--text-main);">${r.title}</strong>
-                            <span style="display:block;font-size:0.85rem;color:var(--text-dark);">Ø§Ù„Ù…ØµØ¯Ø±: ${r.source} â€¢ ${r.chapters ? r.chapters.length + ' ÙØµÙ„' : ''}</span>
+                            <span style="display:block;font-size:0.85rem;color:var(--text-dark);">المصدر: ${r.source} • ${r.chapters ? r.chapters.length + ' فصل' : ''}</span>
                         </div>
                         <button class="admin-submit-btn link-alt-source-btn" style="padding:8px 16px;font-size:0.85rem;" data-manga-id="${mangaId}" data-source="${r.source}" data-url="${r.url}">
-                            <i class="fa-solid fa-link"></i> Ø±Ø¨Ø·
+                            <i class="fa-solid fa-link"></i> ربط
                         </button>
                     </div>`;
                 });
@@ -6677,20 +6677,20 @@ function attachEventListeners() {
                                 body: JSON.stringify({manga_id: mid, source: src, source_url: url})
                             });
                             const ldata = await lresp.json();
-                            alert(ldata.error || 'ØªÙ… Ø±Ø¨Ø· Ø§Ù„Ù…ØµØ¯Ø± Ø§Ù„Ø¨Ø¯ÙŠÙ„ Ø¨Ù†Ø¬Ø§Ø­!');
+                            alert(ldata.error || 'تم ربط المصدر البديل بنجاح!');
                             if (lresp.ok) btn.disabled = true;
                         } catch (err) {
-                            alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„');
+                            alert('خطأ في الاتصال');
                         }
                     };
                 });
             } catch (err) {
-                if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:#ff007f;">Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù….</p>';
+                if (resultsDiv) resultsDiv.innerHTML = '<p style="text-align:center;padding:20px;color:#ff007f;">خطأ في الاتصال بالخادم.</p>';
             }
         };
     }
 
-    // Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…: Ø­ÙØ¸ Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…
+    // إعدادات المستخدم: حفظ اسم المستخدم
     const btnSaveUsername = document.getElementById('btn-save-username');
     if (btnSaveUsername) {
         btnSaveUsername.onclick = async () => {
@@ -6698,10 +6698,10 @@ function attachEventListeners() {
             const msg = document.getElementById('username-msg');
             const username = input.value.trim();
             if (!username || username.length < 2) {
-                msg.innerHTML = '<span style="color:#ff007f;">Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… ÙŠØ¬Ø¨ Ø£Ù† ÙŠÙƒÙˆÙ† Ø­Ø±ÙÙŠÙ† Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">اسم المستخدم يجب أن يكون حرفين على الأقل</span>';
                 return;
             }
-            msg.innerHTML = '<span style="color:var(--text-muted);">Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
             try {
                 const res = await fetch('/api/auth/change-username', {
                     method: 'POST',
@@ -6712,17 +6712,17 @@ function attachEventListeners() {
                 if (res.ok) {
                     state.userProfile.username = username;
                     state.saveUserProfile();
-                    msg.innerHTML = '<span style="color:#00ff7f;">ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù… Ø¨Ù†Ø¬Ø§Ø­</span>';
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم تحديث اسم المستخدم بنجاح</span>';
                 } else {
-                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'ÙØ´Ù„ Ø§Ù„ØªØ­Ø¯ÙŠØ«'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التحديث'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
             }
         };
     }
 
-    // Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ù…Ø³ØªØ®Ø¯Ù…: ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±
+    // إعدادات المستخدم: تغيير كلمة المرور
     const btnSavePassword = document.getElementById('btn-save-password');
     if (btnSavePassword) {
         btnSavePassword.onclick = async () => {
@@ -6730,14 +6730,14 @@ function attachEventListeners() {
             const newPass = document.getElementById('settings-new-password');
             const msg = document.getElementById('password-msg');
             if (!currentPass.value) {
-                msg.innerHTML = '<span style="color:#ff007f;">Ø§Ù„Ø±Ø¬Ø§Ø¡ Ø¥Ø¯Ø®Ø§Ù„ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">الرجاء إدخال كلمة المرور الحالية</span>';
                 return;
             }
             if (!newPass.value || newPass.value.length < 6) {
-                msg.innerHTML = '<span style="color:#ff007f;">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© ÙŠØ¬Ø¨ Ø£Ù† ØªÙƒÙˆÙ† 6 Ø£Ø­Ø±Ù Ø¹Ù„Ù‰ Ø§Ù„Ø£Ù‚Ù„</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل</span>';
                 return;
             }
-            msg.innerHTML = '<span style="color:var(--text-muted);">Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
             try {
                 const res = await fetch('/api/auth/change-password', {
                     method: 'POST',
@@ -6746,19 +6746,19 @@ function attachEventListeners() {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    msg.innerHTML = '<span style="color:#00ff7f;">ØªÙ… ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø¨Ù†Ø¬Ø§Ø­</span>';
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم تغيير كلمة المرور بنجاح</span>';
                     currentPass.value = '';
                     newPass.value = '';
                 } else {
-                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'ÙØ´Ù„ Ø§Ù„ØªØºÙŠÙŠØ±'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${data.error || 'فشل التغيير'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
             }
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: ØªØ­Ù…ÙŠÙ„ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ÙÙŠ Ù†Ù…ÙˆØ°Ø¬ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„ Ø¹Ù†Ø¯ Ø§Ø®ØªÙŠØ§Ø±Ù‡Ø§
+    // الإدارة: تحميل بيانات المنهوا في نموذج التعديل عند اختيارها
     const editMangaSelect = document.getElementById('edit-manga-id');
     if (editMangaSelect) {
         editMangaSelect.onchange = () => {
@@ -6770,20 +6770,20 @@ function attachEventListeners() {
             const manga = state.mangas.find(m => m.id === mangaId);
             if (!manga) return;
             document.getElementById('edit-manga-cover').value = manga.cover || '';
-            document.getElementById('edit-manga-genres').value = (Array.isArray(manga.genres) ? manga.genres.join('ØŒ ') : manga.genres || '');
+            document.getElementById('edit-manga-genres').value = (Array.isArray(manga.genres) ? manga.genres.join('، ') : manga.genres || '');
             document.getElementById('edit-manga-title').value = manga.title || '';
             document.getElementById('edit-manga-alt').value = manga.alternative || '';
             document.getElementById('edit-manga-author').value = manga.author || '';
             document.getElementById('edit-manga-synopsis').value = manga.synopsis || '';
-            const statusMap = { 'Ongoing': 'Ù…Ø³ØªÙ…Ø±', 'Ù…Ø³ØªÙ…Ø±': 'Ù…Ø³ØªÙ…Ø±', 'Completed': 'Ù…ÙƒØªÙ…Ù„', 'Ù…ÙƒØªÙ…Ù„': 'Ù…ÙƒØªÙ…Ù„', 'Ù…ØªÙˆÙ‚Ù': 'Ù…ØªÙˆÙ‚Ù' };
+            const statusMap = { 'Ongoing': 'مستمر', 'مستمر': 'مستمر', 'Completed': 'مكتمل', 'مكتمل': 'مكتمل', 'متوقف': 'متوقف' };
             const statusSelect = document.getElementById('edit-manga-status');
-            statusSelect.value = statusMap[manga.status] || 'Ù…Ø³ØªÙ…Ø±';
+            statusSelect.value = statusMap[manga.status] || 'مستمر';
             document.getElementById('edit-manga-fields').style.display = 'block';
             document.getElementById('edit-manga-msg').innerHTML = '';
         };
     }
 
-    // Ø§Ù„Ø¥Ø¯Ø§Ø±Ø©: Ø­ÙØ¸ ØªØ¹Ø¯ÙŠÙ„Ø§Øª Ø§Ù„Ù…Ù†Ù‡ÙˆØ§
+    // الإدارة: حفظ تعديلات المنهوا
     const editMangaForm = document.getElementById('edit-manga-form');
     if (editMangaForm) {
         editMangaForm.onsubmit = async (e) => {
@@ -6791,11 +6791,11 @@ function attachEventListeners() {
             const mangaId = document.getElementById('edit-manga-id').value;
             if (!mangaId) return;
             const msg = document.getElementById('edit-manga-msg');
-            msg.innerHTML = '<span style="color:var(--text-muted);">Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...</span>';
+            msg.innerHTML = '<span style="color:var(--text-muted);">جاري الحفظ...</span>';
             try {
                 const manga = state.mangas.find(m => m.id === mangaId);
                 if (!manga) {
-                    msg.innerHTML = '<span style="color:#ff007f;">Ø§Ù„Ù…Ù†Ù‡ÙˆØ§ ØºÙŠØ± Ù…ÙˆØ¬ÙˆØ¯Ø©</span>';
+                    msg.innerHTML = '<span style="color:#ff007f;">المنهوا غير موجودة</span>';
                     return;
                 }
                 const updated = { ...manga };
@@ -6807,7 +6807,7 @@ function attachEventListeners() {
                 updated.author = document.getElementById('edit-manga-author').value || manga.author;
                 updated.synopsis = document.getElementById('edit-manga-synopsis').value || manga.synopsis || '';
                 const statusSelect = document.getElementById('edit-manga-status');
-                const statusMapRev = { 'Ù…Ø³ØªÙ…Ø±': 'Ongoing', 'Ù…ÙƒØªÙ…Ù„': 'Completed', 'Ù…ØªÙˆÙ‚Ù': 'Hiatus' };
+                const statusMapRev = { 'مستمر': 'Ongoing', 'مكتمل': 'Completed', 'متوقف': 'Hiatus' };
                 updated.status = statusMapRev[statusSelect.value] || manga.status;
                 updated.type = document.getElementById('edit-manga-type').value || manga.type;
 
@@ -6817,16 +6817,16 @@ function attachEventListeners() {
                     body: JSON.stringify(updated)
                 });
                 if (res.ok) {
-                    msg.innerHTML = '<span style="color:#00ff7f;">ØªÙ… Ø­ÙØ¸ Ø§Ù„ØªØ¹Ø¯ÙŠÙ„Ø§Øª Ø¨Ù†Ø¬Ø§Ø­! Ø³ÙŠØªÙ… Ø§Ù„ØªØ­Ø¯ÙŠØ« Ø¨Ø¹Ø¯ Ø¥Ø¹Ø§Ø¯Ø© ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø©.</span>';
+                    msg.innerHTML = '<span style="color:#00ff7f;">تم حفظ التعديلات بنجاح! سيتم التحديث بعد إعادة تحميل الصفحة.</span>';
                     const idx = state.mangas.findIndex(m => m.id === mangaId);
                     if (idx !== -1) state.mangas[idx] = updated;
                     state.saveMangas();
                 } else {
                     const errData = await res.json();
-                    msg.innerHTML = `<span style="color:#ff007f;">${errData.error || 'ÙØ´Ù„ Ø§Ù„Ø­ÙØ¸'}</span>`;
+                    msg.innerHTML = `<span style="color:#ff007f;">${errData.error || 'فشل الحفظ'}</span>`;
                 }
             } catch (err) {
-                msg.innerHTML = '<span style="color:#ff007f;">Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…</span>';
+                msg.innerHTML = '<span style="color:#ff007f;">خطأ في الاتصال بالخادم</span>';
             }
         };
     }
@@ -6985,10 +6985,10 @@ function attachEventListeners() {
                 if (res.ok) {
                     if (data.following) {
                         followBtn.classList.add('following');
-                        followBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Ù…ØªØ§Ø¨ÙŽØ¹';
+                        followBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> متابَع';
                     } else {
                         followBtn.classList.remove('following');
-                        followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Ù…ØªØ§Ø¨Ø¹Ø©';
+                        followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> متابعة';
                     }
                 }
             } catch (e) { console.error(e); }
@@ -7007,7 +7007,7 @@ function attachEventListeners() {
         };
     });
 
-    // Activity items â†’ navigate to manga detail
+    // Activity items → navigate to manga detail
     document.querySelectorAll('.activity-item').forEach(item => {
         item.onclick = () => {
             const mangaId = item.dataset.manga;
@@ -7015,7 +7015,7 @@ function attachEventListeners() {
         };
     });
 
-    // Library card â†’ navigate to manga detail
+    // Library card → navigate to manga detail
     document.querySelectorAll('.library-card').forEach(card => {
         card.onclick = () => {
             const mangaId = card.dataset.manga;
@@ -7023,7 +7023,7 @@ function attachEventListeners() {
         };
     });
 
-    // Review card â†’ navigate to manga detail
+    // Review card → navigate to manga detail
     document.querySelectorAll('.review-card').forEach(card => {
         card.onclick = () => {
             const mangaId = card.dataset.manga;
@@ -7031,7 +7031,7 @@ function attachEventListeners() {
         };
     });
 
-    // Leaderboard row â†’ navigate to profile
+    // Leaderboard row → navigate to profile
     document.querySelectorAll('.leaderboard-row').forEach(row => {
         row.onclick = () => {
             const username = row.dataset.username;
@@ -7043,7 +7043,7 @@ function attachEventListeners() {
     const lbHomeBtn = document.getElementById('lb-home-btn');
     if (lbHomeBtn) lbHomeBtn.onclick = () => navigate('home');
 
-    // Podium items â†’ navigate to profile
+    // Podium items → navigate to profile
     document.querySelectorAll('.podium-item .podium-name').forEach(el => {
         el.onclick = (e) => {
             e.stopPropagation();
@@ -7061,7 +7061,7 @@ function attachEventListeners() {
     if (claimBtn) {
         claimBtn.onclick = async () => {
             claimBtn.disabled = true;
-            claimBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ø¬Ø§Ø±ÙŠ...';
+            claimBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري...';
             try {
                 const res = await fetch('/api/rewards/claim_daily', {
                     method: 'POST',
@@ -7081,15 +7081,15 @@ function attachEventListeners() {
                         if (badge) badge.innerHTML = data.total_points + ' <i class="fa-solid fa-star" style="font-size:0.6rem;"></i>';
                     }, 100);
                 } else {
-                    alert(data.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£');
+                    alert(data.error || 'حدث خطأ');
                     claimBtn.disabled = false;
-                    claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> Ø¬Ù…Ø¹ Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©';
+                    claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
                 }
             } catch (e) {
                 console.error('Claim reward error:', e);
-                alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…');
+                alert('خطأ في الاتصال بالخادم');
                 claimBtn.disabled = false;
-                claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> Ø¬Ù…Ø¹ Ø§Ù„Ù…ÙƒØ§ÙØ£Ø©';
+                claimBtn.innerHTML = '<i class="fa-solid fa-gift"></i> جمع المكافأة';
             }
         };
     }
@@ -7186,7 +7186,7 @@ function attachEventListeners() {
                 });
                 const result = await res.json();
                 if (res.ok) {
-                    alert('ØªÙ… Ø§Ù„Ø´Ø±Ø§Ø¡ Ø¨Ù†Ø¬Ø§Ø­!');
+                    alert('تم الشراء بنجاح!');
                     state.userProfile.points = result.points || state.userProfile.points;
                     if (result.item_id) {
                         state.userProfile.purchased = state.userProfile.purchased || [];
@@ -7195,22 +7195,22 @@ function attachEventListeners() {
                     state.saveUserProfile();
                     renderApp();
                 } else {
-                    alert(result.error || 'ÙØ´Ù„ Ø§Ù„Ø´Ø±Ø§Ø¡');
+                    alert(result.error || 'فشل الشراء');
                     btn.disabled = false;
-                    btn.innerHTML = 'Ø´Ø±Ø§Ø¡';
+                    btn.innerHTML = 'شراء';
                 }
             } catch (e) {
                 console.error('Buy error:', e);
-                alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„');
+                alert('خطأ في الاتصال');
                 btn.disabled = false;
-                btn.innerHTML = 'Ø´Ø±Ø§Ø¡';
+                btn.innerHTML = 'شراء';
             }
         };
     });
 }
 
 // ==========================================
-// 5.5. Ø¯ÙˆØ§Ù„ Ù…Ø³Ø§Ø¹Ø¯Ø© Ù„Ù„Ø¥Ø¯Ø§Ø±Ø©
+// 5.5. دوال مساعدة للإدارة
 // ==========================================
 
 function loadEditMangaData() {
@@ -7227,7 +7227,7 @@ function loadEditMangaData() {
 }
 
 // ==========================================
-// 6. ØªØ´ØºÙŠÙ„ Ø§Ù„Ù‚Ø§Ø±Ø¦ ÙˆØ§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„ÙƒØ³ÙˆÙ„
+// 6. تشغيل القارئ والتحميل الكسول
 // ==========================================
 
 window.readerImageQueue = [];
@@ -7289,9 +7289,9 @@ function showImageError(container, src, exhausted) {
     var chapterId = state.activeChapterId || '';
     container.innerHTML = '<div class="reader-image-error" style="padding:40px 20px;text-align:center;color:var(--color-accent);display:flex;flex-direction:column;align-items:center;gap:8px;">' +
         '<i class="fa-solid fa-triangle-exclamation" style="font-size:2.5rem;margin-bottom:8px;"></i>' +
-        '<p style="font-weight:700;">' + (exhausted ? 'ØªØ¹Ø°Ø± ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙˆØ±Ø© Ø¨Ø¹Ø¯ Ø¹Ø¯Ø© Ù…Ø­Ø§ÙˆÙ„Ø§Øª' : 'ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ù‡Ø°Ù‡ Ø§Ù„ØµÙØ­Ø©') + '</p>' +
-        (exhausted ? '' : '<button class="retry-btn" style="background:var(--color-primary);color:white;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;">Ø¥Ø¹Ø§Ø¯Ø© Ø§Ù„Ù…Ø­Ø§ÙˆÙ„Ø©</button>') +
-        '<button class="alt-source-btn" data-manga-id="' + mangaId + '" data-chap-id="' + chapterId + '" style="background:var(--color-secondary);color:#07080c;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;margin-top:4px;"><i class="fa-solid fa-compass"></i> Ù…ØµØ¯Ø± Ø¨Ø¯ÙŠÙ„</button>' +
+        '<p style="font-weight:700;">' + (exhausted ? 'تعذر تحميل الصورة بعد عدة محاولات' : 'فشل تحميل هذه الصفحة') + '</p>' +
+        (exhausted ? '' : '<button class="retry-btn" style="background:var(--color-primary);color:white;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;">إعادة المحاولة</button>') +
+        '<button class="alt-source-btn" data-manga-id="' + mangaId + '" data-chap-id="' + chapterId + '" style="background:var(--color-secondary);color:#07080c;border:none;padding:8px 18px;border-radius:20px;cursor:pointer;font-family:var(--font-family);font-weight:700;margin-top:4px;"><i class="fa-solid fa-compass"></i> مصدر بديل</button>' +
         '</div>';
     var altBtn = container.querySelector('.alt-source-btn');
     if (altBtn) {
@@ -7311,14 +7311,14 @@ function showImageError(container, src, exhausted) {
                             var ch = manga.chapters.find(function(c) { return c.id === cid; });
                             if (ch) {
                                 ch.alt_images = data.alt_images;
-                                container.parentElement.innerHTML = '<div class="reader-image-placeholder"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-secondary);margin-bottom:12px;"></i><span>Ø¬Ø§Ø±ÙŠ ØªØ­Ù…ÙŠÙ„ Ù…Ù† Ø§Ù„Ù…ØµØ¯Ø± Ø§Ù„Ø¨Ø¯ÙŠÙ„...</span></div>';
+                                container.parentElement.innerHTML = '<div class="reader-image-placeholder"><i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-secondary);margin-bottom:12px;"></i><span>جاري تحميل من المصدر البديل...</span></div>';
                                 loadSingleImage(container.parentElement, '/proxy-image?url=' + encodeURIComponent(data.alt_images[0]));
                             }
                         }
                     } else {
-                        alert('Ù„Ù… Ù†Ø¹Ø«Ø± Ø¹Ù„Ù‰ Ù…ØµØ¯Ø± Ø¨Ø¯ÙŠÙ„ Ù„Ù‡Ø°Ø§ Ø§Ù„ÙØµÙ„.');
+                        alert('لم نعثر على مصدر بديل لهذا الفصل.');
                     }
-                }).catch(function() { alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…'); });
+                }).catch(function() { alert('خطأ في الاتصال بالخادم'); });
             }
         };
     }
@@ -7328,7 +7328,7 @@ function showImageError(container, src, exhausted) {
             e.stopPropagation();
             container.innerHTML = '<div class="reader-image-placeholder">' +
                 '<i class="fa-solid fa-circle-notch fa-spin" style="font-size:2.5rem;color:var(--color-primary);margin-bottom:12px;"></i>' +
-                '<span>Ø¬Ø§Ø±ÙŠ Ø¥Ø¹Ø§Ø¯Ø© ØªØ­Ù…ÙŠÙ„ Ø§Ù„ØµÙØ­Ø©...</span></div>';
+                '<span>جاري إعادة تحميل الصفحة...</span></div>';
             var retrySrc = src;
             if (src.includes('/proxy-image')) {
                 retrySrc = src + (src.includes('?') ? '&' : '?') + 't=' + Date.now();
@@ -7375,7 +7375,7 @@ function initProgressTracker() {
             state.saveReadingProgress(state.activeMangaId, state.activeChapterId, winScroll, scrolled);
         }
         
-        // Ø§Ù„ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø§Ø³ØªØ¨Ø§Ù‚ÙŠ Ø§Ù„Ø°ÙƒÙŠ Ù„Ù„ÙØµÙ„ Ø§Ù„Ù‚Ø§Ø¯Ù…
+        // التحميل الاستباقي الذكي للفصل القادم
         if (scrolled > 70 && !window._hasPrefetchedNextChapter && window._nextChapterImages) {
             prefetchNextChapter(window._nextChapterImages);
         }
@@ -7421,7 +7421,7 @@ async function loadAdminSuggestions() {
         if (response.ok) {
             const list = await response.json();
             if (list.length === 0) {
-                container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-dark);">Ù„Ø§ ØªÙˆØ¬Ø¯ Ø´ÙƒØ§ÙˆÙ‰ Ø£Ùˆ Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª Ù…Ø±Ø³Ù„Ø© Ø­Ø§Ù„ÙŠØ§Ù‹.</p>';
+                container.innerHTML = '<p style="text-align:center; padding: 20px; color: var(--text-dark);">لا توجد شكاوى أو اقتراحات مرسلة حالياً.</p>';
                 return;
             }
             let html = `
@@ -7432,7 +7432,7 @@ async function loadAdminSuggestions() {
                 const isComplaint = item.type === 'complaint';
                 const badgeBg = isComplaint ? 'rgba(255, 0, 127, 0.1)' : 'rgba(0, 255, 127, 0.1)';
                 const badgeColor = isComplaint ? '#ff007f' : '#00ff7f';
-                const badgeText = isComplaint ? 'Ø´ÙƒÙˆÙ‰' : 'Ø§Ù‚ØªØ±Ø§Ø­';
+                const badgeText = isComplaint ? 'شكوى' : 'اقتراح';
                 const badgeIcon = isComplaint ? '<i class="fa-solid fa-circle-exclamation"></i>' : '<i class="fa-solid fa-lightbulb"></i>';
                 
                 html += `
@@ -7453,10 +7453,10 @@ async function loadAdminSuggestions() {
             html += '</div>';
             container.innerHTML = html;
         } else {
-            container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">ÙØ´Ù„ ØªØ­Ù…ÙŠÙ„ Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª Ù…Ù† Ø§Ù„Ø³ÙŠØ±ÙØ±.</p>';
+            container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">فشل تحميل الاقتراحات من السيرفر.</p>';
         }
     } catch(e) {
-        container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù….</p>';
+        container.innerHTML = '<p style="text-align:center; padding: 20px; color: #ff007f;">حدث خطأ أثناء الاتصال بالخادم.</p>';
     }
 }
 
@@ -7496,7 +7496,7 @@ async function loadAdminConfig() {
     }
 }
 
-// Ø¥ØºÙ„Ø§Ù‚ Ù…Ù‚ØªØ±Ø­Ø§Øª Ø§Ù„Ø¨Ø­Ø« Ø¹Ù†Ø¯ Ø§Ù„Ù†Ù‚Ø± Ø®Ø§Ø±Ø¬ ØµÙ†Ø¯ÙˆÙ‚ Ø§Ù„Ø¨Ø­Ø«
+// إغلاق مقترحات البحث عند النقر خارج صندوق البحث
 document.addEventListener('click', (e) => {
     document.querySelectorAll('.bookmark-picker.open').forEach(picker => {
         if (!picker.contains(e.target)) {
@@ -7618,7 +7618,7 @@ let isOnline = navigator.onLine;
 window.addEventListener('online', () => { isOnline = true; document.body.classList.remove('is-offline'); renderApp(); });
 window.addEventListener('offline', () => { isOnline = false; document.body.classList.add('is-offline'); renderApp(); });
 
-// ØªØ´ØºÙŠÙ„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚
+// تشغيل التطبيق
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bootstrapConfig);
 } else {
@@ -7638,8 +7638,8 @@ async function ProfileViewComponent() {
     const rewardsHtml = `
         <div class="settings-card">
             <div class="flex-between" style="margin-bottom:15px;">
-                <div style="font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> Ø§Ù„Ù…ÙƒØ§ÙØ¢Øª Ø§Ù„ÙŠÙˆÙ…ÙŠØ©</div>
-                <div style="font-size:0.85rem; color:var(--text-muted);">Ø§Ù„ÙŠÙˆÙ… 2 Ù…Ù† 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> ÙŠÙˆÙ… Ù…ØªØªØ§Ù„Ù</div>
+                <div style="font-weight:bold; font-size:1.1rem;"><i class="fa-solid fa-gift" style="color:var(--primary-color);"></i> المكافآت اليومية</div>
+                <div style="font-size:0.85rem; color:var(--text-muted);">اليوم 2 من 7 <i class="fa-solid fa-fire" style="color:#e67e22;"></i> يوم متتالٍ</div>
             </div>
             <div class="rewards-grid">
                 <div class="reward-card completed">
@@ -7674,8 +7674,8 @@ async function ProfileViewComponent() {
                 </div>
                 <div class="reward-card wide locked">
                     <div>
-                        <div class="reward-day" style="font-weight:bold; color:#fff;">Ø§Ù„ÙŠÙˆÙ… 7</div>
-                        <div style="font-size:0.7rem; color:var(--text-muted);">Ù…ÙƒØ§ÙØ£Ø© Ø§Ù„Ø£Ø³Ø¨ÙˆØ¹ <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">Ù…Ø¶Ø§Ø¹Ù</span></div>
+                        <div class="reward-day" style="font-weight:bold; color:#fff;">اليوم 7</div>
+                        <div style="font-size:0.7rem; color:var(--text-muted);">مكافأة الأسبوع <span style="background:#f39c12; color:#000; padding:2px 5px; border-radius:4px; font-weight:bold;">مضاعف</span></div>
                         <div class="reward-prizes" style="margin-top:5px;">50 <i class="fa-solid fa-star" style="font-size:0.7rem;"></i></div>
                     </div>
                     <div class="reward-icon-box" style="width:40px; height:40px;"><i class="fa-solid fa-lock"></i></div>
@@ -7698,7 +7698,7 @@ async function ProfileViewComponent() {
                 </div>
             </div>
             <div style="position:absolute; bottom:20px; left:40px;">
-                <button class="btn-primary" onclick="navigate('settings')"><i class="fa-solid fa-gear"></i> Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø­Ø³Ø§Ø¨</button>
+                <button class="btn-primary" onclick="navigate('settings')"><i class="fa-solid fa-gear"></i> إعدادات الحساب</button>
             </div>
         </div>
 
@@ -7706,19 +7706,19 @@ async function ProfileViewComponent() {
         <div style="display:flex; justify-content:center; gap:50px; padding:30px 0; background:rgba(255,255,255,0.02); margin-top:50px; border-radius:12px;">
             <div style="text-align:center;">
                 <div style="font-size:1.5rem; font-weight:bold;">0</div>
-                <div style="color:var(--text-muted); font-size:0.85rem;">Ø§Ù„Ù…ØªØ§Ø¨Ø¹ÙˆÙ†</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">المتابعون</div>
             </div>
             <div style="text-align:center;">
                 <div style="font-size:1.5rem; font-weight:bold;">0</div>
-                <div style="color:var(--text-muted); font-size:0.85rem;">ÙŠØªØ§Ø¨Ø¹</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">يتابع</div>
             </div>
             <div style="text-align:center;">
                 <div style="font-size:1.5rem; font-weight:bold;">0</div>
-                <div style="color:var(--text-muted); font-size:0.85rem;">Ø£ÙŠØ§Ù… Ø§Ù„ØªØ³Ø¬ÙŠÙ„</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">أيام التسجيل</div>
             </div>
             <div style="text-align:center;">
                 <div style="font-size:1.5rem; font-weight:bold;">0</div>
-                <div style="color:var(--text-muted); font-size:0.85rem;">Ø³Ø¬Ù„ Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</div>
+                <div style="color:var(--text-muted); font-size:0.85rem;">سجل القراءة</div>
             </div>
         </div>
 
@@ -7726,16 +7726,16 @@ async function ProfileViewComponent() {
             <div class="settings-content" style="flex:2;">
                 <!-- Tabs -->
                 <div class="notif-tabs" style="margin-bottom:20px;">
-                    <div class="notif-tab active" onclick="window.switchProfileViewTab(this, 'activity')">Ù†Ø´Ø§Ø· Ø§Ù„Ø­Ø³Ø§Ø¨</div>
-                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'library')">Ø§Ù„Ù…ÙƒØªØ¨Ø©</div>
-                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'reviews')">Ø§Ù„Ù…Ø±Ø§Ø¬Ø¹Ø§Øª</div>
-                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'chapters')">Ø§Ù„ÙØµÙˆÙ„</div>
-                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'ratings')">Ø§Ù„ØªÙ‚ÙŠÙŠÙ…</div>
+                    <div class="notif-tab active" onclick="window.switchProfileViewTab(this, 'activity')">نشاط الحساب</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'library')">المكتبة</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'reviews')">المراجعات</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'chapters')">الفصول</div>
+                    <div class="notif-tab" onclick="window.switchProfileViewTab(this, 'ratings')">التقييم</div>
                 </div>
                 
                 <div class="notif-empty" id="profile-content-box">
                     <i class="fa-solid fa-ghost"></i>
-                    <div>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£ÙŠ Ù†Ø´Ø§Ø· Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†</div>
+                    <div>لا يوجد أي نشاط حتى الآن</div>
                 </div>
             </div>
             
@@ -7744,16 +7744,16 @@ async function ProfileViewComponent() {
                 <div class="settings-card">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
                         <div>
-                            <div style="font-size:0.85rem; color:var(--text-muted);">Ù…Ø¹Ù„ÙˆÙ…Ø§Øª Ø§Ù„Ø¹Ø¶Ùˆ</div>
-                            <div style="font-weight:bold; font-size:1.1rem;">Ù…Ø³ØªØ®Ø¯Ù… 1</div>
+                            <div style="font-size:0.85rem; color:var(--text-muted);">معلومات العضو</div>
+                            <div style="font-weight:bold; font-size:1.1rem;">مستخدم 1</div>
                         </div>
                         <i class="fa-solid fa-crown" style="font-size:2rem; color:var(--primary-color);"></i>
                     </div>
                     <div style="width:100%; background:rgba(255,255,255,0.1); height:8px; border-radius:4px; margin-bottom:5px; position:relative;">
                         <div style="position:absolute; top:0; right:0; height:100%; width:10%; background:var(--primary-color); border-radius:4px;"></div>
                     </div>
-                    <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">10% Ø¥Ù„Ù‰ Ù…Ø³ØªÙˆÙ‰ 2</div>
-                    <p style="font-size:0.7rem; color:rgba(255,255,255,0.3); text-align:center; margin-top:10px;">ÙˆØ³Ø§Ù… Ø§Ù„Ù‚Ø±Ø§Ø¡Ø© ÙˆØ§Ù„Ù…ÙƒØ§ÙØ¢Øª ØªØ¹Ø²Ø² Ù…Ø³ØªÙˆØ§Ùƒ Ø£Ø¹Ù„Ù‰</p>
+                    <div style="font-size:0.75rem; color:var(--text-muted); text-align:center;">10% إلى مستوى 2</div>
+                    <p style="font-size:0.7rem; color:rgba(255,255,255,0.3); text-align:center; margin-top:10px;">وسام القراءة والمكافآت تعزز مستواك أعلى</p>
                 </div>
 
                 ${rewardsHtml}
@@ -7771,31 +7771,31 @@ function SettingsViewComponent() {
 
     const profileHtml = `
         <div class="settings-tab-pane" id="settings-pane-profile" style="display:block;">
-            <div class="settings-section-title"><i class="fa-regular fa-user"></i> Ù…Ø¸Ù‡Ø± Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ</div>
+            <div class="settings-section-title"><i class="fa-regular fa-user"></i> مظهر الملف الشخصي</div>
             <div class="settings-card">
                 <div class="flex-between">
                     <div>
-                        <div class="form-label">ØµÙˆØ±Ø© Ø§Ù„ØºÙ„Ø§Ù (Banner)</div>
-                        <div onclick="alert('Ø³ÙŠØªÙ… ØªÙØ¹ÙŠÙ„ Ø±ÙØ¹ Ø§Ù„ØµÙˆØ± Ù‚Ø±ÙŠØ¨Ø§Ù‹')" style="width:400px; height:120px; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                        <div class="form-label">صورة الغلاف (Banner)</div>
+                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:400px; height:120px; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
                             <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; margin-bottom:10px;"></i>
-                            <span>Ø±ÙØ¹ ØµÙˆØ±Ø© ØºÙ„Ø§Ù</span>
+                            <span>رفع صورة غلاف</span>
                         </div>
                     </div>
                     <div>
-                        <div class="form-label">Ø§Ù„ØµÙˆØ±Ø© Ø§Ù„Ø´Ø®ØµÙŠØ©</div>
-                        <div onclick="alert('Ø³ÙŠØªÙ… ØªÙØ¹ÙŠÙ„ Ø±ÙØ¹ Ø§Ù„ØµÙˆØ± Ù‚Ø±ÙŠØ¨Ø§Ù‹')" style="width:100px; height:100px; border-radius:50%; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
+                        <div class="form-label">الصورة الشخصية</div>
+                        <div onclick="alert('سيتم تفعيل رفع الصور قريباً')" style="width:100px; height:100px; border-radius:50%; background:rgba(0,0,0,0.3); border:2px dashed rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; color:var(--text-muted); cursor:pointer;">
                             <i class="fa-solid fa-camera"></i>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">Ø§Ù„Ø§Ø³Ù… Ø§Ù„Ù…Ø³ØªØ¹Ø§Ø±</label>
+                <label class="form-label">الاسم المستعار</label>
                 <input type="text" class="form-control" value="${s.userEmail ? getUserHandle(s.userEmail) : ''}">
             </div>
             <div class="form-group">
-                <label class="form-label">Ø§Ù„Ù†Ø¨Ø°Ø© Ø§Ù„ØªØ¹Ø±ÙŠÙÙŠØ© (Bio)</label>
-                <textarea class="form-control" placeholder="ØªØ­Ø¯Ø« Ø¹Ù† Ù†ÙØ³Ùƒ..."></textarea>
+                <label class="form-label">النبذة التعريفية (Bio)</label>
+                <textarea class="form-control" placeholder="تحدث عن نفسك..."></textarea>
                 <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px; text-align:left;">0/500</div>
             </div>
         </div>
@@ -7803,22 +7803,22 @@ function SettingsViewComponent() {
 
     const securityHtml = `
         <div class="settings-tab-pane" id="settings-pane-security" style="display:none;">
-            <div class="settings-section-title"><i class="fa-solid fa-lock"></i> Ø§Ù„Ø£Ù…Ø§Ù† ÙˆØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</div>
+            <div class="settings-section-title"><i class="fa-solid fa-lock"></i> الأمان وتغيير كلمة المرور</div>
             <div class="settings-card">
                 <div class="form-group">
-                    <label class="form-label">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø­Ø§Ù„ÙŠØ©</label>
+                    <label class="form-label">كلمة المرور الحالية</label>
                     <input type="password" class="form-control" value="........................">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</label>
+                    <label class="form-label">كلمة المرور الجديدة</label>
                     <input type="password" class="form-control" placeholder="........">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">ØªØ£ÙƒÙŠØ¯ ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</label>
+                    <label class="form-label">تأكيد كلمة المرور الجديدة</label>
                     <input type="password" class="form-control" placeholder="........">
                 </div>
                 <div style="text-align:left;">
-                    <button class="btn-primary" onclick="alert('ØªÙ… ØªØ­Ø¯ÙŠØ« Ø§Ù„Ø£Ù…Ø§Ù† Ø¨Ù†Ø¬Ø§Ø­')">ØªØºÙŠÙŠØ± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ±</button>
+                    <button class="btn-primary" onclick="alert('تم تحديث الأمان بنجاح')">تغيير كلمة المرور</button>
                 </div>
             </div>
         </div>
@@ -7826,12 +7826,12 @@ function SettingsViewComponent() {
 
     const notifHtml = `
         <div class="settings-tab-pane" id="settings-pane-notifications" style="display:none;">
-            <div class="settings-section-title"><i class="fa-regular fa-bell"></i> Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª</div>
+            <div class="settings-section-title"><i class="fa-regular fa-bell"></i> إعدادات الإشعارات</div>
             <div class="settings-card">
                 <div class="flex-between" style="margin-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:15px;">
                     <div>
-                        <div style="font-weight:bold; margin-bottom:5px;">Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„ÙØµÙˆÙ„ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø©</div>
-                        <div style="color:var(--text-muted); font-size:0.85rem;">ØªÙ„Ù‚ÙŠ Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ÙÙˆØ±ÙŠØ© Ø¹Ù†Ø¯ ØµØ¯ÙˆØ± ÙØµÙˆÙ„ Ù„Ù„Ù…Ø§Ù†Ø¬Ø§ ÙÙŠ Ù…ÙƒØªØ¨ØªÙƒ.</div>
+                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات الفصول الجديدة</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">تلقي إشعارات فورية عند صدور فصول للمانجا في مكتبتك.</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" checked>
@@ -7840,8 +7840,8 @@ function SettingsViewComponent() {
                 </div>
                 <div class="flex-between">
                     <div>
-                        <div style="font-weight:bold; margin-bottom:5px;">Ø¥Ø´Ø¹Ø§Ø±Ø§Øª Ø§Ù„Ù†Ø¸Ø§Ù…</div>
-                        <div style="color:var(--text-muted); font-size:0.85rem;">Ø¥Ø´Ø¹Ø§Ø±Ø§Øª ØªØ®Øµ Ø§Ù„ØªØ­Ø¯ÙŠØ«Ø§Øª ÙˆØ§Ù„Ù‡Ø¯Ø§ÙŠØ§ ÙˆØ§Ù„Ù…ÙƒØ§ÙØ¢Øª.</div>
+                        <div style="font-weight:bold; margin-bottom:5px;">إشعارات النظام</div>
+                        <div style="color:var(--text-muted); font-size:0.85rem;">إشعارات تخص التحديثات والهدايا والمكافآت.</div>
                     </div>
                     <label class="toggle-switch">
                         <input type="checkbox" checked>
@@ -7854,11 +7854,11 @@ function SettingsViewComponent() {
 
     const privacyHtml = `
         <div class="settings-tab-pane" id="settings-pane-privacy" style="display:none;">
-            <div class="settings-section-title"><i class="fa-solid fa-shield-halved"></i> Ø§Ù„Ø®ØµÙˆØµÙŠØ© ÙˆØ§Ù„Ø¨ÙŠØ§Ù†Ø§Øª</div>
+            <div class="settings-section-title"><i class="fa-solid fa-shield-halved"></i> الخصوصية والبيانات</div>
             <div class="settings-card flex-between">
                 <div>
-                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">Ø¥Ø®ÙØ§Ø¡ Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ù‚Ø±Ø§Ø¡Ø©</div>
-                    <div style="color:var(--text-muted); font-size:0.85rem;">Ø§Ù„Ø³Ù…Ø§Ø­ Ù„Ù„Ø¢Ø®Ø±ÙŠÙ† Ø¨Ù…Ø´Ø§Ù‡Ø¯Ø© Ù‚Ø§Ø¦Ù…Ø© Ø§Ù„Ø£Ø¹Ù…Ø§Ù„ Ø§Ù„ØªÙŠ ØªÙ‚Ø±Ø£Ù‡Ø§.</div>
+                    <div style="font-weight:bold; font-size:1.1rem; margin-bottom:5px;">إخفاء قائمة القراءة</div>
+                    <div style="color:var(--text-muted); font-size:0.85rem;">السماح للآخرين بمشاهدة قائمة الأعمال التي تقرأها.</div>
                 </div>
                 <label class="toggle-switch">
                     <input type="checkbox" checked>
@@ -7870,24 +7870,24 @@ function SettingsViewComponent() {
 
     return `
     <div class="settings-container">
-        <div style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;">Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª</div>
-        <div style="color:var(--text-muted); margin-bottom:30px;">Ø¥Ø¯Ø§Ø±Ø© Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø­Ø³Ø§Ø¨Ùƒ ÙˆØªÙØ¶ÙŠÙ„Ø§ØªÙƒ.</div>
+        <div style="font-size:1.5rem; font-weight:bold; margin-bottom:10px;">الإعدادات</div>
+        <div style="color:var(--text-muted); margin-bottom:30px;">إدارة إعدادات حسابك وتفضيلاتك.</div>
         
         <div class="settings-layout">
             <div class="settings-sidebar">
-                <div class="settings-sidebar-title"><i class="fa-regular fa-user"></i> Ø§Ù„Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¹Ø§Ù…Ø©</div>
-                <div class="settings-sidebar-subtitle">ØªØ­ÙƒÙ… Ø¨Ù…Ù„ÙÙƒ Ø§Ù„Ø´Ø®ØµÙŠ ÙˆØ§Ù„Ø£Ù…Ø§Ù†</div>
+                <div class="settings-sidebar-title"><i class="fa-regular fa-user"></i> الإعدادات العامة</div>
+                <div class="settings-sidebar-subtitle">تحكم بملفك الشخصي والأمان</div>
                 <div class="settings-nav-item active" onclick="window.switchSettingsTab(this, 'profile')">
-                    <i class="fa-regular fa-user"></i> Ù…Ø¸Ù‡Ø± Ø§Ù„Ù…Ù„Ù Ø§Ù„Ø´Ø®ØµÙŠ
+                    <i class="fa-regular fa-user"></i> مظهر الملف الشخصي
                 </div>
                 <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'security')">
-                    <i class="fa-solid fa-lock"></i> Ø§Ù„Ø£Ù…Ø§Ù†
+                    <i class="fa-solid fa-lock"></i> الأمان
                 </div>
                 <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'notifications')">
-                    <i class="fa-regular fa-bell"></i> Ø§Ù„Ø¥Ø´Ø¹Ø§Ø±Ø§Øª
+                    <i class="fa-regular fa-bell"></i> الإشعارات
                 </div>
                 <div class="settings-nav-item" onclick="window.switchSettingsTab(this, 'privacy')">
-                    <i class="fa-solid fa-shield-halved"></i> Ø§Ù„Ø®ØµÙˆØµÙŠØ© ÙˆØ§Ù„Ø¨ÙŠØ§Ù†Ø§Øª
+                    <i class="fa-solid fa-shield-halved"></i> الخصوصية والبيانات
                 </div>
             </div>
             
@@ -7938,15 +7938,15 @@ if (typeof window.switchProfileViewTab === 'undefined') {
         if (!contentBox) return;
         
         if(tabName === 'activity') {
-            contentBox.innerHTML = '<i class="fa-solid fa-ghost"></i><div>Ù„Ø§ ÙŠÙˆØ¬Ø¯ Ø£ÙŠ Ù†Ø´Ø§Ø· Ø­ØªÙ‰ Ø§Ù„Ø¢Ù†</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-ghost"></i><div>لا يوجد أي نشاط حتى الآن</div>';
         } else if(tabName === 'library') {
-            contentBox.innerHTML = '<i class="fa-solid fa-book-open"></i><div>Ø§Ù„Ù…ÙƒØªØ¨Ø© ÙØ§Ø±ØºØ©</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-book-open"></i><div>المكتبة فارغة</div>';
         } else if(tabName === 'reviews') {
-            contentBox.innerHTML = '<i class="fa-solid fa-star"></i><div>Ù„Ø§ ØªÙˆØ¬Ø¯ Ù…Ø±Ø§Ø¬Ø¹Ø§Øª</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-star"></i><div>لا توجد مراجعات</div>';
         } else if(tabName === 'chapters') {
-            contentBox.innerHTML = '<i class="fa-solid fa-file-lines"></i><div>Ù„Ù… ØªÙ‚Ù… Ø¨Ù‚Ø±Ø§Ø¡Ø© Ø£ÙŠ ÙØµÙˆÙ„ Ø¨Ø¹Ø¯</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-file-lines"></i><div>لم تقم بقراءة أي فصول بعد</div>';
         } else if(tabName === 'ratings') {
-            contentBox.innerHTML = '<i class="fa-solid fa-thumbs-up"></i><div>Ù„Ù… ØªÙ‚Ù… Ø¨ØªÙ‚ÙŠÙŠÙ… Ø£ÙŠ Ù…Ø§Ù†Ø¬Ø§</div>';
+            contentBox.innerHTML = '<i class="fa-solid fa-thumbs-up"></i><div>لم تقم بتقييم أي مانجا</div>';
         }
     };
 }
@@ -7993,7 +7993,7 @@ function SuggestionsViewComponent() {
     const backBtn = `
         <div style="padding:16px 0 0 0;">
             <button onclick="window.navigateView('home')" style="background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); color:var(--text-main); padding:10px 22px; border-radius:30px; cursor:pointer; font-family:inherit; font-size:0.95rem; display:inline-flex; align-items:center; gap:8px; transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
-                <i class="fa-solid fa-arrow-right"></i> Ø§Ù„Ø¹ÙˆØ¯Ø© Ù„Ù„Ø±Ø¦ÙŠØ³ÙŠØ©
+                <i class="fa-solid fa-arrow-right"></i> العودة للرئيسية
             </button>
         </div>`;
 
@@ -8003,10 +8003,10 @@ function SuggestionsViewComponent() {
             ${backBtn}
             <div style="text-align:center; padding:80px 20px;">
                 <i class="fa-solid fa-lock" style="font-size:3rem; color:var(--color-primary); margin-bottom:20px; display:block;"></i>
-                <h2 style="margin-bottom:15px;">ÙŠØ¬Ø¨ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„</h2>
-                <p style="color:var(--text-muted); margin-bottom:25px;">Ø¹Ø°Ø±Ø§Ù‹ØŒ ÙŠØ¬Ø¨ Ø¹Ù„ÙŠÙƒ ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„ Ù„ØªØªÙ…ÙƒÙ† Ù…Ù† Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª Ø£Ùˆ Ø§Ù„Ø´ÙƒØ§ÙˆÙŠ.</p>
+                <h2 style="margin-bottom:15px;">يجب تسجيل الدخول</h2>
+                <p style="color:var(--text-muted); margin-bottom:25px;">عذراً، يجب عليك تسجيل الدخول لتتمكن من إرسال الاقتراحات أو الشكاوي.</p>
                 <button class="primary-btn" onclick="state.showAuthModal=true; state.authModalTab='login'; renderApp();">
-                    <i class="fa-solid fa-right-to-bracket"></i> ØªØ³Ø¬ÙŠÙ„ Ø§Ù„Ø¯Ø®ÙˆÙ„
+                    <i class="fa-solid fa-right-to-bracket"></i> تسجيل الدخول
                 </button>
             </div>
         </div>`;
@@ -8016,27 +8016,27 @@ function SuggestionsViewComponent() {
         ${backBtn}
         <div style="text-align:center; margin:30px 0 40px;">
             <h1 style="font-size:2.2rem; margin-bottom:12px; color:var(--color-primary);">
-                <i class="fa-solid fa-envelope-open-text"></i> Ø§Ù„Ø§Ù‚ØªØ±Ø§Ø­Ø§Øª ÙˆØ§Ù„Ø´ÙƒØ§ÙˆÙŠ
+                <i class="fa-solid fa-envelope-open-text"></i> الاقتراحات والشكاوي
             </h1>
-            <p style="color:var(--text-muted); font-size:1rem;">Ù†Ø­Ù† Ù†Ø³ØªÙ…Ø¹ Ø¥Ù„ÙŠÙƒ! Ø£Ø±Ø³Ù„ Ù„Ù†Ø§ Ø£ÙÙƒØ§Ø±Ùƒ Ù„ØªØ·ÙˆÙŠØ± Ø§Ù„Ù…ÙˆÙ‚Ø¹ØŒ Ø£Ùˆ Ø£ÙŠ Ù…Ø´ÙƒÙ„Ø© ØªÙˆØ§Ø¬Ù‡Ùƒ ÙˆØ³Ù†Ù‚ÙˆÙ… Ø¨Ø­Ù„Ù‡Ø§ ÙÙˆØ±Ø§Ù‹.</p>
+            <p style="color:var(--text-muted); font-size:1rem;">نحن نستمع إليك! أرسل لنا أفكارك لتطوير الموقع، أو أي مشكلة تواجهك وسنقوم بحلها فوراً.</p>
         </div>
         
         <div style="background:var(--secondary-color); padding:30px; border-radius:15px; border:1px solid rgba(255,255,255,0.05);">
             <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:10px; font-weight:bold;">Ù†ÙˆØ¹ Ø§Ù„Ø±Ø³Ø§Ù„Ø©</label>
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">نوع الرسالة</label>
                 <select id="sug-type" style="width:100%; padding:15px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none;">
-                    <option value="suggestion" style="background:var(--secondary-color);">ðŸ’¡ Ø§Ù‚ØªØ±Ø§Ø­ Ù„ØªØ·ÙˆÙŠØ± Ø§Ù„Ù…ÙˆÙ‚Ø¹</option>
-                    <option value="complaint" style="background:var(--secondary-color);">âš ï¸ Ø´ÙƒÙˆÙ‰ Ø£Ùˆ Ù…Ø´ÙƒÙ„Ø© ÙÙ†ÙŠØ©</option>
+                    <option value="suggestion" style="background:var(--secondary-color);">💡 اقتراح لتطوير الموقع</option>
+                    <option value="complaint" style="background:var(--secondary-color);">⚠️ شكوى أو مشكلة فنية</option>
                 </select>
             </div>
             
             <div class="form-group" style="margin-bottom:25px;">
-                <label style="display:block; margin-bottom:10px; font-weight:bold;">Ù†Øµ Ø§Ù„Ø±Ø³Ø§Ù„Ø©</label>
-                <textarea id="sug-content" rows="6" placeholder="Ø§ÙƒØªØ¨ Ø±Ø³Ø§Ù„ØªÙƒ Ù‡Ù†Ø§ Ø¨Ø§Ù„ØªÙØµÙŠÙ„..." style="width:100%; padding:15px; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none; resize:vertical;"></textarea>
+                <label style="display:block; margin-bottom:10px; font-weight:bold;">نص الرسالة</label>
+                <textarea id="sug-content" rows="6" placeholder="اكتب رسالتك هنا بالتفصيل..." style="width:100%; padding:15px; box-sizing:border-box; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:10px; color:#fff; font-family:inherit; font-size:1rem; outline:none; resize:vertical;"></textarea>
             </div>
             
             <button id="sug-submit-btn" class="primary-btn" style="width:100%; padding:15px; font-size:1.1rem; border-radius:10px;" onclick="window.submitSuggestion()">
-                <i class="fa-solid fa-paper-plane"></i> Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©
+                <i class="fa-solid fa-paper-plane"></i> إرسال الرسالة
             </button>
         </div>
     </div>
@@ -8049,12 +8049,12 @@ window.submitSuggestion = async function() {
     const btn = document.getElementById('sug-submit-btn');
     
     if (!content) {
-        alert('Ø§Ù„Ø±Ø¬Ø§Ø¡ ÙƒØªØ§Ø¨Ø© Ù†Øµ Ø§Ù„Ø±Ø³Ø§Ù„Ø© Ø£ÙˆÙ„Ø§Ù‹!');
+        alert('الرجاء كتابة نص الرسالة أولاً!');
         return;
     }
     
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الإرسال...';
     
     try {
         const response = await fetch('/api/suggestions', {
@@ -8065,31 +8065,31 @@ window.submitSuggestion = async function() {
         
         const data = await response.json();
         if (response.ok) {
-            alert('ØªÙ… Ø¥Ø±Ø³Ø§Ù„ Ø±Ø³Ø§Ù„ØªÙƒ Ø¨Ù†Ø¬Ø§Ø­! Ø´ÙƒØ±Ø§Ù‹ Ù„ØªÙˆØ§ØµÙ„Ùƒ Ù…Ø¹Ù†Ø§.');
+            alert('تم إرسال رسالتك بنجاح! شكراً لتواصلك معنا.');
             document.getElementById('sug-content').value = '';
             navigate('home');
         } else {
-            alert(data.error || 'Ø­Ø¯Ø« Ø®Ø·Ø£ Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„Ø¥Ø±Ø³Ø§Ù„');
+            alert(data.error || 'حدث خطأ أثناء الإرسال');
         }
     } catch (e) {
-        alert('Ø®Ø·Ø£ ÙÙŠ Ø§Ù„Ø§ØªØµØ§Ù„ Ø¨Ø§Ù„Ø®Ø§Ø¯Ù…');
+        alert('خطأ في الاتصال بالخادم');
     }
     
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Ø¥Ø±Ø³Ø§Ù„ Ø§Ù„Ø±Ø³Ø§Ù„Ø©';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> إرسال الرسالة';
 };
 
 
 window.startLiveScrape = function() {
     const url = document.getElementById('live-scrape-url').value.trim();
-    if (!url) return alert('ÙŠØ±Ø¬Ù‰ Ø¥Ø¯Ø®Ø§Ù„ Ø§Ù„Ø±Ø§Ø¨Ø· Ø£ÙˆÙ„Ø§Ù‹!');
+    if (!url) return alert('يرجى إدخال الرابط أولاً!');
     
     const terminal = document.getElementById('terminal-output');
     const btn = document.getElementById('live-scrape-btn');
     
     terminal.innerHTML = '<span style="color:#0f0;">$ Starting scrape for: ' + url + '</span>\n';
     btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø³Ø­Ø¨...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري السحب...';
     
     // Connect to SSE Endpoint
     const eventSource = new EventSource(`/api/admin/scrape_stream?url=${encodeURIComponent(url)}&token=${state.sessionToken}`);
@@ -8100,7 +8100,7 @@ window.startLiveScrape = function() {
             terminal.innerHTML += '\n<span style="color:#0f0;">$ Process Finished!</span>\n';
             eventSource.close();
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-play"></i> Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø³Ø­Ø¨';
+            btn.innerHTML = '<i class="fa-solid fa-play"></i> ابدأ السحب';
             return;
         }
         
@@ -8113,7 +8113,7 @@ window.startLiveScrape = function() {
         terminal.innerHTML += '\n<span style="color:red;">$ Connection Error or Process Terminated.</span>\n';
         eventSource.close();
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-play"></i> Ø§Ø¨Ø¯Ø£ Ø§Ù„Ø³Ø­Ø¨';
+        btn.innerHTML = '<i class="fa-solid fa-play"></i> ابدأ السحب';
     };
 };
 
@@ -8126,11 +8126,11 @@ window.checkAutoUpdaterStatus = async function() {
         
         if (data.enabled) {
             toggle.checked = true;
-            statusText.textContent = 'ÙŠØ¹Ù…Ù„ Ø§Ù„Ø¢Ù† (Active)';
+            statusText.textContent = 'يعمل الآن (Active)';
             statusText.style.color = '#00E676';
         } else {
             toggle.checked = false;
-            statusText.textContent = 'Ù…ØªÙˆÙ‚Ù (Paused)';
+            statusText.textContent = 'متوقف (Paused)';
             statusText.style.color = '#ff4444';
         }
     } catch(e) {}
@@ -8141,7 +8141,7 @@ window.toggleAutoUpdater = async function() {
     const newState = toggle.checked;
     const statusText = document.getElementById('auto-updater-status');
     
-    statusText.textContent = 'Ø¬Ø§Ø±ÙŠ Ø§Ù„Ø­ÙØ¸...';
+    statusText.textContent = 'جاري الحفظ...';
     
     try {
         const res = await fetch('/api/admin/updater_toggle', {
@@ -8155,14 +8155,14 @@ window.toggleAutoUpdater = async function() {
         const data = await res.json();
         
         if (data.enabled) {
-            statusText.textContent = 'ÙŠØ¹Ù…Ù„ Ø§Ù„Ø¢Ù† (Active)';
+            statusText.textContent = 'يعمل الآن (Active)';
             statusText.style.color = '#00E676';
         } else {
-            statusText.textContent = 'Ù…ØªÙˆÙ‚Ù (Paused)';
+            statusText.textContent = 'متوقف (Paused)';
             statusText.style.color = '#ff4444';
         }
     } catch (e) {
-        alert('Ø­Ø¯Ø« Ø®Ø·Ø£');
+        alert('حدث خطأ');
         toggle.checked = !newState;
     }
 };
